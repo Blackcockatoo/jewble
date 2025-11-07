@@ -8,7 +8,6 @@ import type { Vitals } from '@/lib/store';
 import type { Genome, DerivedTraits, GenomeHash } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
 import type { HeptaDigits, PrimeTailId, Rotation, Vault } from '@/lib/identity/types';
-import type { HeptaDigits, PrimeTailId } from '@/lib/identity/types';
 
 const DB_NAME = 'MetaPetDB';
 const DB_VERSION = 1;
