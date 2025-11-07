@@ -37,6 +37,10 @@
 - Background-pause (battery-safe)
 - Zustand state management
 
+✅ **Evolution Guidance**
+- Stage-specific lore and celebration copy per phase
+- Requirement breakdown with age, interaction, and vitals progress
+
 ✅ **Offline-First**
 - No network required
 - IndexedDB persistence with autosave cadence

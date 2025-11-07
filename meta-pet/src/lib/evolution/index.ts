@@ -2,10 +2,25 @@
  * Evolution System - State Machine
  */
 
+import type { EvolutionData, EvolutionState, EvolutionRequirement } from './types';
 import type { EvolutionData, EvolutionState } from './types';
 import { EVOLUTION_REQUIREMENTS, EVOLUTION_ORDER } from './types';
 
 export * from './types';
+
+export interface RequirementSnapshot {
+  state: EvolutionState;
+  requirements: EvolutionRequirement;
+}
+
+export interface RequirementProgress {
+  nextState: EvolutionState;
+  ageProgress: number;
+  interactionsProgress: number;
+  vitalsProgress: number;
+  specialMet: boolean;
+  specialDescription?: string;
+}
 
 /**
  * Initialize evolution data for a new pet
@@ -38,6 +53,7 @@ export function checkEvolutionEligibility(
   const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
+  const age = Date.now() - evolution.lastEvolutionTime;
   const age = Date.now() - evolution.birthTime;
   const meetsAge = age >= requirements.minAge;
   const meetsInteractions = evolution.totalInteractions >= requirements.minInteractions;
@@ -95,6 +111,7 @@ export function getTimeUntilNextEvolution(evolution: EvolutionData): number {
   const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
+  const age = Date.now() - evolution.lastEvolutionTime;
   const age = Date.now() - evolution.birthTime;
   const timeRemaining = Math.max(0, requirements.minAge - age);
 
@@ -117,6 +134,7 @@ export function getEvolutionProgress(
   const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
+  const age = Date.now() - evolution.lastEvolutionTime;
   const age = Date.now() - evolution.birthTime;
   const ageProgress = Math.min(100, (age / requirements.minAge) * 100);
   const interactionProgress = Math.min(100, (evolution.totalInteractions / requirements.minInteractions) * 100);
@@ -124,4 +142,48 @@ export function getEvolutionProgress(
 
   // Average of all progress metrics
   return (ageProgress + interactionProgress + vitalsProgress) / 3;
+}
+
+export function getNextEvolutionRequirement(evolution: EvolutionData): RequirementSnapshot | null {
+  const currentStateIndex = EVOLUTION_ORDER.indexOf(evolution.state);
+
+  if (currentStateIndex === EVOLUTION_ORDER.length - 1) {
+    return null;
+  }
+
+  const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
+  return {
+    state: nextState,
+    requirements: EVOLUTION_REQUIREMENTS[nextState],
+  };
+}
+
+export function getRequirementProgress(
+  evolution: EvolutionData,
+  vitalsAverage: number,
+  snapshot: RequirementSnapshot | null = getNextEvolutionRequirement(evolution)
+): RequirementProgress | null {
+  if (!snapshot) {
+    return null;
+  }
+
+  const { requirements, state } = snapshot;
+  const ageElapsed = Date.now() - evolution.lastEvolutionTime;
+  const ageProgress = requirements.minAge === 0 ? 1 : Math.min(1, ageElapsed / requirements.minAge);
+  const interactionsProgress = requirements.minInteractions === 0
+    ? 1
+    : Math.min(1, evolution.totalInteractions / requirements.minInteractions);
+  const vitalsProgress = requirements.minVitalsAverage === 0
+    ? 1
+    : Math.min(1, vitalsAverage / requirements.minVitalsAverage);
+  const specialMet = requirements.specialCondition ? requirements.specialCondition() : true;
+
+  return {
+    nextState: state,
+    ageProgress,
+    interactionsProgress,
+    vitalsProgress,
+    specialMet,
+    specialDescription: requirements.specialDescription,
+  };
 }
