@@ -1,23 +1,7 @@
 import { create } from 'zustand';
 import type { Genome, DerivedTraits } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
-import {
-  initializeEvolution,
-  gainExperience,
-  checkEvolutionEligibility,
-  evolvePet,
-} from '@/lib/evolution';
-import {
-  ACHIEVEMENT_CATALOG,
-  createDefaultBattleStats,
-  createDefaultMiniGameProgress,
-  createDefaultVimanaState,
-  type Achievement,
-  type BattleStats,
-  type BreedingRecord,
-  type MiniGameProgress,
-  type VimanaState,
-} from '@/lib/progression/types';
+import { initializeEvolution, gainExperience, checkEvolutionEligibility, evolvePet } from '@/lib/evolution';
 
 export interface Vitals {
   hunger: number;    // 0-100 (100 = full)
@@ -31,24 +15,9 @@ interface State {
   genome: Genome | null;
   traits: DerivedTraits | null;
   evolution: EvolutionData;
-  vimana: VimanaState;
-  battle: BattleStats;
-  miniGames: MiniGameProgress;
-  achievements: Achievement[];
-  breedingHistory: BreedingRecord[];
   tickId?: number;
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
-  hydrate: (data: {
-    vitals: Vitals;
-    genome: Genome;
-    traits: DerivedTraits;
-    evolution: EvolutionData;
-    vimana: VimanaState;
-    battle: BattleStats;
-    miniGames: MiniGameProgress;
-    achievements: Achievement[];
-    breedingHistory: BreedingRecord[];
-  }) => void;
+  hydrate: (data: { vitals: Vitals; genome: Genome; traits: DerivedTraits; evolution: EvolutionData }) => void;
   startTick: () => void;
   stopTick: () => void;
   feed: () => void;
@@ -56,12 +25,6 @@ interface State {
   play: () => void;
   sleep: () => void;
   tryEvolve: () => boolean;
-  exploreCell: (cellId: string) => void;
-  resolveAnomaly: (cellId: string) => void;
-  recordBattle: (result: 'win' | 'loss', opponent: string) => void;
-  updateMiniGameScore: (game: 'memory' | 'rhythm', score: number) => void;
-  unlockAchievement: (id: string) => void;
-  addBreedingRecord: (record: BreedingRecord) => void;
 }
 
 const clamp = (v: number, min = 0, max = 100) => Math.max(min, Math.min(max, v));
@@ -76,27 +39,17 @@ export const useStore = create<State>((set, get) => ({
   genome: null,
   traits: null,
   evolution: initializeEvolution(),
-  vimana: createDefaultVimanaState(),
-  battle: createDefaultBattleStats(),
-  miniGames: createDefaultMiniGameProgress(),
-  achievements: [],
-  breedingHistory: [],
 
   setGenome(genome: Genome, traits: DerivedTraits) {
     set({ genome, traits });
   },
 
-  hydrate({ vitals, genome, traits, evolution, vimana, battle, miniGames, achievements, breedingHistory }) {
+  hydrate({ vitals, genome, traits, evolution }) {
     set(state => ({
       vitals: { ...vitals },
       genome,
       traits,
       evolution: { ...evolution },
-      vimana: { ...vimana, cells: vimana.cells.map(cell => ({ ...cell })) },
-      battle: { ...battle },
-      miniGames: { ...miniGames },
-      achievements: achievements.map(item => ({ ...item })),
-      breedingHistory: breedingHistory.map(record => ({ ...record })),
       tickId: state.tickId,
     }));
   },
@@ -134,7 +87,7 @@ export const useStore = create<State>((set, get) => ({
 
       set({
         vitals: next,
-        evolution: { ...evolution, canEvolve },
+        evolution: { ...evolution, canEvolve }
       });
     }, TICK_MS) as unknown as number;
 
@@ -193,182 +146,6 @@ export const useStore = create<State>((set, get) => ({
       },
       evolution: gainExperience(state.evolution, 1),
     }));
-  },
-
-  exploreCell(cellId) {
-    const { vimana, vitals } = get();
-    const target = vimana.cells.find(cell => cell.id === cellId);
-    if (!target) return;
-
-    const now = Date.now();
-    const updatedCells = vimana.cells.map(cell =>
-      cell.id === cellId
-        ? {
-            ...cell,
-            discovered: true,
-            visitedAt: now,
-          }
-        : cell
-    );
-
-    const updatedVitals = { ...vitals };
-    switch (target.reward) {
-      case 'mood':
-        updatedVitals.mood = clamp(updatedVitals.mood + 8);
-        break;
-      case 'energy':
-        updatedVitals.energy = clamp(updatedVitals.energy + 6);
-        break;
-      case 'hygiene':
-        updatedVitals.hygiene = clamp(updatedVitals.hygiene + 10);
-        break;
-      case 'mystery':
-        updatedVitals.mood = clamp(updatedVitals.mood + 4);
-        updatedVitals.energy = clamp(updatedVitals.energy + 4);
-        break;
-    }
-
-    const alreadyEarned = get().achievements.some(a => a.id === 'explorer-first-step');
-
-    set(state => ({
-      vitals: updatedVitals,
-      vimana: {
-        ...state.vimana,
-        cells: updatedCells,
-        activeCellId: cellId,
-        scansPerformed: state.vimana.scansPerformed + 1,
-        lastScanAt: now,
-      },
-    }));
-
-    if (!alreadyEarned) {
-      get().unlockAchievement('explorer-first-step');
-    }
-  },
-
-  resolveAnomaly(cellId) {
-    const { vimana } = get();
-    const cell = vimana.cells.find(c => c.id === cellId);
-    if (!cell || !cell.anomaly) return;
-
-    const updatedCells = vimana.cells.map(c =>
-      c.id === cellId
-        ? {
-            ...c,
-            anomaly: false,
-            visitedAt: Date.now(),
-          }
-        : c
-    );
-
-    const anomaliesFound = vimana.anomaliesFound + 1;
-
-    set(state => ({
-      vimana: {
-        ...state.vimana,
-        cells: updatedCells,
-        anomaliesFound,
-      },
-    }));
-
-    if (anomaliesFound >= 3) {
-      get().unlockAchievement('explorer-anomaly-hunter');
-    }
-  },
-
-  recordBattle(result, opponent) {
-    const { battle } = get();
-    const win = result === 'win';
-
-    const wins = battle.wins + (win ? 1 : 0);
-    const losses = battle.losses + (win ? 0 : 1);
-    const streak = win ? battle.streak + 1 : 0;
-    const energyShield = clamp(
-      battle.energyShield + (win ? 10 : -8),
-      0,
-      100
-    );
-
-    set(state => ({
-      battle: {
-        wins,
-        losses,
-        streak,
-        lastResult: result,
-        lastOpponent: opponent,
-        energyShield,
-      },
-      vitals: win
-        ? {
-            ...state.vitals,
-            mood: clamp(state.vitals.mood + 6),
-          }
-        : {
-            ...state.vitals,
-            energy: clamp(state.vitals.energy - 5),
-          },
-    }));
-
-    if (win) {
-      const hasFirst = get().achievements.some(a => a.id === 'battle-first-win');
-      if (!hasFirst) {
-        get().unlockAchievement('battle-first-win');
-      }
-    }
-
-    if (streak >= 3) {
-      get().unlockAchievement('battle-streak');
-    }
-  },
-
-  updateMiniGameScore(game, score) {
-    set(state => {
-      const nextMiniGames: MiniGameProgress = { ...state.miniGames };
-      const focusStreak = nextMiniGames.focusStreak + 1;
-      if (game === 'memory') {
-        nextMiniGames.memoryHighScore = Math.max(nextMiniGames.memoryHighScore, score);
-        if (score >= 10) {
-          get().unlockAchievement('minigame-memory');
-        }
-      } else {
-        nextMiniGames.rhythmHighScore = Math.max(nextMiniGames.rhythmHighScore, score);
-        if (score >= 12) {
-          get().unlockAchievement('minigame-rhythm');
-        }
-      }
-
-      nextMiniGames.focusStreak = focusStreak;
-      nextMiniGames.lastPlayedAt = Date.now();
-
-      return {
-        miniGames: nextMiniGames,
-        vitals: {
-          ...state.vitals,
-          mood: clamp(state.vitals.mood + 3),
-        },
-      };
-    });
-  },
-
-  unlockAchievement(id) {
-    const existing = get().achievements;
-    if (existing.some(item => item.id === id)) return;
-
-    const template = ACHIEVEMENT_CATALOG.find(item => item.id === id);
-    const earned: Achievement = template
-      ? { ...template, earnedAt: Date.now() }
-      : { id, title: id, description: 'Secret milestone unlocked.', earnedAt: Date.now() };
-
-    set(state => ({
-      achievements: [...state.achievements, earned],
-    }));
-  },
-
-  addBreedingRecord(record) {
-    set(state => ({
-      breedingHistory: [...state.breedingHistory, { ...record }],
-    }));
-    get().unlockAchievement('breeding-first');
   },
 }));
 

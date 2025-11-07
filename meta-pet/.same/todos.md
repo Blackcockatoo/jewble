@@ -3,8 +3,8 @@
 ## Current Focus: Advanced Features Implementation
 
 ### In Progress
-- [x] Breeding system
-- [x] Vimana exploration map
+- [ ] Breeding system
+- [ ] Vimana exploration map
 
 - [x] Prime-Tail Crest identity system
 - [x] HeptaCode v1 encoding with ECC (42 digits)
@@ -27,8 +27,12 @@
 2. [x] **Persistence Enhancements** - Export/import UX and multi-pet management
 3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
 4. [x] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
-5. [x] **Breeding System** - Genome inheritance and trait mixing
-6. [x] **Vimana Map** - Grid component with exploration
-7. [x] **Battle System** - Consciousness-based combat
-8. [x] **Mini-games** - Pattern recognition, meditation, etc.
-9. [x] **Achievements** - Track milestones and unlock cosmetics
+1. [ ] **Evolution Polish** - Balance requirements, add celebratory UI, surface lore per stage
+2. [ ] **Persistence Enhancements** - Export/import UX and multi-pet management
+3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
+4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
+5. [ ] **Breeding System** - Genome inheritance and trait mixing
+6. [ ] **Vimana Map** - Grid component with exploration
+7. [ ] **Battle System** - Consciousness-based combat
+8. [ ] **Mini-games** - Pattern recognition, meditation, etc.
+9. [ ] **Achievements** - Track milestones and unlock cosmetics

@@ -50,22 +50,6 @@
 - Multi-pet switching with rename, export, and import controls
 - Autosave indicator with graceful fallback when persistence is unavailable
 
-✅ **Vimana Expedition**
-- Grid-based field scanning with anomaly resolution and vitals rewards
-- Energy shield tracking and scan counters for exploration pacing
-
-✅ **Breeding Lab**
-- Lineage forging UI with partner selector, fusion modes, and trait forecasting
-- Produces new companions with fresh crests, HeptaCode digits, and autosave snapshots
-
-✅ **Consciousness Arena**
-- Battle stats with win/loss tracking, streak milestones, and energy shield buffs
-- Opponent simulator that ties success odds to vitals health
-
-✅ **Mini-Game Arcade & Achievements**
-- Memory and rhythm mini-games that boost mood and record high scores
-- Achievement shelf synced to exploration, battles, minigames, and breeding milestones
-
 ---
 
 ## File Structure
@@ -222,51 +206,6 @@ The dashboard ships with three share-level presets that re-encode the 42-digit H
 
 Changing the preset regenerates the digits with a fresh nonce and stores the choice in IndexedDB so autosave snapshots, exports, and re-imports maintain the same privacy stance.
 
-### 7. Vimana Exploration
-
-```ts
-import { useStore } from '@/lib/store';
-
-const scans = useStore(s => s.vimana.scansPerformed);
-const exploreCell = useStore(s => s.exploreCell);
-
-exploreCell('calm-2'); // reveals Harmonic Springs, buffs hygiene + mood
-```
-
-Sixteen-way Vimana cells start fogged and reveal energy rewards, anomalies, and mood boosts as you scan. Resolved anomalies increment achievements and feed back into vitals momentum.
-
-### 8. Breeding Lab
-
-```ts
-import { breedPets } from '@/lib/breeding';
-
-const { offspring, traits } = breedPets(parentA.genome, parentB.genome, 'MUTATION');
-```
-
-The breeding UI lets you pick a partner from your archive, choose Balanced/Dominant/Mutation fusion, preview trait forecasts, and mint a new crest + HeptaCode for the offspring. Offspring autosaves alongside a breeding history record for achievements.
-
-### 9. Consciousness Arena
-
-```ts
-import { useStore } from '@/lib/store';
-
-const recordBattle = useStore(s => s.recordBattle);
-recordBattle('win', 'Echo Wisp');
-```
-
-Wins increase an energy shield buffer and feed evolution experience, while streaks unlock achievements. Losses reduce energy, encouraging rest before the next duel.
-
-### 10. Mini-Games & Achievements
-
-```ts
-import { useStore } from '@/lib/store';
-
-const updateScore = useStore(s => s.updateMiniGameScore);
-updateScore('memory', 12); // Sets a new high score and unlocks Pattern Master
-```
-
-Memory and rhythm mini-games reward vitals with mood boosts and track high scores. The achievement shelf highlights unlocked milestones with timestamps across exploration, battles, minigames, and breeding.
-
 ---
 
 ## Next Steps (From Master Build Prompt)
@@ -280,6 +219,7 @@ Memory and rhythm mini-games reward vitals with mood boosts and track high score
 - [x] Fix ECC to output exactly 42 digits
 - [x] Add audio chime (playHepta)
 - [x] Privacy presets (Stealth/Standard/Radiant)
+- [ ] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Consent grants (pairwise, time-boxed)
 
 ### Phase 2: Game Loop
@@ -287,19 +227,19 @@ Memory and rhythm mini-games reward vitals with mood boosts and track high score
 - [x] 4-state machine (genetics → neuro → quantum → speciation)
 - [x] Evolution gates + transitions
 - [ ] Sealed export/import
-- [x] Breeding system (genome inheritance)
+- [ ] Breeding system (genome inheritance)
 
 ### Phase 3: Vimana Integration
-- [x] Grid map component
-- [x] Field scanning
-- [x] Anomaly detection
+- [ ] Grid map component
+- [ ] Field scanning
+- [ ] Anomaly detection
 - [ ] Sample collection
 
 ### Phase 4: Endgame Features
-- [x] Battle system (consciousness-based)
-- [x] Breeding (standard + recursive)
-- [x] Mini-games (pattern recognition, meditation)
-- [x] Cosmetics + achievements
+- [ ] Battle system (consciousness-based)
+- [ ] Breeding (standard + recursive)
+- [ ] Mini-games (pattern recognition, meditation)
+- [ ] Cosmetics + achievements
 
 ---
 

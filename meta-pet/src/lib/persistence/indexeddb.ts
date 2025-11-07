@@ -7,20 +7,8 @@
 import type { Vitals } from '@/lib/store';
 import type { Genome, DerivedTraits, GenomeHash } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
-import type {
-  HeptaDigits,
-  PrimeTailId,
-  PrivacyPreset,
-  Rotation,
-  Vault,
-} from '@/lib/identity/types';
-import type {
-  BattleStats,
-  MiniGameProgress,
-  VimanaState,
-  Achievement,
-  BreedingRecord,
-} from '@/lib/progression/types';
+import type { HeptaDigits, PrimeTailId, Rotation, Vault } from '@/lib/identity/types';
+import type { HeptaDigits, PrimeTailId } from '@/lib/identity/types';
 
 const DB_NAME = 'MetaPetDB';
 const DB_VERSION = 1;
@@ -36,12 +24,6 @@ export interface PetSaveData {
   evolution: EvolutionData;
   crest: PrimeTailId;
   heptaDigits: HeptaDigits;
-  privacyPreset: PrivacyPreset;
-  vimana: VimanaState;
-  battle: BattleStats;
-  miniGames: MiniGameProgress;
-  achievements: Achievement[];
-  breedingHistory: BreedingRecord[];
   lastSaved: number;
   createdAt: number;
 }
@@ -87,14 +69,6 @@ export async function savePet(data: PetSaveData): Promise<void> {
         black60: [...data.genome.black60],
       },
       heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
-      vimana: {
-        ...data.vimana,
-        cells: data.vimana.cells.map(cell => ({ ...cell })),
-      },
-      battle: { ...data.battle },
-      miniGames: { ...data.miniGames },
-      achievements: data.achievements.map(item => ({ ...item })),
-      breedingHistory: data.breedingHistory.map(entry => ({ ...entry })),
       lastSaved: Date.now(),
     };
 
@@ -210,15 +184,6 @@ export function exportPetToJSON(data: PetSaveData): string {
     traits: JSON.parse(JSON.stringify(data.traits)),
     crest: { ...data.crest, tail: [...data.crest.tail] as [number, number, number, number] },
     heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
-    privacyPreset: data.privacyPreset,
-    vimana: {
-      ...data.vimana,
-      cells: data.vimana.cells.map(cell => ({ ...cell })),
-    },
-    battle: { ...data.battle },
-    miniGames: { ...data.miniGames },
-    achievements: data.achievements.map(item => ({ ...item })),
-    breedingHistory: data.breedingHistory.map(entry => ({ ...entry })),
   };
 
   return JSON.stringify(safeData, null, 2);
@@ -262,30 +227,6 @@ export function importPetFromJSON(json: string): PetSaveData {
     throw new Error('Invalid pet file: HeptaCode digits malformed');
   }
 
-  if (!isValidVimana(parsed.vimana)) {
-    throw new Error('Invalid pet file: vimana state malformed');
-  }
-
-  if (!isValidBattle(parsed.battle)) {
-    throw new Error('Invalid pet file: battle stats malformed');
-  }
-
-  if (!isValidMiniGames(parsed.miniGames)) {
-    throw new Error('Invalid pet file: mini-game progress malformed');
-  }
-
-  if (!isValidAchievements(parsed.achievements)) {
-    throw new Error('Invalid pet file: achievements malformed');
-  }
-
-  if (!isValidBreedingHistory(parsed.breedingHistory)) {
-    throw new Error('Invalid pet file: breeding history malformed');
-  }
-
-  const privacyPreset = isValidPrivacyPreset(parsed.privacyPreset)
-    ? parsed.privacyPreset
-    : 'standard';
-
   const createdAt = typeof parsed.createdAt === 'number' ? parsed.createdAt : Date.now();
   const lastSaved = typeof parsed.lastSaved === 'number' ? parsed.lastSaved : Date.now();
 
@@ -299,15 +240,6 @@ export function importPetFromJSON(json: string): PetSaveData {
     evolution: parsed.evolution,
     crest: parsed.crest,
     heptaDigits: Object.freeze([...parsed.heptaDigits]) as HeptaDigits,
-    privacyPreset,
-    vimana: {
-      ...parsed.vimana,
-      cells: parsed.vimana.cells.map(cell => ({ ...cell })),
-    },
-    battle: { ...parsed.battle },
-    miniGames: { ...parsed.miniGames },
-    achievements: parsed.achievements.map(item => ({ ...item })),
-    breedingHistory: parsed.breedingHistory.map(entry => ({ ...entry })),
     createdAt,
     lastSaved,
   };
@@ -389,78 +321,5 @@ function isValidHeptaDigits(value: unknown): value is HeptaDigits {
     Array.isArray(value) &&
     value.length === 42 &&
     value.every(v => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 7)
-  );
-}
-
-function isValidPrivacyPreset(value: unknown): value is PrivacyPreset {
-  return value === 'stealth' || value === 'standard' || value === 'radiant';
-}
-
-function isValidVimana(value: unknown): value is VimanaState {
-  if (!value || typeof value !== 'object') return false;
-  const vimana = value as VimanaState;
-  return (
-    Array.isArray(vimana.cells) &&
-    vimana.cells.every(cell =>
-      typeof cell.id === 'string' &&
-      typeof cell.label === 'string' &&
-      (cell.field === 'calm' || cell.field === 'neuro' || cell.field === 'quantum' || cell.field === 'earth') &&
-      typeof cell.discovered === 'boolean' &&
-      typeof cell.anomaly === 'boolean' &&
-      typeof cell.energy === 'number' &&
-      ['mood', 'energy', 'hygiene', 'mystery'].includes(cell.reward)
-    ) &&
-    typeof vimana.activeCellId === 'string' &&
-    typeof vimana.anomaliesFound === 'number' &&
-    typeof vimana.scansPerformed === 'number' &&
-    (typeof vimana.lastScanAt === 'number' || vimana.lastScanAt === null)
-  );
-}
-
-function isValidBattle(value: unknown): value is BattleStats {
-  if (!value || typeof value !== 'object') return false;
-  const battle = value as BattleStats;
-  return (
-    typeof battle.wins === 'number' &&
-    typeof battle.losses === 'number' &&
-    typeof battle.streak === 'number' &&
-    (battle.lastResult === 'win' || battle.lastResult === 'loss' || battle.lastResult === null) &&
-    (typeof battle.lastOpponent === 'string' || battle.lastOpponent === null) &&
-    typeof battle.energyShield === 'number'
-  );
-}
-
-function isValidMiniGames(value: unknown): value is MiniGameProgress {
-  if (!value || typeof value !== 'object') return false;
-  const miniGames = value as MiniGameProgress;
-  return (
-    typeof miniGames.memoryHighScore === 'number' &&
-    typeof miniGames.rhythmHighScore === 'number' &&
-    typeof miniGames.focusStreak === 'number' &&
-    (typeof miniGames.lastPlayedAt === 'number' || miniGames.lastPlayedAt === null)
-  );
-}
-
-function isValidAchievements(value: unknown): value is Achievement[] {
-  if (!Array.isArray(value)) return false;
-  return value.every(item =>
-    item &&
-    typeof item === 'object' &&
-    typeof item.id === 'string' &&
-    typeof item.title === 'string' &&
-    typeof item.description === 'string' &&
-    (typeof item.earnedAt === 'number' || typeof item.earnedAt === 'undefined')
-  );
-}
-
-function isValidBreedingHistory(value: unknown): value is BreedingRecord[] {
-  if (!Array.isArray(value)) return false;
-  return value.every(entry =>
-    entry &&
-    typeof entry === 'object' &&
-    typeof entry.offspringId === 'string' &&
-    typeof entry.partnerId === 'string' &&
-    (entry.mode === 'DOMINANT' || entry.mode === 'BALANCED' || entry.mode === 'MUTATION') &&
-    typeof entry.createdAt === 'number'
   );
 }

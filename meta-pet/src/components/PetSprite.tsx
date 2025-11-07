@@ -8,7 +8,6 @@ export function PetSprite() {
   const traits = useStore(s => s.traits);
   const vitals = useStore(s => s.vitals);
   const evolution = useStore(s => s.evolution);
-  const achievements = useStore(s => s.achievements);
 
   if (!traits) {
     return (
@@ -128,14 +127,6 @@ export function PetSprite() {
   };
 
   const visuals = EVOLUTION_VISUALS[evolution.state];
-  const auraColor = achievements.length >= 7
-    ? '#FFD700'
-    : achievements.length >= 4
-      ? '#FF6BD6'
-      : achievements.length >= 1
-        ? '#66FFF3'
-        : null;
-  const badgeIcon = achievements.length >= 7 ? '👑' : achievements.length >= 4 ? '✨' : achievements.length >= 1 ? '🌟' : null;
 
   return (
     <motion.div
@@ -166,18 +157,6 @@ export function PetSprite() {
           ease: 'easeInOut',
         }}
       />
-
-      {auraColor && (
-        <motion.div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(circle at center, ${auraColor}33, transparent 70%)`,
-            filter: 'blur(40px)',
-          }}
-          animate={{ opacity: [0.2, 0.6, 0.2], scale: [0.9, 1.1, 0.9] }}
-          transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
-        />
-      )}
 
       <svg width="200" height="200" viewBox="0 0 200 200">
         <defs>
@@ -290,16 +269,6 @@ export function PetSprite() {
           </g>
         )}
       </svg>
-
-      {badgeIcon && (
-        <motion.div
-          className="absolute -top-3 -right-3 text-2xl"
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
-        >
-          {badgeIcon}
-        </motion.div>
-      )}
 
       {/* Mood indicator */}
       <div className="absolute bottom-2 right-2">

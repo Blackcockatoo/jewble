@@ -10,20 +10,10 @@ import { PetSprite } from '@/components/PetSprite';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
 import { Button } from '@/components/ui/button';
-import { VimanaMap } from '@/components/VimanaMap';
-import { BattleArena } from '@/components/BattleArena';
-import { MiniGamesPanel } from '@/components/MiniGamesPanel';
-import { AchievementShelf } from '@/components/AchievementShelf';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
 import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
-import {
-  encodeGenome,
-  decodeGenome,
-  hashGenome,
-  type GenomeHash,
-  type Genome,
-} from '@/lib/genome';
-import type { PrimeTailId, HeptaDigits, PrivacyPreset } from '@/lib/identity/types';
+import { encodeGenome, decodeGenome, hashGenome, type GenomeHash } from '@/lib/genome';
+import type { PrimeTailId, HeptaDigits } from '@/lib/identity/types';
 import {
   savePet,
   loadPet,
@@ -36,17 +26,6 @@ import {
 } from '@/lib/persistence/indexeddb';
 import { EvolutionPanel } from '@/components/EvolutionPanel';
 import { initializeEvolution } from '@/lib/evolution';
-import { breedPets, predictOffspring, canBreed } from '@/lib/breeding';
-import {
-  createDefaultBattleStats,
-  createDefaultMiniGameProgress,
-  createDefaultVimanaState,
-  type Achievement,
-  type BreedingRecord,
-  type BattleStats,
-  type MiniGameProgress,
-  type VimanaState,
-} from '@/lib/progression/types';
 import {
   Sparkles,
   Shield,
@@ -68,49 +47,6 @@ interface PetSummary {
 }
 
 const DNA_CHARS = ['A', 'C', 'G', 'T'] as const;
-
-const PRIVACY_PRESET_ORDER: PrivacyPreset[] = ['stealth', 'standard', 'radiant'];
-
-const PRIVACY_PRESET_DETAILS: Record<PrivacyPreset, {
-  title: string;
-  tagline: string;
-  highlights: string[];
-  accentClass: string;
-}> = {
-  stealth: {
-    title: 'Stealth',
-    tagline: 'Minimal reveal — tail digits only',
-    highlights: ['Crest stored locally', 'Broadcasts anonymized HeptaCode'],
-    accentClass: 'text-emerald-400',
-  },
-  standard: {
-    title: 'Standard',
-    tagline: 'Balanced sharing for trusted circles',
-    highlights: ['Shares crest vault + rotation', 'Keeps genome hashes private'],
-    accentClass: 'text-cyan-300',
-  },
-  radiant: {
-    title: 'Radiant',
-    tagline: 'Full aura broadcast for public signal',
-    highlights: ['Publishes crest metadata', 'Optimized for pairing + discovery'],
-    accentClass: 'text-amber-300',
-  },
-};
-
-const BREEDING_MODE_DETAILS: Record<'BALANCED' | 'DOMINANT' | 'MUTATION', { label: string; description: string }> = {
-  BALANCED: {
-    label: 'Balanced',
-    description: 'Blend genes evenly for predictable traits.',
-  },
-  DOMINANT: {
-    label: 'Dominant',
-    description: 'Lean into one parent for lineage continuity.',
-  },
-  MUTATION: {
-    label: 'Mutation',
-    description: 'Invite chaos with spontaneous new traits.',
-  },
-};
 
 function randomDNA(length: number): string {
   const values = new Uint8Array(length);
@@ -143,34 +79,20 @@ function slugify(value: string | undefined, fallback: string): string {
     .replace(/\s+/g, '-');
 }
 
-function genomeToDNAString(genome: Genome): string {
-  const pool = [...genome.red60, ...genome.blue60, ...genome.black60];
-  const chars: string[] = [];
-  for (let i = 0; i < 64; i++) {
-    const digit = pool[i % pool.length] ?? 0;
-    chars.push(DNA_CHARS[(digit + i) % DNA_CHARS.length]);
-  }
-  return chars.join('');
-}
-
-function deriveTailFromGenome(genome: Genome): [number, number, number, number] {
-  const pick = (a: number, b: number) => ((a * 7 + b) % 60) as number;
-  return [
-    pick(genome.red60[0] ?? 0, genome.red60[1] ?? 0),
-    pick(genome.red60[2] ?? 0, genome.blue60[0] ?? 0),
-    pick(genome.blue60[1] ?? 0, genome.black60[0] ?? 0),
-    pick(genome.black60[1] ?? 0, genome.black60[2] ?? 0),
-  ];
-}
-
 export default function Home() {
   const startTick = useStore(s => s.startTick);
   const hydrate = useStore(s => s.hydrate);
-  const genome = useStore(s => s.genome);
-  const evolution = useStore(s => s.evolution);
-  const addBreedingRecord = useStore(s => s.addBreedingRecord);
-  const breedingHistory = useStore(s => s.breedingHistory);
 
+import { savePet, loadPet, setupAutoSave, type PetSaveData } from '@/lib/persistence/indexeddb';
+import { EvolutionPanel } from '@/components/EvolutionPanel';
+import { Sparkles, Shield, Hash, Dna, Database, Volume2 } from 'lucide-react';
+
+const PET_ID = 'metapet-primary';
+
+export default function Home() {
+  const startTick = useStore(s => s.startTick);
+  const setGenome = useStore(s => s.setGenome);
+  const hydrate = useStore(s => s.hydrate);
   const [crest, setCrest] = useState<PrimeTailId | null>(null);
   const [heptaCode, setHeptaCode] = useState<HeptaDigits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -183,17 +105,7 @@ export default function Home() {
   const [currentPetId, setCurrentPetId] = useState<string | null>(null);
   const [petName, setPetName] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
-  const [privacyPreset, setPrivacyPreset] = useState<PrivacyPreset>('standard');
-  const [presetSaving, setPresetSaving] = useState(false);
-  const [presetStatus, setPresetStatus] = useState<string | null>(null);
-  const [presetError, setPresetError] = useState<string | null>(null);
-  const [breedingPartnerId, setBreedingPartnerId] = useState('');
-  const [breedingMode, setBreedingMode] = useState<'BALANCED' | 'DOMINANT' | 'MUTATION'>('BALANCED');
-  const [breedingStatus, setBreedingStatus] = useState<string | null>(null);
-  const [breedingError, setBreedingError] = useState<string | null>(null);
-  const [breedingLoading, setBreedingLoading] = useState(false);
-  const [breedingPreview, setBreedingPreview] = useState<{ possibleTraits: string[]; confidence: number } | null>(null);
-  const [breedingPartner, setBreedingPartner] = useState<PetSaveData | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   const crestRef = useRef<PrimeTailId | null>(null);
   const heptaRef = useRef<HeptaDigits | null>(null);
@@ -205,7 +117,7 @@ export default function Home() {
   const persistenceSupportedRef = useRef(false);
   const autoSaveCleanupRef = useRef<(() => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const privacyPresetRef = useRef<PrivacyPreset>('standard');
+  const autoSaveCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     crestRef.current = crest;
@@ -213,6 +125,7 @@ export default function Home() {
 
   useEffect(() => {
     heptaRef.current = heptaCode ? Object.freeze([...heptaCode]) as HeptaDigits : null;
+    heptaRef.current = heptaCode;
   }, [heptaCode]);
 
   useEffect(() => {
@@ -226,52 +139,6 @@ export default function Home() {
   useEffect(() => {
     petNameRef.current = petName.trim();
   }, [petName]);
-
-  useEffect(() => {
-    privacyPresetRef.current = privacyPreset;
-  }, [privacyPreset]);
-
-  useEffect(() => {
-    if (!breedingPartnerId) {
-      setBreedingPartner(null);
-      setBreedingPreview(null);
-      setBreedingError(null);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const partner = await loadPet(breedingPartnerId);
-        if (cancelled) return;
-        if (!partner) {
-          setBreedingPartner(null);
-          setBreedingPreview(null);
-          setBreedingError('Selected partner could not be loaded.');
-          return;
-        }
-        setBreedingPartner(partner);
-        setBreedingError(null);
-        if (genome) {
-          const preview = predictOffspring(genome, partner.genome);
-          setBreedingPreview(preview);
-        } else {
-          setBreedingPreview(null);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.warn('Failed to load breeding partner:', error);
-          setBreedingPartner(null);
-          setBreedingPreview(null);
-          setBreedingError('Unable to load partner data.');
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [breedingPartnerId, genome]);
 
   useEffect(() => {
     return () => {
@@ -305,16 +172,7 @@ export default function Home() {
       evolution: state.evolution,
       crest: crestRef.current,
       heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
-      privacyPreset: privacyPresetRef.current ?? 'standard',
       createdAt: createdAtRef.current ?? Date.now(),
-      vimana: {
-        ...state.vimana,
-        cells: state.vimana.cells.map(cell => ({ ...cell })),
-      },
-      battle: { ...state.battle },
-      miniGames: { ...state.miniGames },
-      achievements: state.achievements.map(item => ({ ...item })),
-      breedingHistory: state.breedingHistory.map(entry => ({ ...entry })),
       lastSaved: Date.now(),
     };
   }, []);
@@ -326,6 +184,29 @@ export default function Home() {
       if (!persistenceSupportedRef.current) return;
       try {
         const snapshot = buildSnapshot();
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (typeof indexedDB === 'undefined') return;
+
+    const handleBeforeUnload = () => {
+      try {
+        const state = useStore.getState();
+        if (!state.genome || !state.traits) return;
+        if (!crestRef.current || !heptaRef.current || !genomeHashRef.current) return;
+
+        const snapshot: PetSaveData = {
+          id: PET_ID,
+          vitals: state.vitals,
+          genome: state.genome,
+          genomeHash: genomeHashRef.current,
+          traits: state.traits,
+          evolution: state.evolution,
+          crest: crestRef.current,
+          heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
+          lastSaved: Date.now(),
+          createdAt: createdAtRef.current ?? Date.now(),
+        };
+
         void savePet(snapshot);
       } catch (error) {
         console.warn('Failed to persist pet on unload:', error);
@@ -369,28 +250,15 @@ export default function Home() {
       },
       traits: pet.traits,
       evolution: { ...pet.evolution },
-      vimana: {
-        ...pet.vimana,
-        cells: pet.vimana.cells.map(cell => ({ ...cell })),
-      },
-      battle: { ...pet.battle },
-      miniGames: { ...pet.miniGames },
-      achievements: pet.achievements.map(item => ({ ...item })),
-      breedingHistory: pet.breedingHistory.map(entry => ({ ...entry })),
     });
 
     const digits = Object.freeze([...pet.heptaDigits]) as HeptaDigits;
-    const preset = pet.privacyPreset ?? 'standard';
 
     setCrest(pet.crest);
     setHeptaCode(digits);
     setGenomeHash(pet.genomeHash);
     setCreatedAt(pet.createdAt);
     setPetName(pet.name ?? '');
-    setPrivacyPreset(preset);
-    setPresetSaving(false);
-    setPresetStatus(null);
-    setPresetError(null);
     setCurrentPetId(pet.id);
 
     crestRef.current = pet.crest;
@@ -399,7 +267,6 @@ export default function Home() {
     createdAtRef.current = pet.createdAt;
     petIdRef.current = pet.id;
     petNameRef.current = pet.name?.trim() ?? '';
-    privacyPresetRef.current = preset;
   }, [hydrate]);
 
   const activateAutoSave = useCallback(() => {
@@ -423,15 +290,15 @@ export default function Home() {
     }
   }, [buildSnapshot]);
 
-  const ensureDeviceKey = useCallback(async (): Promise<CryptoKey> => {
-    if (hmacKeyRef.current) return hmacKeyRef.current;
-    const key = await getDeviceHmacKey();
-    hmacKeyRef.current = key;
-    return key;
-  }, []);
-
   const createFreshPet = useCallback(async (): Promise<PetSaveData> => {
-    const hmacKey = await ensureDeviceKey();
+    const ensureKey = async () => {
+      if (hmacKeyRef.current) return hmacKeyRef.current;
+      const key = await getDeviceHmacKey();
+      hmacKeyRef.current = key;
+      return key;
+    };
+
+    const hmacKey = await ensureKey();
     const primeDNA = randomDNA(64);
     const tailDNA = randomDNA(64);
     const tail = randomTail();
@@ -480,20 +347,15 @@ export default function Home() {
       evolution: initializeEvolution(),
       crest: crestValue,
       heptaDigits: Object.freeze([...heptaDigits]) as HeptaDigits,
-      privacyPreset: 'standard',
-      vimana: createDefaultVimanaState(),
-      battle: createDefaultBattleStats(),
-      miniGames: createDefaultMiniGameProgress(),
-      achievements: [],
-      breedingHistory: [],
       createdAt: created,
       lastSaved: created,
     };
-  }, [ensureDeviceKey]);
+  }, []);
 
   const initializeIdentity = useCallback(async () => {
     try {
-      const hmacKey = await ensureDeviceKey();
+      const hmacKey = await getDeviceHmacKey();
+      hmacKeyRef.current = hmacKey;
 
       const supported = typeof indexedDB !== 'undefined';
       persistenceSupportedRef.current = supported;
@@ -550,129 +412,146 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [activateAutoSave, applyPetData, createFreshPet, ensureDeviceKey, refreshPetSummaries]);
+  }, [activateAutoSave, applyPetData, createFreshPet, refreshPetSummaries]);
 
-  const handleBreed = useCallback(async () => {
-    if (!breedingPartnerId) {
-      setBreedingError('Select a partner companion to begin breeding.');
-      return;
-    }
+      const persistenceSupported = typeof indexedDB !== 'undefined';
+      let restored: PetSaveData | null = null;
 
-    if (!genome || !evolution) {
-      setBreedingError('Active companion genome not initialized.');
-      return;
-    }
-
-    if (!breedingPartner) {
-      setBreedingError('Partner data not available yet.');
-      return;
-    }
-
-    if (!canBreed(evolution.state, breedingPartner.evolution.state)) {
-      setBreedingError('Both companions must reach SPECIATION before breeding.');
-      return;
-    }
-
-    setBreedingLoading(true);
-    setBreedingError(null);
-    setBreedingStatus(null);
-
-    try {
-      const { offspring, traits } = breedPets(genome, breedingPartner.genome, breedingMode);
-      const genomeHashValue = await hashGenome(offspring);
-      const hmacKey = await ensureDeviceKey();
-      const dnaString = genomeToDNAString(offspring);
-      const tailDigits = deriveTailFromGenome(offspring);
-      const vault = crestRef.current?.vault ?? breedingPartner.crest.vault;
-      const rotation = Math.random() > 0.5 ? crestRef.current?.rotation ?? 'CW' : breedingPartner.crest.rotation;
-
-      const crestValue = await mintPrimeTailId({
-        dna: dnaString,
-        vault,
-        rotation,
-        tail: tailDigits,
-        hmacKey,
-      });
-
-      const minutes = Math.floor(Date.now() / 60000) % 8192;
-      const heptaDigits = await heptaEncode42(
-        {
-          version: 1,
-          preset: privacyPreset,
-          vault: crestValue.vault,
-          rotation: crestValue.rotation,
-          tail: tailDigits,
-          epoch13: minutes,
-          nonce14: Math.floor(Math.random() * 16384),
-        },
-        hmacKey
-      );
-
-      const created = Date.now();
-      const record: BreedingRecord = {
-        offspringId: `pet-${crestValue.signature.slice(0, 12)}`,
-        partnerId: breedingPartner.id,
-        mode: breedingMode,
-        createdAt: created,
-      };
-
-      const newPet: PetSaveData = {
-        id: record.offspringId,
-        name: undefined,
-        vitals: {
-          hunger: 35,
-          hygiene: 72,
-          mood: 68,
-          energy: 78,
-        },
-        genome: offspring,
-        genomeHash: genomeHashValue,
-        traits,
-        evolution: initializeEvolution(),
-        crest: crestValue,
-        heptaDigits: Object.freeze([...heptaDigits]) as HeptaDigits,
-        privacyPreset,
-        vimana: createDefaultVimanaState(),
-        battle: createDefaultBattleStats(),
-        miniGames: createDefaultMiniGameProgress(),
-        achievements: [],
-        breedingHistory: [],
-        createdAt: created,
-        lastSaved: created,
-      };
-
-      await savePet(newPet);
-      await refreshPetSummaries();
-      applyPetData(newPet);
-      addBreedingRecord(record);
-      try {
-        const snapshot = buildSnapshot();
-        await savePet(snapshot);
-      } catch (persistError) {
-        console.warn('Failed to persist breeding snapshot immediately:', persistError);
+      if (persistenceSupported) {
+        try {
+          restored = await loadPet(PET_ID);
+        } catch (error) {
+          console.warn('Failed to load existing pet save:', error);
+        }
       }
 
-      setBreedingStatus('New companion hatched and added to your archive.');
-      setBreedingPartnerId('');
+      if (restored) {
+        hydrate({
+          vitals: restored.vitals,
+          genome: restored.genome,
+          traits: restored.traits,
+          evolution: restored.evolution,
+        });
+        setCrest(restored.crest);
+        setHeptaCode(restored.heptaDigits);
+        setGenomeHash(restored.genomeHash);
+        setCreatedAt(restored.createdAt);
+        crestRef.current = restored.crest;
+        heptaRef.current = restored.heptaDigits;
+        genomeHashRef.current = restored.genomeHash;
+        createdAtRef.current = restored.createdAt;
+        setPersistenceActive(persistenceSupported);
+      } else {
+        // Generate mock DNA (in production, this would come from secure vault)
+        const primeDNA = 'ATGCCGCGTCATATCACGTTATGCTATACTATACCACATCGTGTCACATTGTACTGTGCT';
+        const tailDNA = 'GCTATGCACGTATATCGCGTACGCGTACGCGTACGCGTACGCGTACGCGTACGCGTACGC';
+
+        // Generate genome from DNA
+        const genome = await encodeGenome(primeDNA, tailDNA);
+        const traits = decodeGenome(genome);
+        setGenome(genome, traits);
+
+        const genomeHashValue = await hashGenome(genome);
+        setGenomeHash(genomeHashValue);
+
+        // Mint crest
+        const newCrest = await mintPrimeTailId({
+          dna: primeDNA,
+          vault: 'blue',
+          rotation: 'CW',
+          tail: [12, 37, 5, 59],
+          hmacKey,
+        });
+        setCrest(newCrest);
+
+        // Generate HeptaCode
+        const minutes = Math.floor(Date.now() / 60000) % 8192;
+        const digits = await heptaEncode42(
+          {
+            version: 1,
+            preset: 'standard',
+            vault: 'blue',
+            rotation: 'CW',
+            tail: [12, 37, 5, 59],
+            epoch13: minutes,
+            nonce14: Math.floor(Math.random() * 16384),
+          },
+          hmacKey
+        );
+        setHeptaCode(digits);
+
+        const created = Date.now();
+        setCreatedAt(created);
+        crestRef.current = newCrest;
+        heptaRef.current = digits;
+        genomeHashRef.current = genomeHashValue;
+        createdAtRef.current = created;
+
+        if (persistenceSupported) {
+          const state = useStore.getState();
+          const snapshot: PetSaveData = {
+            id: PET_ID,
+            vitals: state.vitals,
+            genome,
+            genomeHash: genomeHashValue,
+            traits,
+            evolution: state.evolution,
+            crest: newCrest,
+            heptaDigits: digits,
+            createdAt: created,
+            lastSaved: Date.now(),
+          };
+          try {
+            await savePet(snapshot);
+            setPersistenceActive(true);
+          } catch (error) {
+            console.warn('Failed to persist initial pet snapshot:', error);
+            setPersistenceActive(false);
+          }
+        } else {
+          setPersistenceActive(false);
+        }
+      }
+
+      if (persistenceSupported) {
+        if (autoSaveCleanupRef.current) {
+          autoSaveCleanupRef.current();
+        }
+
+        const cleanup = setupAutoSave(() => {
+          const state = useStore.getState();
+          if (!state.genome || !state.traits) {
+            throw new Error('Genome not initialized');
+          }
+          if (!crestRef.current || !heptaRef.current || !genomeHashRef.current) {
+            throw new Error('Identity not initialized');
+          }
+
+          return {
+            id: PET_ID,
+            vitals: state.vitals,
+            genome: state.genome,
+            genomeHash: genomeHashRef.current,
+            traits: state.traits,
+            evolution: state.evolution,
+            crest: crestRef.current,
+            heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
+            createdAt: createdAtRef.current ?? Date.now(),
+            lastSaved: Date.now(),
+          };
+        }, 60_000);
+
+        autoSaveCleanupRef.current = cleanup;
+        setPersistenceActive(true);
+      }
+
+      setLoading(false);
     } catch (error) {
-      console.error('Breeding failed:', error);
-      setBreedingError('Breeding failed. Please try again after restoring vitals.');
-    } finally {
-      setBreedingLoading(false);
+      console.error('Identity init failed:', error);
+      setLoading(false);
+      setPersistenceActive(false);
     }
-  }, [
-    breedingPartnerId,
-    genome,
-    evolution,
-    breedingPartner,
-    breedingMode,
-    ensureDeviceKey,
-    privacyPreset,
-    refreshPetSummaries,
-    applyPetData,
-    addBreedingRecord,
-    buildSnapshot,
-  ]);
+  }, [hydrate, setGenome]);
 
   const handlePlayHepta = useCallback(async () => {
     if (!heptaCode) return;
@@ -685,66 +564,6 @@ export default function Home() {
       setAudioError(message);
     }
   }, [heptaCode]);
-
-  const handlePrivacyPresetChange = useCallback(
-    async (preset: PrivacyPreset) => {
-      if (!crestRef.current) return;
-      if (preset === privacyPresetRef.current && heptaRef.current) return;
-
-      try {
-        setPresetSaving(true);
-        setPresetError(null);
-        setPresetStatus(null);
-
-        const hmacKey = await ensureDeviceKey();
-        const minutes = Math.floor(Date.now() / 60000) % 8192;
-        const digits = await heptaEncode42(
-          {
-            version: 1,
-            preset,
-            vault: crestRef.current.vault,
-            rotation: crestRef.current.rotation,
-            tail: crestRef.current.tail,
-            epoch13: minutes,
-            nonce14: Math.floor(Math.random() * 16384),
-          },
-          hmacKey
-        );
-
-        const nextDigits = Object.freeze([...digits]) as HeptaDigits;
-
-        setHeptaCode(nextDigits);
-        heptaRef.current = nextDigits;
-        setPrivacyPreset(preset);
-        privacyPresetRef.current = preset;
-
-        const detail = PRIVACY_PRESET_DETAILS[preset];
-
-        if (persistenceSupportedRef.current) {
-          try {
-            const snapshot = buildSnapshot();
-            snapshot.heptaDigits = nextDigits;
-            snapshot.privacyPreset = preset;
-            await savePet(snapshot);
-            await refreshPetSummaries();
-            setPresetStatus(`${detail.title} mode archived offline.`);
-          } catch (error) {
-            console.warn('Failed to persist privacy preset change:', error);
-            setPresetStatus(`${detail.title} mode active locally.`);
-            setPresetError('Could not sync preset change to IndexedDB. Will retry on next autosave.');
-          }
-        } else {
-          setPresetStatus(`${detail.title} mode active.`);
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to update privacy preset';
-        setPresetError(message);
-      } finally {
-        setPresetSaving(false);
-      }
-    },
-    [buildSnapshot, ensureDeviceKey, refreshPetSummaries]
-  );
 
   const handleNameBlur = useCallback(async () => {
     if (!persistenceSupportedRef.current || !currentPetId) return;
@@ -887,6 +706,10 @@ export default function Home() {
     startTick();
     void initializeIdentity();
   }, [initializeIdentity, startTick]);
+  useEffect(() => {
+    startTick();
+    initializeIdentity();
+  }, [startTick, initializeIdentity]);
 
   if (loading) {
     return (
@@ -903,8 +726,6 @@ export default function Home() {
     }
   };
 
-  const availablePartners = petSummaries.filter(summary => summary.id !== currentPetId);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto">
@@ -918,6 +739,9 @@ export default function Home() {
             <Sparkles className="w-8 h-8 text-pink-400" />
           </div>
           <p className="text-zinc-400 text-sm">Prime-Tail Crest • HeptaCode v1 • Live Vitals</p>
+          <p className="text-zinc-400 text-sm">
+            Prime-Tail Crest • HeptaCode v1 • Live Vitals
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -929,6 +753,7 @@ export default function Home() {
                 Your Companion
               </h2>
 
+              {/* Pet sprite */}
               <div className="relative h-48 mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden">
                 <PetSprite />
               </div>
@@ -936,6 +761,7 @@ export default function Home() {
               <HUD />
             </div>
 
+            {/* Genome Traits */}
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Dna className="w-5 h-5 text-purple-400" />
@@ -947,6 +773,9 @@ export default function Home() {
 
           {/* Identity & Persistence */}
           <div className="lg:col-span-2 space-y-6">
+          {/* Identity Cards */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Crest */}
             {crest && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -974,6 +803,33 @@ export default function Home() {
                     <div className="flex items-start gap-2">
                       <span className="text-zinc-400">Signature:</span>
                       <span className="text-pink-400 font-mono text-xs break-all">{crest.signature.slice(0, 16)}...</span>
+                      <span className="text-blue-400 font-mono font-bold uppercase">
+                        {crest.vault}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-400">Rotation:</span>
+                      <span className="text-cyan-400 font-mono font-bold">
+                        {crest.rotation}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-400">Tail:</span>
+                      <span className="text-purple-400 font-mono">
+                        [{crest.tail.join(', ')}]
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-zinc-400">DNA Hash:</span>
+                      <span className="text-green-400 font-mono text-xs break-all">
+                        {crest.dnaHash.slice(0, 16)}...
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-zinc-400">Signature:</span>
+                      <span className="text-pink-400 font-mono text-xs break-all">
+                        {crest.signature.slice(0, 16)}...
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-zinc-400">Coronated:</span>
@@ -989,6 +845,7 @@ export default function Home() {
               </div>
             )}
 
+            {/* HeptaCode Visuals */}
             {heptaCode && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -1005,9 +862,12 @@ export default function Home() {
                     <SeedOfLifeGlyph digits={heptaCode} size={260} />
                   </div>
                 </div>
-                <div className="mt-4 space-y-4">
+                <div className="mt-4 space-y-3">
                   <div className="p-3 bg-slate-950/50 rounded-lg">
                     <p className="text-xs text-zinc-500 font-mono break-all">Digits: [{heptaCode.join(', ')}]</p>
+                    <p className="text-xs text-zinc-500 font-mono break-all">
+                      Digits: [{heptaCode.join(', ')}]
+                    </p>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <Button
@@ -1021,55 +881,6 @@ export default function Home() {
                     <span className={`text-xs ${audioError ? 'text-rose-400' : 'text-zinc-500'}`}>
                       {audioError ?? 'Turn up your volume to hear the crest signature.'}
                     </span>
-                  </div>
-                  <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-white">Privacy Presets</p>
-                        <p className="text-xs text-zinc-500">Choose how boldly your crest broadcasts beyond the device.</p>
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {presetSaving ? (
-                          <span className="text-cyan-300">Saving preset…</span>
-                        ) : presetError ? (
-                          <span className="text-rose-400">{presetError}</span>
-                        ) : presetStatus ? (
-                          <span className="text-emerald-300">{presetStatus}</span>
-                        ) : (
-                          <span>Active: {PRIVACY_PRESET_DETAILS[privacyPreset].title}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      {PRIVACY_PRESET_ORDER.map(option => {
-                        const detail = PRIVACY_PRESET_DETAILS[option];
-                        const isActive = option === privacyPreset;
-                        return (
-                          <button
-                            key={option}
-                            type="button"
-                            onClick={() => void handlePrivacyPresetChange(option)}
-                            disabled={presetSaving && !isActive}
-                            className={`group h-full rounded-xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
-                              isActive
-                                ? 'border-cyan-400 bg-cyan-500/10 shadow-lg shadow-cyan-500/10'
-                                : 'border-slate-800 bg-slate-950/30 hover:border-slate-600'
-                            }`}
-                          >
-                            <p className={`text-sm font-semibold ${detail.accentClass}`}>{detail.title}</p>
-                            <p className="mt-1 text-xs text-zinc-400">{detail.tagline}</p>
-                            <ul className="mt-3 space-y-1 text-xs text-zinc-500">
-                              {detail.highlights.map(highlight => (
-                                <li key={highlight} className="flex items-start gap-2">
-                                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-cyan-400/80" />
-                                  <span>{highlight}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </button>
-                        );
-                      })}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1185,6 +996,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Evolution */}
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-cyan-300" />
@@ -1192,134 +1004,10 @@ export default function Home() {
               </h2>
               <EvolutionPanel />
             </div>
-        </div>
-      </div>
-
-        <div className="mt-10 grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-            <VimanaMap />
-          </div>
-          <div className="space-y-6">
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <BattleArena />
-            </div>
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <MiniGamesPanel />
-            </div>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-pink-300" />
-                  Breeding Lab
-                </h2>
-                <p className="text-xs text-zinc-500">
-                  Pair SPECIATION companions to mint a fresh lineage with shared heritage.
-                </p>
-              </div>
-              <div className="text-xs text-zinc-400">
-                Lineages recorded: <span className="text-cyan-300 font-semibold">{breedingHistory.length}</span>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-wide text-zinc-500">Partner Archive</label>
-                <select
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  value={breedingPartnerId}
-                  onChange={event => setBreedingPartnerId(event.target.value)}
-                  disabled={availablePartners.length === 0}
-                >
-                  <option value="">Select a companion</option>
-                  {availablePartners.map(partner => (
-                    <option key={partner.id} value={partner.id}>
-                      {`${partner.name && partner.name.trim() !== '' ? partner.name : partner.id} • Saved ${new Date(partner.lastSaved).toLocaleDateString()}`}
-                    </option>
-                  ))}
-                </select>
-                {availablePartners.length === 0 && (
-                  <p className="text-xs text-zinc-500">Archive another companion to unlock breeding matches.</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-xs uppercase tracking-wide text-zinc-500">Fusion Mode</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.keys(BREEDING_MODE_DETAILS) as Array<'BALANCED' | 'DOMINANT' | 'MUTATION'>).map(mode => {
-                    const detail = BREEDING_MODE_DETAILS[mode];
-                    const active = breedingMode === mode;
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setBreedingMode(mode)}
-                        className={`rounded-lg border px-2 py-2 text-xs transition ${
-                          active
-                            ? 'border-pink-400 bg-pink-500/10 text-pink-200'
-                            : 'border-slate-700 bg-slate-950/40 text-zinc-300 hover:border-slate-500'
-                        }`}
-                      >
-                        <span className="font-semibold block">{detail.label}</span>
-                        <span className="text-[10px] text-zinc-400 block mt-1">{detail.description}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {breedingPartner && (
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-xs text-zinc-400 space-y-1">
-                  <p className="text-sm font-semibold text-zinc-200">Partner Snapshot</p>
-                  <p>Vault: <span className="text-cyan-300 font-mono">{breedingPartner.crest.vault}</span></p>
-                  <p>Evolution: <span className="text-emerald-300 font-semibold">{breedingPartner.evolution.state}</span></p>
-                  <p>Last saved {new Date(breedingPartner.lastSaved).toLocaleString()}</p>
-                </div>
-                {breedingPreview && (
-                  <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-xs text-zinc-400 space-y-2">
-                    <p className="text-sm font-semibold text-zinc-200">Trait Forecast</p>
-                    <p>Confidence window: <span className="text-amber-300 font-semibold">{breedingPreview.confidence.toFixed(0)}%</span></p>
-                    <ul className="space-y-1">
-                      {breedingPreview.possibleTraits.slice(0, 5).map(trait => (
-                        <li key={trait} className="flex items-center gap-2">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80" />
-                          <span className="text-zinc-300">{trait}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {breedingError && <p className="text-xs text-rose-400">{breedingError}</p>}
-            {breedingStatus && <p className="text-xs text-emerald-300">{breedingStatus}</p>}
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                onClick={() => void handleBreed()}
-                disabled={breedingLoading || !breedingPartnerId}
-                className="gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                {breedingLoading ? 'Sequencing…' : 'Forge Offspring'}
-              </Button>
-              <span className="text-xs text-zinc-500">
-                Parents must both reach SPECIATION. Balanced mode keeps traits stable, mutation invites surprises.
-              </span>
-            </div>
-          </div>
-          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-            <AchievementShelf />
-          </div>
-        </div>
-
+        {/* Info Footer */}
         <div className="mt-8 text-center text-zinc-600 text-xs space-y-1">
           <p>✨ DNA stays private • Only hashes + tail are visible</p>
           <p>🔒 Time-boxed consent • Pairwise identity • Fully offline</p>
@@ -1331,6 +1019,9 @@ export default function Home() {
                 ? 'Offline autosave active (sync every 60s)'
                 : 'Autosave paused — interact to resume saving'
               : 'Offline persistence unavailable in this environment'}
+            {persistenceActive
+              ? 'Offline autosave active (sync every 60s)'
+              : 'Offline autosave unavailable in this session'}
           </p>
         </div>
       </div>
