@@ -184,6 +184,28 @@ useEffect(() => {
 <button onClick={feed}>Feed</button>
 ```
 
+### 5. Offline Archives
+```ts
+import { exportPetToJSON, importPetFromJSON, savePet } from '@/lib/persistence/indexeddb';
+
+const petJSON = exportPetToJSON(snapshot); // Generate downloadable backup
+
+const imported = importPetFromJSON(petJSON);
+await savePet(imported); // Restores to IndexedDB and hydrates via the UI selector
+```
+
+### 6. Privacy Presets
+
+The dashboard ships with three share-level presets that re-encode the 42-digit HeptaCode on demand:
+
+| Preset | Share Level | Best For |
+| --- | --- | --- |
+| **Stealth** | Tail digits only; crest metadata stays local. | Solo play, hidden alt vaults. |
+| **Standard** | Vault + rotation broadcast; hashes remain private. | Trusted circles, family swaps. |
+| **Radiant** | Full crest metadata + aura for discovery. | Public pairing, community drops. |
+
+Changing the preset regenerates the digits with a fresh nonce and stores the choice in IndexedDB so autosave snapshots, exports, and re-imports maintain the same privacy stance.
+
 ---
 
 ## Next Steps (From Master Build Prompt)
@@ -196,6 +218,7 @@ useEffect(() => {
 - [x] **Visual pet sprite (genome-driven)**
 - [x] Fix ECC to output exactly 42 digits
 - [x] Add audio chime (playHepta)
+- [x] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Consent grants (pairwise, time-boxed)
 
