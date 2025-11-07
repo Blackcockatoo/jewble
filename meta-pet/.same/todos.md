@@ -24,6 +24,7 @@
 
 ### Next Steps (Suggested Priority)
 1. [x] **Evolution Polish** - Requirement breakdowns, stage lore, and celebration copy
+1. [ ] **Evolution Polish** - Balance requirements, add celebratory UI, surface lore per stage
 2. [ ] **Persistence Enhancements** - Export/import UX and multi-pet management
 3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
 4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
