@@ -33,6 +33,7 @@ export interface EvolutionStageInfo {
   tagline: string;
   celebration: string;
   focus: string[];
+  specialCondition?: () => boolean;
 }
 
 export const EVOLUTION_REQUIREMENTS: Record<EvolutionState, EvolutionRequirement> = {

@@ -184,16 +184,6 @@ useEffect(() => {
 <button onClick={feed}>Feed</button>
 ```
 
-### 5. Offline Archives
-```ts
-import { exportPetToJSON, importPetFromJSON, savePet } from '@/lib/persistence/indexeddb';
-
-const petJSON = exportPetToJSON(snapshot); // Generate downloadable backup
-
-const imported = importPetFromJSON(petJSON);
-await savePet(imported); // Restores to IndexedDB and hydrates via the UI selector
-```
-
 ---
 
 ## Next Steps (From Master Build Prompt)

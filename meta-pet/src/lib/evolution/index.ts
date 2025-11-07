@@ -3,6 +3,7 @@
  */
 
 import type { EvolutionData, EvolutionState, EvolutionRequirement } from './types';
+import type { EvolutionData, EvolutionState } from './types';
 import { EVOLUTION_REQUIREMENTS, EVOLUTION_ORDER } from './types';
 
 export * from './types';
@@ -53,6 +54,7 @@ export function checkEvolutionEligibility(
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
   const age = Date.now() - evolution.lastEvolutionTime;
+  const age = Date.now() - evolution.birthTime;
   const meetsAge = age >= requirements.minAge;
   const meetsInteractions = evolution.totalInteractions >= requirements.minInteractions;
   const meetsVitals = vitalsAverage >= requirements.minVitalsAverage;
@@ -110,6 +112,7 @@ export function getTimeUntilNextEvolution(evolution: EvolutionData): number {
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
   const age = Date.now() - evolution.lastEvolutionTime;
+  const age = Date.now() - evolution.birthTime;
   const timeRemaining = Math.max(0, requirements.minAge - age);
 
   return timeRemaining;
@@ -132,6 +135,7 @@ export function getEvolutionProgress(
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
   const age = Date.now() - evolution.lastEvolutionTime;
+  const age = Date.now() - evolution.birthTime;
   const ageProgress = Math.min(100, (age / requirements.minAge) * 100);
   const interactionProgress = Math.min(100, (evolution.totalInteractions / requirements.minInteractions) * 100);
   const vitalsProgress = Math.min(100, (vitalsAverage / requirements.minVitalsAverage) * 100);

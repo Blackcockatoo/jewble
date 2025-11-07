@@ -83,6 +83,16 @@ export default function Home() {
   const startTick = useStore(s => s.startTick);
   const hydrate = useStore(s => s.hydrate);
 
+import { savePet, loadPet, setupAutoSave, type PetSaveData } from '@/lib/persistence/indexeddb';
+import { EvolutionPanel } from '@/components/EvolutionPanel';
+import { Sparkles, Shield, Hash, Dna, Database, Volume2 } from 'lucide-react';
+
+const PET_ID = 'metapet-primary';
+
+export default function Home() {
+  const startTick = useStore(s => s.startTick);
+  const setGenome = useStore(s => s.setGenome);
+  const hydrate = useStore(s => s.hydrate);
   const [crest, setCrest] = useState<PrimeTailId | null>(null);
   const [heptaCode, setHeptaCode] = useState<HeptaDigits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,6 +105,7 @@ export default function Home() {
   const [currentPetId, setCurrentPetId] = useState<string | null>(null);
   const [petName, setPetName] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   const crestRef = useRef<PrimeTailId | null>(null);
   const heptaRef = useRef<HeptaDigits | null>(null);
@@ -106,6 +117,7 @@ export default function Home() {
   const persistenceSupportedRef = useRef(false);
   const autoSaveCleanupRef = useRef<(() => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const autoSaveCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     crestRef.current = crest;
@@ -113,6 +125,7 @@ export default function Home() {
 
   useEffect(() => {
     heptaRef.current = heptaCode ? Object.freeze([...heptaCode]) as HeptaDigits : null;
+    heptaRef.current = heptaCode;
   }, [heptaCode]);
 
   useEffect(() => {
@@ -171,6 +184,29 @@ export default function Home() {
       if (!persistenceSupportedRef.current) return;
       try {
         const snapshot = buildSnapshot();
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (typeof indexedDB === 'undefined') return;
+
+    const handleBeforeUnload = () => {
+      try {
+        const state = useStore.getState();
+        if (!state.genome || !state.traits) return;
+        if (!crestRef.current || !heptaRef.current || !genomeHashRef.current) return;
+
+        const snapshot: PetSaveData = {
+          id: PET_ID,
+          vitals: state.vitals,
+          genome: state.genome,
+          genomeHash: genomeHashRef.current,
+          traits: state.traits,
+          evolution: state.evolution,
+          crest: crestRef.current,
+          heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
+          lastSaved: Date.now(),
+          createdAt: createdAtRef.current ?? Date.now(),
+        };
+
         void savePet(snapshot);
       } catch (error) {
         console.warn('Failed to persist pet on unload:', error);
@@ -378,6 +414,145 @@ export default function Home() {
     }
   }, [activateAutoSave, applyPetData, createFreshPet, refreshPetSummaries]);
 
+      const persistenceSupported = typeof indexedDB !== 'undefined';
+      let restored: PetSaveData | null = null;
+
+      if (persistenceSupported) {
+        try {
+          restored = await loadPet(PET_ID);
+        } catch (error) {
+          console.warn('Failed to load existing pet save:', error);
+        }
+      }
+
+      if (restored) {
+        hydrate({
+          vitals: restored.vitals,
+          genome: restored.genome,
+          traits: restored.traits,
+          evolution: restored.evolution,
+        });
+        setCrest(restored.crest);
+        setHeptaCode(restored.heptaDigits);
+        setGenomeHash(restored.genomeHash);
+        setCreatedAt(restored.createdAt);
+        crestRef.current = restored.crest;
+        heptaRef.current = restored.heptaDigits;
+        genomeHashRef.current = restored.genomeHash;
+        createdAtRef.current = restored.createdAt;
+        setPersistenceActive(persistenceSupported);
+      } else {
+        // Generate mock DNA (in production, this would come from secure vault)
+        const primeDNA = 'ATGCCGCGTCATATCACGTTATGCTATACTATACCACATCGTGTCACATTGTACTGTGCT';
+        const tailDNA = 'GCTATGCACGTATATCGCGTACGCGTACGCGTACGCGTACGCGTACGCGTACGCGTACGC';
+
+        // Generate genome from DNA
+        const genome = await encodeGenome(primeDNA, tailDNA);
+        const traits = decodeGenome(genome);
+        setGenome(genome, traits);
+
+        const genomeHashValue = await hashGenome(genome);
+        setGenomeHash(genomeHashValue);
+
+        // Mint crest
+        const newCrest = await mintPrimeTailId({
+          dna: primeDNA,
+          vault: 'blue',
+          rotation: 'CW',
+          tail: [12, 37, 5, 59],
+          hmacKey,
+        });
+        setCrest(newCrest);
+
+        // Generate HeptaCode
+        const minutes = Math.floor(Date.now() / 60000) % 8192;
+        const digits = await heptaEncode42(
+          {
+            version: 1,
+            preset: 'standard',
+            vault: 'blue',
+            rotation: 'CW',
+            tail: [12, 37, 5, 59],
+            epoch13: minutes,
+            nonce14: Math.floor(Math.random() * 16384),
+          },
+          hmacKey
+        );
+        setHeptaCode(digits);
+
+        const created = Date.now();
+        setCreatedAt(created);
+        crestRef.current = newCrest;
+        heptaRef.current = digits;
+        genomeHashRef.current = genomeHashValue;
+        createdAtRef.current = created;
+
+        if (persistenceSupported) {
+          const state = useStore.getState();
+          const snapshot: PetSaveData = {
+            id: PET_ID,
+            vitals: state.vitals,
+            genome,
+            genomeHash: genomeHashValue,
+            traits,
+            evolution: state.evolution,
+            crest: newCrest,
+            heptaDigits: digits,
+            createdAt: created,
+            lastSaved: Date.now(),
+          };
+          try {
+            await savePet(snapshot);
+            setPersistenceActive(true);
+          } catch (error) {
+            console.warn('Failed to persist initial pet snapshot:', error);
+            setPersistenceActive(false);
+          }
+        } else {
+          setPersistenceActive(false);
+        }
+      }
+
+      if (persistenceSupported) {
+        if (autoSaveCleanupRef.current) {
+          autoSaveCleanupRef.current();
+        }
+
+        const cleanup = setupAutoSave(() => {
+          const state = useStore.getState();
+          if (!state.genome || !state.traits) {
+            throw new Error('Genome not initialized');
+          }
+          if (!crestRef.current || !heptaRef.current || !genomeHashRef.current) {
+            throw new Error('Identity not initialized');
+          }
+
+          return {
+            id: PET_ID,
+            vitals: state.vitals,
+            genome: state.genome,
+            genomeHash: genomeHashRef.current,
+            traits: state.traits,
+            evolution: state.evolution,
+            crest: crestRef.current,
+            heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
+            createdAt: createdAtRef.current ?? Date.now(),
+            lastSaved: Date.now(),
+          };
+        }, 60_000);
+
+        autoSaveCleanupRef.current = cleanup;
+        setPersistenceActive(true);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Identity init failed:', error);
+      setLoading(false);
+      setPersistenceActive(false);
+    }
+  }, [hydrate, setGenome]);
+
   const handlePlayHepta = useCallback(async () => {
     if (!heptaCode) return;
 
@@ -531,6 +706,10 @@ export default function Home() {
     startTick();
     void initializeIdentity();
   }, [initializeIdentity, startTick]);
+  useEffect(() => {
+    startTick();
+    initializeIdentity();
+  }, [startTick, initializeIdentity]);
 
   if (loading) {
     return (
@@ -560,6 +739,9 @@ export default function Home() {
             <Sparkles className="w-8 h-8 text-pink-400" />
           </div>
           <p className="text-zinc-400 text-sm">Prime-Tail Crest • HeptaCode v1 • Live Vitals</p>
+          <p className="text-zinc-400 text-sm">
+            Prime-Tail Crest • HeptaCode v1 • Live Vitals
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -571,6 +753,7 @@ export default function Home() {
                 Your Companion
               </h2>
 
+              {/* Pet sprite */}
               <div className="relative h-48 mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden">
                 <PetSprite />
               </div>
@@ -578,6 +761,7 @@ export default function Home() {
               <HUD />
             </div>
 
+            {/* Genome Traits */}
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Dna className="w-5 h-5 text-purple-400" />
@@ -589,6 +773,9 @@ export default function Home() {
 
           {/* Identity & Persistence */}
           <div className="lg:col-span-2 space-y-6">
+          {/* Identity Cards */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Crest */}
             {crest && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -616,6 +803,33 @@ export default function Home() {
                     <div className="flex items-start gap-2">
                       <span className="text-zinc-400">Signature:</span>
                       <span className="text-pink-400 font-mono text-xs break-all">{crest.signature.slice(0, 16)}...</span>
+                      <span className="text-blue-400 font-mono font-bold uppercase">
+                        {crest.vault}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-400">Rotation:</span>
+                      <span className="text-cyan-400 font-mono font-bold">
+                        {crest.rotation}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-400">Tail:</span>
+                      <span className="text-purple-400 font-mono">
+                        [{crest.tail.join(', ')}]
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-zinc-400">DNA Hash:</span>
+                      <span className="text-green-400 font-mono text-xs break-all">
+                        {crest.dnaHash.slice(0, 16)}...
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-zinc-400">Signature:</span>
+                      <span className="text-pink-400 font-mono text-xs break-all">
+                        {crest.signature.slice(0, 16)}...
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-zinc-400">Coronated:</span>
@@ -631,6 +845,7 @@ export default function Home() {
               </div>
             )}
 
+            {/* HeptaCode Visuals */}
             {heptaCode && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -650,6 +865,9 @@ export default function Home() {
                 <div className="mt-4 space-y-3">
                   <div className="p-3 bg-slate-950/50 rounded-lg">
                     <p className="text-xs text-zinc-500 font-mono break-all">Digits: [{heptaCode.join(', ')}]</p>
+                    <p className="text-xs text-zinc-500 font-mono break-all">
+                      Digits: [{heptaCode.join(', ')}]
+                    </p>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <Button
@@ -778,6 +996,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Evolution */}
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-cyan-300" />
@@ -788,6 +1007,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Info Footer */}
         <div className="mt-8 text-center text-zinc-600 text-xs space-y-1">
           <p>✨ DNA stays private • Only hashes + tail are visible</p>
           <p>🔒 Time-boxed consent • Pairwise identity • Fully offline</p>
@@ -799,6 +1019,9 @@ export default function Home() {
                 ? 'Offline autosave active (sync every 60s)'
                 : 'Autosave paused — interact to resume saving'
               : 'Offline persistence unavailable in this environment'}
+            {persistenceActive
+              ? 'Offline autosave active (sync every 60s)'
+              : 'Offline autosave unavailable in this session'}
           </p>
         </div>
       </div>
