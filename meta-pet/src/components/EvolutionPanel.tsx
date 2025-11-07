@@ -56,10 +56,6 @@ export function EvolutionPanel() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 mb-2"
           style={{
             borderColor: visuals.colors[0],
-            backgroundColor: `${visuals.colors[0]}20`,
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 mb-2"
-          style={{
-            borderColor: visuals.colors[0],
             backgroundColor: `${visuals.colors[0]}20`
           }}
         >
@@ -70,7 +66,6 @@ export function EvolutionPanel() {
           Evolution Stage {['GENETICS', 'NEURO', 'QUANTUM', 'SPECIATION'].indexOf(evolution.state) + 1}/4
         </p>
         <p className="text-zinc-300 text-xs mt-1">{stageInfo.tagline}</p>
-        <p className="text-zinc-400 text-sm">Evolution Stage {['GENETICS', 'NEURO', 'QUANTUM', 'SPECIATION'].indexOf(evolution.state) + 1}/4</p>
       </div>
 
       {/* Stats */}
