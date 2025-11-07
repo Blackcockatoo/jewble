@@ -3,9 +3,10 @@
 ## Current Focus: Advanced Features Implementation
 
 ### In Progress
-- [ ] Breeding system
-- [ ] Vimana exploration map
+- [ ] Breeding system UI (wire up `breedPets`, selection flows, and result preview)
+- [ ] Integrate Vimana exploration map into the main dashboard layout
 
+### Recently Completed
 - [x] Prime-Tail Crest identity system
 - [x] HeptaCode v1 encoding with ECC (42 digits)
 - [x] Live vitals HUD with Zustand store
@@ -21,18 +22,21 @@
 - [x] Audio chime (HeptaCode → tones)
 - [x] Evolution system (4-state machine)
 - [x] IndexedDB persistence with autosave
+- [x] Evolution polish – requirement breakdowns, stage lore, and celebration copy
+- [x] Persistence enhancements – export/import UX and multi-pet management
+- [x] Privacy presets – UI for Stealth/Standard/Radiant modes
+- [x] Vimana exploration map component and store logic
+- [x] Consciousness battle arena simulation with energy shield loop
+- [x] Mini-games panel with memory/rhythm tracking
+- [x] Achievement shelf catalog + unlock state
 
 ### Next Steps (Suggested Priority)
-1. [x] **Evolution Polish** - Requirement breakdowns, stage lore, and celebration copy
-2. [x] **Persistence Enhancements** - Export/import UX and multi-pet management
-3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
-4. [x] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
-1. [ ] **Evolution Polish** - Balance requirements, add celebratory UI, surface lore per stage
-2. [ ] **Persistence Enhancements** - Export/import UX and multi-pet management
-3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
-4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
-5. [ ] **Breeding System** - Genome inheritance and trait mixing
-6. [ ] **Vimana Map** - Grid component with exploration
-7. [ ] **Battle System** - Consciousness-based combat
-8. [ ] **Mini-games** - Pattern recognition, meditation, etc.
-9. [ ] **Achievements** - Track milestones and unlock cosmetics
+1. [ ] **Dashboard Integration** – Mount Vimana map, battle arena, mini-games, and achievements panels on the home page with responsive layout sections.
+2. [ ] **Breeding System** – Build pairing UI, surface `predictOffspring`, and persist breeding outcomes.
+3. [ ] **Privacy Presets** – Connect preset selection to crest/hepta encoding flows and expose them in HUD actions.
+4. [ ] **Battle Progression** – Surface opponents log, add cooldown timers, and persist shield state between sessions.
+5. [ ] **Mini-game Expansions** – Add rhythm pattern generator + meditation mini-game, sync high scores to achievements.
+6. [ ] **Vimana Map UX** – Add fog-of-war animations, anomaly events, and reward tooltips; persist discoveries to saves.
+7. [ ] **Breeding Lore & Achievements** – Unlock achievements for lineage milestones and write stage copy.
+8. [ ] **Narrative Events** – Rotate daily prompts that affect mood/energy modifiers across systems.
+9. [ ] **Testing & QA** – Add unit coverage for breeding calculations, battle probability, and store mutations.
