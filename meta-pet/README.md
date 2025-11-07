@@ -29,7 +29,7 @@
 - Encodes payload → MAC → base-7 → ECC
 - Target: 42 digits (6×7 blocks with error correction)
 - Renders as HeptaTag (7-sided) + Seed of Life (7 circles)
-- Syncs to audio tone (planned)
+- Syncs to audio tone (playable crest chime)
 
 ✅ **Live Vitals System**
 - Real-time tick loop (1000ms)
@@ -56,6 +56,7 @@ meta-pet/
 │   │   │   └── hepta/
 │   │   │       ├── codec.ts      # Payload → base-7
 │   │   │       ├── ecc.ts        # 6×7 error correction
+│   │   │       ├── audio.ts      # HeptaCode → crest chime playback
 │   │   │       └── index.ts      # heptaEncode42/Decode42
 │   │   ├── genome/
 │   │   │   ├── types.ts          # Genome + trait types
@@ -111,7 +112,7 @@ const crest = await mintPrimeTailId({
 
 ### 2. HeptaCode (Base-7 Encoding)
 ```ts
-import { heptaEncode42 } from '@/lib/identity/hepta';
+import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
 
 const payload = {
   version: 1,
@@ -125,6 +126,9 @@ const payload = {
 
 const digits42 = await heptaEncode42(payload, hmacKey);
 // Returns: readonly number[] (42 digits, base-7)
+
+// Play the crest chime in the browser
+await playHepta(digits42);
 ```
 
 ### 3. Genome System
@@ -183,7 +187,7 @@ useEffect(() => {
 - [x] **Deterministic trait derivation**
 - [x] **Visual pet sprite (genome-driven)**
 - [ ] Fix ECC to output exactly 42 digits
-- [ ] Add audio chime (playHepta)
+- [x] Add audio chime (playHepta)
 - [ ] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Consent grants (pairwise, time-boxed)
 

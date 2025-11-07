@@ -22,11 +22,12 @@
 - [x] Visual pet sprite (genome-driven SVG rendering)
 - [x] HeptaCode ECC fix (outputs exactly 42 digits)
 - [x] README documentation update
+- [x] Audio chime (HeptaCode → tones)
 
 ### Next Steps (Suggested Priority)
 1. [ ] **Evolution System** - Implement 4-state machine (genetics → neuro → quantum → speciation)
 2. [ ] **Persistence** - IndexedDB for saving pet state offline
-3. [ ] **Audio Chime** - Implement playHepta (HeptaCode → tone)
+3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
 4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
 5. [ ] **Breeding System** - Genome inheritance and trait mixing
 6. [ ] **Vimana Map** - Grid component with exploration

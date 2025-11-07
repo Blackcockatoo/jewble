@@ -29,3 +29,4 @@ export async function heptaDecode42(
 // Re-export for convenience
 export { packPayload, unpackPayload } from './codec';
 export { eccEncode, eccDecode } from './ecc';
+export { playHepta, stopHepta, heptaDigitsToFrequencies } from './audio';

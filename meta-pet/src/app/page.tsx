@@ -7,13 +7,14 @@ import { TraitPanel } from '@/components/TraitPanel';
 import { PetSprite } from '@/components/PetSprite';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
+import { Button } from '@/components/ui/button';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
-import { heptaEncode42 } from '@/lib/identity/hepta';
+import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
 import { encodeGenome, decodeGenome, hashGenome, type GenomeHash } from '@/lib/genome';
 import type { PrimeTailId, HeptaDigits } from '@/lib/identity/types';
 import { savePet, loadPet, setupAutoSave, type PetSaveData } from '@/lib/persistence/indexeddb';
 import { EvolutionPanel } from '@/components/EvolutionPanel';
-import { Sparkles, Shield, Hash, Dna, Database } from 'lucide-react';
+import { Sparkles, Shield, Hash, Dna, Database, Volume2 } from 'lucide-react';
 
 const PET_ID = 'metapet-primary';
 
@@ -27,6 +28,7 @@ export default function Home() {
   const [genomeHash, setGenomeHash] = useState<GenomeHash | null>(null);
   const [createdAt, setCreatedAt] = useState<number | null>(null);
   const [persistenceActive, setPersistenceActive] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   const crestRef = useRef<PrimeTailId | null>(null);
   const heptaRef = useRef<HeptaDigits | null>(null);
@@ -235,6 +237,18 @@ export default function Home() {
     }
   }, [hydrate, setGenome]);
 
+  const handlePlayHepta = useCallback(async () => {
+    if (!heptaCode) return;
+
+    try {
+      setAudioError(null);
+      await playHepta(heptaCode);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to play audio';
+      setAudioError(message);
+    }
+  }, [heptaCode]);
+
   useEffect(() => {
     startTick();
     initializeIdentity();
@@ -364,10 +378,25 @@ export default function Home() {
                     <SeedOfLifeGlyph digits={heptaCode} size={260} />
                   </div>
                 </div>
-                <div className="mt-4 p-3 bg-slate-950/50 rounded-lg">
-                  <p className="text-xs text-zinc-500 font-mono break-all">
-                    Digits: [{heptaCode.join(', ')}]
-                  </p>
+                <div className="mt-4 space-y-3">
+                  <div className="p-3 bg-slate-950/50 rounded-lg">
+                    <p className="text-xs text-zinc-500 font-mono break-all">
+                      Digits: [{heptaCode.join(', ')}]
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <Button
+                      variant="outline"
+                      className="border-slate-700 bg-slate-950/60 text-cyan-200 hover:text-cyan-50"
+                      onClick={handlePlayHepta}
+                    >
+                      <Volume2 className="w-4 h-4 mr-2" />
+                      Play Hepta Tone
+                    </Button>
+                    <span className={`text-xs ${audioError ? 'text-rose-400' : 'text-zinc-500'}`}>
+                      {audioError ?? 'Turn up your volume to hear the crest signature.'}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
