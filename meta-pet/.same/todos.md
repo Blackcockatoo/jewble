@@ -7,6 +7,7 @@
 - [ ] IndexedDB persistence
 - [ ] Breeding system
 - [ ] Vimana exploration map
+- [ ] Audio chime (HeptaCode → tones)
 
 ### Completed ✅
 - [x] Prime-Tail Crest identity system
