@@ -39,7 +39,7 @@
 
 ✅ **Offline-First**
 - No network required
-- IndexedDB persistence (planned)
+- IndexedDB persistence with autosave cadence
 - PWA-ready architecture
 
 ---
@@ -186,15 +186,15 @@ useEffect(() => {
 - [x] **Genome Core (Red60/Blue60/Black60)**
 - [x] **Deterministic trait derivation**
 - [x] **Visual pet sprite (genome-driven)**
-- [ ] Fix ECC to output exactly 42 digits
+- [x] Fix ECC to output exactly 42 digits
 - [x] Add audio chime (playHepta)
 - [ ] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Consent grants (pairwise, time-boxed)
 
 ### Phase 2: Game Loop
 - [x] Vitals tick (real-time)
-- [ ] 4-state machine (genetics → neuro → quantum → speciation)
-- [ ] Evolution gates + transitions
+- [x] 4-state machine (genetics → neuro → quantum → speciation)
+- [x] Evolution gates + transitions
 - [ ] Sealed export/import
 - [ ] Breeding system (genome inheritance)
 

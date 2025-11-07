@@ -3,13 +3,9 @@
 ## Current Focus: Advanced Features Implementation
 
 ### In Progress
-- [ ] Evolution system (4-state machine)
-- [ ] IndexedDB persistence
 - [ ] Breeding system
 - [ ] Vimana exploration map
-- [ ] Audio chime (HeptaCode → tones)
 
-### Completed ✅
 - [x] Prime-Tail Crest identity system
 - [x] HeptaCode v1 encoding with ECC (42 digits)
 - [x] Live vitals HUD with Zustand store
@@ -23,10 +19,12 @@
 - [x] HeptaCode ECC fix (outputs exactly 42 digits)
 - [x] README documentation update
 - [x] Audio chime (HeptaCode → tones)
+- [x] Evolution system (4-state machine)
+- [x] IndexedDB persistence with autosave
 
 ### Next Steps (Suggested Priority)
-1. [ ] **Evolution System** - Implement 4-state machine (genetics → neuro → quantum → speciation)
-2. [ ] **Persistence** - IndexedDB for saving pet state offline
+1. [ ] **Evolution Polish** - Balance requirements, add celebratory UI, surface lore per stage
+2. [ ] **Persistence Enhancements** - Export/import UX and multi-pet management
 3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
 4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
 5. [ ] **Breeding System** - Genome inheritance and trait mixing
