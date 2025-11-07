@@ -46,6 +46,10 @@
 - IndexedDB persistence with autosave cadence
 - PWA-ready architecture
 
+✅ **Archive Manager**
+- Multi-pet switching with rename, export, and import controls
+- Autosave indicator with graceful fallback when persistence is unavailable
+
 ---
 
 ## File Structure
