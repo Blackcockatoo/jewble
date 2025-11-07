@@ -7,13 +7,8 @@
 import type { Vitals } from '@/lib/store';
 import type { Genome, DerivedTraits, GenomeHash } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
-import type {
-  HeptaDigits,
-  PrimeTailId,
-  PrivacyPreset,
-  Rotation,
-  Vault,
-} from '@/lib/identity/types';
+import type { HeptaDigits, PrimeTailId, Rotation, Vault } from '@/lib/identity/types';
+import type { HeptaDigits, PrimeTailId } from '@/lib/identity/types';
 
 const DB_NAME = 'MetaPetDB';
 const DB_VERSION = 1;
@@ -29,7 +24,6 @@ export interface PetSaveData {
   evolution: EvolutionData;
   crest: PrimeTailId;
   heptaDigits: HeptaDigits;
-  privacyPreset: PrivacyPreset;
   lastSaved: number;
   createdAt: number;
 }
@@ -190,7 +184,6 @@ export function exportPetToJSON(data: PetSaveData): string {
     traits: JSON.parse(JSON.stringify(data.traits)),
     crest: { ...data.crest, tail: [...data.crest.tail] as [number, number, number, number] },
     heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
-    privacyPreset: data.privacyPreset,
   };
 
   return JSON.stringify(safeData, null, 2);
@@ -234,10 +227,6 @@ export function importPetFromJSON(json: string): PetSaveData {
     throw new Error('Invalid pet file: HeptaCode digits malformed');
   }
 
-  const privacyPreset = isValidPrivacyPreset(parsed.privacyPreset)
-    ? parsed.privacyPreset
-    : 'standard';
-
   const createdAt = typeof parsed.createdAt === 'number' ? parsed.createdAt : Date.now();
   const lastSaved = typeof parsed.lastSaved === 'number' ? parsed.lastSaved : Date.now();
 
@@ -251,7 +240,6 @@ export function importPetFromJSON(json: string): PetSaveData {
     evolution: parsed.evolution,
     crest: parsed.crest,
     heptaDigits: Object.freeze([...parsed.heptaDigits]) as HeptaDigits,
-    privacyPreset,
     createdAt,
     lastSaved,
   };
@@ -334,8 +322,4 @@ function isValidHeptaDigits(value: unknown): value is HeptaDigits {
     value.length === 42 &&
     value.every(v => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 7)
   );
-}
-
-function isValidPrivacyPreset(value: unknown): value is PrivacyPreset {
-  return value === 'stealth' || value === 'standard' || value === 'radiant';
 }

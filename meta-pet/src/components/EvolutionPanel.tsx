@@ -10,6 +10,8 @@ import {
   EVOLUTION_STAGE_INFO,
 } from '@/lib/evolution';
 import { Zap, Clock, TrendingUp, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { getEvolutionProgress, getTimeUntilNextEvolution, EVOLUTION_VISUALS } from '@/lib/evolution';
+import { Zap, Clock, TrendingUp, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function EvolutionPanel() {
@@ -55,6 +57,10 @@ export function EvolutionPanel() {
           style={{
             borderColor: visuals.colors[0],
             backgroundColor: `${visuals.colors[0]}20`,
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 mb-2"
+          style={{
+            borderColor: visuals.colors[0],
+            backgroundColor: `${visuals.colors[0]}20`
           }}
         >
           <Sparkles className="w-4 h-4" style={{ color: visuals.colors[0] }} />
@@ -64,6 +70,7 @@ export function EvolutionPanel() {
           Evolution Stage {['GENETICS', 'NEURO', 'QUANTUM', 'SPECIATION'].indexOf(evolution.state) + 1}/4
         </p>
         <p className="text-zinc-300 text-xs mt-1">{stageInfo.tagline}</p>
+        <p className="text-zinc-400 text-sm">Evolution Stage {['GENETICS', 'NEURO', 'QUANTUM', 'SPECIATION'].indexOf(evolution.state) + 1}/4</p>
       </div>
 
       {/* Stats */}
@@ -111,6 +118,7 @@ export function EvolutionPanel() {
               style={{
                 width: `${progress}%`,
                 background: `linear-gradient(to right, ${visuals.colors[0]}, ${visuals.colors[1] || visuals.colors[0]})`,
+                background: `linear-gradient(to right, ${visuals.colors[0]}, ${visuals.colors[1] || visuals.colors[0]})`
               }}
             />
           </div>
@@ -197,6 +205,19 @@ export function EvolutionPanel() {
             Evolve Now!
           </Button>
         </div>
+      {/* Evolve Button */}
+      {evolution.canEvolve && evolution.state !== 'SPECIATION' && (
+        <Button
+          onClick={handleEvolve}
+          className="w-full gap-2 font-bold text-lg"
+          style={{
+            background: `linear-gradient(135deg, ${visuals.colors[0]}, ${visuals.colors[1] || visuals.colors[0]})`,
+            boxShadow: `0 0 20px ${visuals.colors[0]}50`
+          }}
+        >
+          <Sparkles className="w-5 h-5" />
+          Evolve Now!
+        </Button>
       )}
 
       {/* Age */}

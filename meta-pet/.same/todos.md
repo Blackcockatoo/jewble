@@ -27,6 +27,10 @@
 2. [x] **Persistence Enhancements** - Export/import UX and multi-pet management
 3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
 4. [x] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
+1. [ ] **Evolution Polish** - Balance requirements, add celebratory UI, surface lore per stage
+2. [ ] **Persistence Enhancements** - Export/import UX and multi-pet management
+3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
+4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
 5. [ ] **Breeding System** - Genome inheritance and trait mixing
 6. [ ] **Vimana Map** - Grid component with exploration
 7. [ ] **Battle System** - Consciousness-based combat

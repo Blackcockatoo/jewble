@@ -219,6 +219,7 @@ Changing the preset regenerates the digits with a fresh nonce and stores the cho
 - [x] Fix ECC to output exactly 42 digits
 - [x] Add audio chime (playHepta)
 - [x] Privacy presets (Stealth/Standard/Radiant)
+- [ ] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Consent grants (pairwise, time-boxed)
 
 ### Phase 2: Game Loop
