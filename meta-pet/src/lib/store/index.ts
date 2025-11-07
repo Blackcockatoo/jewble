@@ -2,6 +2,15 @@ import { create } from 'zustand';
 import type { Genome, DerivedTraits } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
 import { initializeEvolution, gainExperience, checkEvolutionEligibility, evolvePet } from '@/lib/evolution';
+import {
+  type Achievement,
+  type BattleStats,
+  type MiniGameProgress,
+  type VimanaState,
+  createDefaultBattleStats,
+  createDefaultMiniGameProgress,
+  createDefaultVimanaState,
+} from '@/lib/progression/types';
 
 export interface Vitals {
   hunger: number;    // 0-100 (100 = full)
@@ -15,6 +24,10 @@ interface State {
   genome: Genome | null;
   traits: DerivedTraits | null;
   evolution: EvolutionData;
+  achievements: Achievement[];
+  battle: BattleStats;
+  miniGames: MiniGameProgress;
+  vimana: VimanaState;
   tickId?: number;
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
   hydrate: (data: { vitals: Vitals; genome: Genome; traits: DerivedTraits; evolution: EvolutionData }) => void;
@@ -25,9 +38,34 @@ interface State {
   play: () => void;
   sleep: () => void;
   tryEvolve: () => boolean;
+  recordBattle: (result: 'win' | 'loss', opponent: string) => void;
+  updateMiniGameScore: (game: 'memory' | 'rhythm', score: number) => void;
+  exploreCell: (cellId: string) => void;
+  resolveAnomaly: (cellId: string) => void;
 }
 
 const clamp = (v: number, min = 0, max = 100) => Math.max(min, Math.min(max, v));
+
+type VimanaReward = VimanaState['cells'][number]['reward'];
+
+function applyVimanaReward(reward: VimanaReward, vitals: Vitals): Vitals {
+  switch (reward) {
+    case 'mood':
+      return { ...vitals, mood: clamp(vitals.mood + 10) };
+    case 'energy':
+      return { ...vitals, energy: clamp(vitals.energy + 10) };
+    case 'hygiene':
+      return { ...vitals, hygiene: clamp(vitals.hygiene + 12) };
+    case 'mystery':
+      return {
+        ...vitals,
+        mood: clamp(vitals.mood + 5),
+        energy: clamp(vitals.energy + 5),
+      };
+    default:
+      return vitals;
+  }
+}
 
 export const useStore = create<State>((set, get) => ({
   vitals: {
@@ -39,6 +77,10 @@ export const useStore = create<State>((set, get) => ({
   genome: null,
   traits: null,
   evolution: initializeEvolution(),
+  achievements: [],
+  battle: createDefaultBattleStats(),
+  miniGames: createDefaultMiniGameProgress(),
+  vimana: createDefaultVimanaState(),
 
   setGenome(genome: Genome, traits: DerivedTraits) {
     set({ genome, traits });
@@ -64,6 +106,109 @@ export const useStore = create<State>((set, get) => ({
       return true;
     }
     return false;
+  },
+
+  recordBattle(result, opponent) {
+    set(state => {
+      const next: BattleStats = {
+        ...state.battle,
+        lastResult: result,
+        lastOpponent: opponent,
+      };
+
+      if (result === 'win') {
+        next.wins += 1;
+        next.streak += 1;
+        next.energyShield = clamp(next.energyShield + 5, 0, 100);
+      } else {
+        next.losses += 1;
+        next.streak = 0;
+        next.energyShield = clamp(next.energyShield - 10, 0, 100);
+      }
+
+      return { battle: next };
+    });
+  },
+
+  updateMiniGameScore(game, score) {
+    set(state => {
+      const next: MiniGameProgress = { ...state.miniGames, lastPlayedAt: Date.now() };
+
+      if (game === 'memory') {
+        next.memoryHighScore = Math.max(next.memoryHighScore, score);
+      } else {
+        next.rhythmHighScore = Math.max(next.rhythmHighScore, score);
+      }
+
+      return { miniGames: next };
+    });
+  },
+
+  exploreCell(cellId) {
+    set(state => {
+      const { vimana, vitals } = state;
+      const cells = vimana.cells.map(cell => {
+        if (cell.id !== cellId) return cell;
+        return {
+          ...cell,
+          discovered: true,
+          visitedAt: Date.now(),
+        };
+      });
+
+      const target = cells.find(cell => cell.id === cellId);
+      let updatedVitals = vitals;
+      if (target) {
+        updatedVitals = applyVimanaReward(target.reward, vitals);
+      }
+
+      const anomaliesFound = cells.filter(cell => cell.anomaly && cell.discovered).length;
+
+      return {
+        vitals: updatedVitals,
+        vimana: {
+          ...vimana,
+          cells,
+          activeCellId: cellId,
+          scansPerformed: vimana.scansPerformed + 1,
+          anomaliesFound,
+          lastScanAt: Date.now(),
+        },
+      };
+    });
+  },
+
+  resolveAnomaly(cellId) {
+    set(state => {
+      const { vimana, vitals } = state;
+      const cells = vimana.cells.map(cell => {
+        if (cell.id !== cellId) return cell;
+        if (!cell.anomaly) return cell;
+        return {
+          ...cell,
+          anomaly: false,
+          discovered: true,
+          visitedAt: Date.now(),
+        };
+      });
+
+      const target = cells.find(cell => cell.id === cellId);
+      let updatedVitals = vitals;
+      if (target) {
+        updatedVitals = applyVimanaReward('mood', vitals);
+      }
+
+      const anomaliesFound = cells.filter(cell => cell.anomaly && cell.discovered).length;
+
+      return {
+        vitals: updatedVitals,
+        vimana: {
+          ...vimana,
+          cells,
+          anomaliesFound,
+        },
+      };
+    });
   },
 
   startTick() {

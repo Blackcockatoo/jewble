@@ -549,10 +549,6 @@ export default function Home() {
     startTick();
     void initializeIdentity();
   }, [initializeIdentity, startTick]);
-  useEffect(() => {
-    startTick();
-    initializeIdentity();
-  }, [startTick, initializeIdentity]);
 
   if (loading) {
     return (
@@ -581,7 +577,6 @@ export default function Home() {
             </h1>
             <Sparkles className="w-8 h-8 text-pink-400" />
           </div>
-          <p className="text-zinc-400 text-sm">Prime-Tail Crest • HeptaCode v1 • Live Vitals</p>
           <p className="text-zinc-400 text-sm">
             Prime-Tail Crest • HeptaCode v1 • Live Vitals
           </p>
@@ -616,8 +611,7 @@ export default function Home() {
 
           {/* Identity & Persistence */}
           <div className="lg:col-span-2 space-y-6">
-          {/* Identity Cards */}
-          <div className="lg:col-span-2 space-y-6">
+            {/* Identity Cards */}
             {/* Crest */}
             {crest && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
@@ -644,35 +638,12 @@ export default function Home() {
                       <span className="text-green-400 font-mono text-xs break-all">{crest.dnaHash.slice(0, 16)}...</span>
                     </div>
                     <div className="flex items-start gap-2">
+                      <span className="text-zinc-400">Mirror Hash:</span>
+                      <span className="text-sky-400 font-mono text-xs break-all">{crest.mirrorHash.slice(0, 16)}...</span>
+                    </div>
+                    <div className="flex items-start gap-2">
                       <span className="text-zinc-400">Signature:</span>
                       <span className="text-pink-400 font-mono text-xs break-all">{crest.signature.slice(0, 16)}...</span>
-                      <span className="text-blue-400 font-mono font-bold uppercase">
-                        {crest.vault}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-400">Rotation:</span>
-                      <span className="text-cyan-400 font-mono font-bold">
-                        {crest.rotation}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-400">Tail:</span>
-                      <span className="text-purple-400 font-mono">
-                        [{crest.tail.join(', ')}]
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-zinc-400">DNA Hash:</span>
-                      <span className="text-green-400 font-mono text-xs break-all">
-                        {crest.dnaHash.slice(0, 16)}...
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-zinc-400">Signature:</span>
-                      <span className="text-pink-400 font-mono text-xs break-all">
-                        {crest.signature.slice(0, 16)}...
-                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-zinc-400">Coronated:</span>
@@ -707,7 +678,6 @@ export default function Home() {
                 </div>
                 <div className="mt-4 space-y-3">
                   <div className="p-3 bg-slate-950/50 rounded-lg">
-                    <p className="text-xs text-zinc-500 font-mono break-all">Digits: [{heptaCode.join(', ')}]</p>
                     <p className="text-xs text-zinc-500 font-mono break-all">
                       Digits: [{heptaCode.join(', ')}]
                     </p>

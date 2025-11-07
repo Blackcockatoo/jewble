@@ -10,8 +10,6 @@ import {
   EVOLUTION_STAGE_INFO,
 } from '@/lib/evolution';
 import { Zap, Clock, TrendingUp, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { getEvolutionProgress, getTimeUntilNextEvolution, EVOLUTION_VISUALS } from '@/lib/evolution';
-import { Zap, Clock, TrendingUp, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function EvolutionPanel() {
@@ -26,7 +24,9 @@ export function EvolutionPanel() {
   const visuals = EVOLUTION_VISUALS[evolution.state];
   const stageInfo = EVOLUTION_STAGE_INFO[evolution.state];
   const requirementSnapshot = getNextEvolutionRequirement(evolution);
-  const requirementProgress = getRequirementProgress(evolution, vitalsAvg, requirementSnapshot);
+  const requirementProgress = requirementSnapshot
+    ? getRequirementProgress(evolution, vitalsAvg, requirementSnapshot)
+    : null;
   const nextStageInfo = requirementSnapshot ? EVOLUTION_STAGE_INFO[requirementSnapshot.state] : null;
 
   const formatTime = (ms: number) => {
@@ -43,7 +43,6 @@ export function EvolutionPanel() {
   const handleEvolve = () => {
     const success = tryEvolve();
     if (success) {
-      // Evolution successful!
       console.log('Evolution successful!');
     }
   };
@@ -56,7 +55,7 @@ export function EvolutionPanel() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 mb-2"
           style={{
             borderColor: visuals.colors[0],
-            backgroundColor: `${visuals.colors[0]}20`
+            backgroundColor: `${visuals.colors[0]}20`,
           }}
         >
           <Sparkles className="w-4 h-4" style={{ color: visuals.colors[0] }} />
@@ -81,7 +80,7 @@ export function EvolutionPanel() {
                 className="h-full transition-all duration-300"
                 style={{
                   width: `${evolution.experience}%`,
-                  backgroundColor: visuals.colors[0]
+                  backgroundColor: visuals.colors[0],
                 }}
               />
             </div>
@@ -94,9 +93,7 @@ export function EvolutionPanel() {
             <Zap className="w-4 h-4" />
             <span>Interactions</span>
           </div>
-          <div className="text-white font-medium text-lg">
-            {evolution.totalInteractions}
-          </div>
+          <div className="text-white font-medium text-lg">{evolution.totalInteractions}</div>
         </div>
       </div>
 
@@ -113,7 +110,6 @@ export function EvolutionPanel() {
               style={{
                 width: `${progress}%`,
                 background: `linear-gradient(to right, ${visuals.colors[0]}, ${visuals.colors[1] || visuals.colors[0]})`,
-                background: `linear-gradient(to right, ${visuals.colors[0]}, ${visuals.colors[1] || visuals.colors[0]})`
               }}
             />
           </div>
@@ -124,16 +120,11 @@ export function EvolutionPanel() {
         </div>
       )}
 
-      {requirementSnapshot && requirementProgress && nextStageInfo && (
-        <div className="mt-4 space-y-3 bg-zinc-900/40 border border-zinc-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-zinc-500 uppercase tracking-wide">Upcoming Stage</p>
-              <p className="text-sm font-semibold text-white">{nextStageInfo.title}</p>
-            </div>
-            <span className="text-xs text-zinc-400 text-right max-w-[200px]">
-              {requirementSnapshot.requirements.description}
-            </span>
+      {requirementSnapshot && requirementProgress && (
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-4 space-y-3 text-sm">
+          <div className="flex items-center justify-between text-xs text-zinc-400">
+            <span>Next Stage: {requirementSnapshot.state}</span>
+            <span>{EVOLUTION_STAGE_INFO[requirementSnapshot.state].title}</span>
           </div>
           <div className="space-y-3 text-xs">
             <RequirementBar
@@ -149,13 +140,21 @@ export function EvolutionPanel() {
             <RequirementBar
               label="Interactions"
               value={requirementProgress.interactionsProgress}
-              helper={`${evolution.totalInteractions}/${requirementSnapshot.requirements.minInteractions}`}
+              helper={formatRequirementValue(
+                evolution.totalInteractions,
+                requirementSnapshot.requirements.minInteractions,
+                'number'
+              )}
               color={visuals.colors[1] || visuals.colors[0]}
             />
             <RequirementBar
               label="Vitals avg"
               value={requirementProgress.vitalsProgress}
-              helper={`${Math.round(vitalsAvg)}/${requirementSnapshot.requirements.minVitalsAverage}`}
+              helper={formatRequirementValue(
+                vitalsAvg,
+                requirementSnapshot.requirements.minVitalsAverage,
+                'number'
+              )}
               color={visuals.colors[visuals.colors.length - 1]}
             />
             {requirementSnapshot.requirements.specialDescription && (
@@ -200,19 +199,6 @@ export function EvolutionPanel() {
             Evolve Now!
           </Button>
         </div>
-      {/* Evolve Button */}
-      {evolution.canEvolve && evolution.state !== 'SPECIATION' && (
-        <Button
-          onClick={handleEvolve}
-          className="w-full gap-2 font-bold text-lg"
-          style={{
-            background: `linear-gradient(135deg, ${visuals.colors[0]}, ${visuals.colors[1] || visuals.colors[0]})`,
-            boxShadow: `0 0 20px ${visuals.colors[0]}50`
-          }}
-        >
-          <Sparkles className="w-5 h-5" />
-          Evolve Now!
-        </Button>
       )}
 
       {/* Age */}
@@ -280,3 +266,4 @@ function formatRequirementValue(current: number, required: number, mode: 'time' 
 
   return `${Math.round(current)}/${required}`;
 }
+
