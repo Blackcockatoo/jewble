@@ -1,9 +1,11 @@
 'use client';
 
+import { memo } from 'react';
+
 import { useStore } from '@/lib/store';
 import { Sparkles, Palette, Brain, Zap } from 'lucide-react';
 
-export function TraitPanel() {
+export const TraitPanel = memo(function TraitPanel() {
   const traits = useStore(s => s.traits);
 
   if (!traits) {
@@ -132,7 +134,7 @@ export function TraitPanel() {
       </section>
     </div>
   );
-}
+});
 
 interface TraitCardProps {
   label: string;

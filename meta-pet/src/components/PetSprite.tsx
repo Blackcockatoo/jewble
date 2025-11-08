@@ -1,10 +1,12 @@
 'use client';
 
+import { memo } from 'react';
+
 import { useStore } from '@/lib/store';
 import { EVOLUTION_VISUALS } from '@/lib/evolution';
 import { motion } from 'framer-motion';
 
-export function PetSprite() {
+export const PetSprite = memo(function PetSprite() {
   const traits = useStore(s => s.traits);
   const vitals = useStore(s => s.vitals);
   const evolution = useStore(s => s.evolution);
@@ -276,4 +278,4 @@ export function PetSprite() {
       </div>
     </motion.div>
   );
-}
+});
