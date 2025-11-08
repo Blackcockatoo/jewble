@@ -34,19 +34,7 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
-          },
-          "ios": {
-            "deploymentTarget": "13.4"
-          }
-        }
-      ]
+      "expo-router"
     ],
     "scheme": "metapet",
     "experiments": {
