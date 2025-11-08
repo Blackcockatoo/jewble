@@ -126,6 +126,7 @@ const PET_ID = 'metapet-primary';
 
 export default function Home() {
   const startTick = useStore(s => s.startTick);
+  const stopTick = useStore(s => s.stopTick);
   const setGenome = useStore(s => s.setGenome);
   const hydrate = useStore(s => s.hydrate);
   const [crest, setCrest] = useState<PrimeTailId | null>(null);
@@ -595,7 +596,11 @@ export default function Home() {
   useEffect(() => {
     startTick();
     void initializeIdentity();
-  }, [initializeIdentity, startTick]);
+
+    return () => {
+      stopTick();
+    };
+  }, [initializeIdentity, startTick, stopTick]);
 
   if (loading) {
     return (
