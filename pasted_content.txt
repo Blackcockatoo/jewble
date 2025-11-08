@@ -1,0 +1,165 @@
+# B$S Meta-Pet â€” **Mobile App Build Prompt (Expo/React Native, Ship-Ready)**
+
+> Single source of truth for building the **mobile** clients. Use this when generating code, creating tickets, or handing tasks to AI tools. Priorities: **Experience Pillars â†’ Core Loops â†’ Mobile Performance â†’ Scope**.
+
+## 0) TL;DR
+- **Goal:** Expo/React Native app for iOS/Android that mirrors PWA core, with secure device keystore, low-battery tick, background-safe audio, and offline-first saves.
+- **Identity:** **Prime-Tail Crest** + **HeptaCode v1** (baseâ€‘7, 42 symbols) with HMAC; DNA never leaves device.
+- **Runtime:** Expo (React Native), Expo Router or `react-navigation`, MMKV/DexieRN for storage, EAS builds. Optional Capacitor bridge not used on RN.
+- **Success:** App start â‰¤ 2.5s mid device; ANR < 0.47%; crash-free â‰¥ 99.5%; background pause works; â€œfeels alive & mineâ€.
+
+## 1) Mobile-Specific Requirements
+- **Keystore:** Use `expo-secure-store` for HMAC key; fall back to platform keystore (Android Keystore, iOS Keychain via SecureStore).
+- **Storage:** `react-native-mmkv` for fast state; `expo-file-system` for sealed exports; optional SQLite for logs.
+- **Audio:** `expo-av` for `playHepta()`; respect silent switch on iOS and audio focus on Android.
+- **Background:** Pause tick when app in background; resume on focus; do *not* use background services in MVP.
+- **Permissions:** None on first run; prompt only when needed (file export, audio if required on Android 13+ for notifications = off in MVP).
+- **Haptics:** `expo-haptics` for gentle feedback; respect Reduced Motion.
+- **Accessibility:** Dynamic Type, VoiceOver/TalkBack labels, sufficient contrast, large tap targets.
+- **Theming:** System dark/light + B$S palette; support AMOLED true black option (opt-in).
+
+## 2) Core Scope (Mobile)
+- **Identity Core:** PrimeTailId mint + verify; HeptaCode v1 pack/MAC/ECC; HeptaTag + SeedOfLife + chime.
+- **Engine:** Deterministic vitals tick â†’ Zustand store; low-power interval; background pause.
+- **UI:** HUD, Rituals (stub), Hepta display sheet, Consent sheet, Settings (Feature toggles).
+- **Saves:** Local-only (MMKV + FileSystem sealed blobs). No cloud sync in MVP.
+- **Tests:** Unit tests for ECC/MAC, store tick invariants; e2e smoke via Detox (basic).
+
+## 3) Feature Toggles
+```ts
+export const FEATURES = {
+  MOCK_MODE: false,
+  IDENTITY: true,
+  ECC_PROFILE: '6x7' as const,
+  AUDIO: true,
+  TICK: true,
+  BACKGROUND_PAUSE: true,
+  LOW_POWER_TICK_MS: 2000,
+};
+```
+Hook to a Settings screen with toggles persisted in MMKV.
+
+## 4) File/Folder (Mobile)
+```
+app/
+  App.tsx
+  app/(tabs)/index.tsx            # Expo Router example
+  src/
+    config.ts
+    store/index.ts
+    engine/{sim.ts,rng.ts,state.ts,genome.ts}
+    identity/{crest.ts, consent.ts, sealed.ts}
+    identity/hepta/{codec.ts,ecc.ts,index.ts}
+    ui/components/{HUD.tsx,HeptaTag.tsx,SeedOfLifeGlyph.tsx}
+    ui/audio/playHepta.native.ts  # expo-av
+    providers/{ThemeProvider.tsx,FeatureProvider.tsx}
+  assets/{fonts/,sfx/,icons/}
+```
+> Note: `playHepta.native.ts` uses `expo-av`; web PWA keeps `playHepta.web.ts`.
+
+## 5) PrimeTail & Hepta (Mobile Implementation Notes)
+- **HMAC Key:** Generate once and store via SecureStore (`getItemAsync('hmacKey')`); 256-bit random if absent.
+- **Mint:** Hash DNA and reversed DNA with `expo-crypto` (SHAâ€‘256). HMAC with `HMAC-SHA256` using JS (tweetnacl/hmac) or a pure TS impl.
+- **Hepta:** Identical pack/MAC/ECC code as web; reuse TS; only `playHepta` uses platform split file.
+
+## 6) Vitals Tick (Mobile)
+- Use `setInterval` with a decoupled accumulator; stop interval on `AppState` becoming `background` or `inactive`.
+- Respect Low Power Mode: on iOS canâ€™t read directlyâ€”offer manual toggle; on Android expose Setting in-app.
+- Ensure no re-renders > 30 fps; move heavy math off UI thread if needed (MVP stays light).
+
+## 7) App Bootstrap (Expo Router sample)
+```tsx
+// App.tsx
+import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { AppState } from "react-native";
+import { FEATURES } from "@/src/config";
+import { useStore } from "@/src/store";
+
+export default function App() {
+  const start = useStore(s=>s.startTick);
+  const stop  = useStore(s=>s.stopTick);
+
+  useEffect(() => {
+    start();
+    const sub = AppState.addEventListener("change", (s) => {
+      if ((s === "background" || s === "inactive") && FEATURES.BACKGROUND_PAUSE) stop();
+      if (s === "active") start();
+    });
+    return () => sub.remove();
+  }, [start, stop]);
+
+  return (
+    <Stack screenOptions={{ headerShown:false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="hepta" />
+      <Stack.Screen name="settings" />
+    </Stack>
+  );
+}
+```
+
+## 8) `playHepta.native.ts` (outline)
+```ts
+import { Audio } from "expo-av";
+
+export async function playHepta(digits:number[], { vault, rotation }:{vault:'red'|'blue'|'black', rotation:'CW'|'CCW'}) {
+  // Map 7 symbols â†’ scale degrees; vault/rotation transpose
+  const freqs = mapDigitsToScale(digits, vault, rotation);
+  const ctx = new Audio.Sound(); // for sample-based; for synth, use Audio API or pre-rendered notes
+  // MVP: load short chime samples and schedule sequentially; ensure unload on finish
+}
+```
+
+## 9) Tests
+- **Unit:** ECC single-error correction; MAC tamper detection; tick stays within 0..100; pause halts drift.
+- **E2E (optional):** Detox smoke: app launch, open Hepta screen, toggle mock mode, chime once, background app, resume.
+
+## 10) Perf Gates (Mobile)
+- Bundle â‰¤ 6 MB uncompressed; Hermes enabled.
+- TTI â‰¤ 2.5s mid device; JS thread idle â‰¥ 60% during idle loop.
+- No layout thrash; 60 fps on HUD updates.
+
+## 11) Oneâ€‘Shot Prompt (Mobile Codegen)
+**Role:** Senior RN dev. **Task:** Implement Metaâ€‘Pet mobile per spec.  
+**Stack:** Expo + React Native + TypeScript + Expo Router, Zustand, MMKV, expoâ€‘secureâ€‘store, expoâ€‘av, expoâ€‘crypto, expoâ€‘file-system.  
+**Deliver:** PrimeTail mint/verify; Hepta encode/ECC/verify + UI + chime; vitals tick with background pause; Settings toggles; sealed export stub; tests.  
+**Quality:** ESLint/Prettier; TS strict; Detox smoke; perf budget.  
+**Style:** B$S palette; sacredâ€‘geometry overlays; haptics light.
+
+## 12) Fillâ€‘In Template (for `/mnt/data/App_1.tsx`)
+Replace the placeholder router with mobile-aware bootstrap (if using web-style file, adapt):
+```tsx
+import { TooltipProvider } from "@/components/ui/tooltip"; // if shared via universal
+import ErrorBoundary from "./components/ErrorBoundary";
+import { FeatureProvider } from "@/src/providers/FeatureProvider";
+import App from "./App"; // Expo Router App
+
+export default function Root() {
+  return (
+    <ErrorBoundary>
+      <FeatureProvider>
+        <TooltipProvider>
+          <App />
+        </TooltipProvider>
+      </FeatureProvider>
+    </ErrorBoundary>
+  );
+}
+```
+If staying with web routing in RN (not recommended), replace with Expo Router stack above and remove `wouter` usage.
+
+## 13) Copyâ€‘Paste Commands
+```
+pnpm i
+pnpm expo prebuild --clean   # only if you need custom native modules
+pnpm expo start              # dev
+pnpm expo run:android        # device
+pnpm expo run:ios            # simulator
+```
+
+## 14) Open Questions (Mobile)
+- Audio synthesis vs. sample chimes? (MVP: samples)  
+- Use Expo Router or react-navigation native stack? (recommend Expo Router)  
+- MMKV vs. SQLite for journal/logs? (MVP: MMKV)  
+- iOS Background Modes (none in MVP; consider for v1.1 rituals if needed)
