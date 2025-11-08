@@ -21,14 +21,33 @@ export interface RequirementProgress {
   specialDescription?: string;
 }
 
+const getElapsedSinceLastEvolution = (evolution: EvolutionData): number =>
+  Date.now() - evolution.lastEvolutionTime;
+
+const getNextState = (state: EvolutionState): EvolutionState | null => {
+  const currentIndex = EVOLUTION_ORDER.indexOf(state);
+  if (currentIndex === -1 || currentIndex === EVOLUTION_ORDER.length - 1) {
+    return null;
+  }
+  return EVOLUTION_ORDER[currentIndex + 1];
+};
+
+const normalizeProgress = (value: number, maximum: number): number => {
+  if (maximum <= 0) {
+    return 1;
+  }
+  return Math.min(1, Math.max(0, value / maximum));
+};
+
 /**
  * Initialize evolution data for a new pet
  */
 export function initializeEvolution(): EvolutionData {
+  const now = Date.now();
   return {
     state: 'GENETICS',
-    birthTime: Date.now(),
-    lastEvolutionTime: Date.now(),
+    birthTime: now,
+    lastEvolutionTime: now,
     experience: 0,
     totalInteractions: 0,
     canEvolve: false,
@@ -42,18 +61,15 @@ export function checkEvolutionEligibility(
   evolution: EvolutionData,
   vitalsAverage: number
 ): boolean {
-  const currentStateIndex = EVOLUTION_ORDER.indexOf(evolution.state);
-
-  // Already at final state
-  if (currentStateIndex === EVOLUTION_ORDER.length - 1) {
+  const nextState = getNextState(evolution.state);
+  if (!nextState) {
     return false;
   }
 
-  const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
-  const age = Date.now() - evolution.lastEvolutionTime;
-  const meetsAge = age >= requirements.minAge;
+  const ageElapsed = getElapsedSinceLastEvolution(evolution);
+  const meetsAge = ageElapsed >= requirements.minAge;
   const meetsInteractions = evolution.totalInteractions >= requirements.minInteractions;
   const meetsVitals = vitalsAverage >= requirements.minVitalsAverage;
   const meetsSpecial = requirements.specialCondition ? requirements.specialCondition() : true;
@@ -65,13 +81,11 @@ export function checkEvolutionEligibility(
  * Evolve pet to next state
  */
 export function evolvePet(evolution: EvolutionData): EvolutionData {
-  const currentStateIndex = EVOLUTION_ORDER.indexOf(evolution.state);
+  const nextState = getNextState(evolution.state);
 
-  if (currentStateIndex === EVOLUTION_ORDER.length - 1) {
+  if (!nextState) {
     return evolution; // Already at max
   }
-
-  const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
 
   return {
     ...evolution,
@@ -100,19 +114,16 @@ export function gainExperience(
  * Get time until next evolution is possible (in ms)
  */
 export function getTimeUntilNextEvolution(evolution: EvolutionData): number {
-  const currentStateIndex = EVOLUTION_ORDER.indexOf(evolution.state);
+  const nextState = getNextState(evolution.state);
 
-  if (currentStateIndex === EVOLUTION_ORDER.length - 1) {
+  if (!nextState) {
     return -1; // Already at max
   }
 
-  const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
+  const ageElapsed = getElapsedSinceLastEvolution(evolution);
 
-  const age = Date.now() - evolution.lastEvolutionTime;
-  const timeRemaining = Math.max(0, requirements.minAge - age);
-
-  return timeRemaining;
+  return Math.max(0, requirements.minAge - ageElapsed);
 }
 
 /**
@@ -122,32 +133,30 @@ export function getEvolutionProgress(
   evolution: EvolutionData,
   vitalsAverage: number
 ): number {
-  const currentStateIndex = EVOLUTION_ORDER.indexOf(evolution.state);
+  const nextState = getNextState(evolution.state);
 
-  if (currentStateIndex === EVOLUTION_ORDER.length - 1) {
+  if (!nextState) {
     return 100; // Already at max
   }
 
-  const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
+  const ageElapsed = getElapsedSinceLastEvolution(evolution);
 
-  const age = Date.now() - evolution.lastEvolutionTime;
-  const ageProgress = Math.min(100, (age / requirements.minAge) * 100);
-  const interactionProgress = Math.min(100, (evolution.totalInteractions / requirements.minInteractions) * 100);
-  const vitalsProgress = Math.min(100, (vitalsAverage / requirements.minVitalsAverage) * 100);
+  const ageProgress = normalizeProgress(ageElapsed, requirements.minAge);
+  const interactionProgress = normalizeProgress(evolution.totalInteractions, requirements.minInteractions);
+  const vitalsProgress = normalizeProgress(vitalsAverage, requirements.minVitalsAverage);
 
   // Average of all progress metrics
-  return (ageProgress + interactionProgress + vitalsProgress) / 3;
+  return (ageProgress + interactionProgress + vitalsProgress) / 3 * 100;
 }
 
 export function getNextEvolutionRequirement(evolution: EvolutionData): RequirementSnapshot | null {
-  const currentStateIndex = EVOLUTION_ORDER.indexOf(evolution.state);
+  const nextState = getNextState(evolution.state);
 
-  if (currentStateIndex === EVOLUTION_ORDER.length - 1) {
+  if (!nextState) {
     return null;
   }
 
-  const nextState = EVOLUTION_ORDER[currentStateIndex + 1];
   return {
     state: nextState,
     requirements: EVOLUTION_REQUIREMENTS[nextState],
@@ -164,14 +173,10 @@ export function getRequirementProgress(
   }
 
   const { requirements, state } = snapshot;
-  const ageElapsed = Date.now() - evolution.lastEvolutionTime;
-  const ageProgress = requirements.minAge === 0 ? 1 : Math.min(1, ageElapsed / requirements.minAge);
-  const interactionsProgress = requirements.minInteractions === 0
-    ? 1
-    : Math.min(1, evolution.totalInteractions / requirements.minInteractions);
-  const vitalsProgress = requirements.minVitalsAverage === 0
-    ? 1
-    : Math.min(1, vitalsAverage / requirements.minVitalsAverage);
+  const ageElapsed = getElapsedSinceLastEvolution(evolution);
+  const ageProgress = normalizeProgress(ageElapsed, requirements.minAge);
+  const interactionsProgress = normalizeProgress(evolution.totalInteractions, requirements.minInteractions);
+  const vitalsProgress = normalizeProgress(vitalsAverage, requirements.minVitalsAverage);
   const specialMet = requirements.specialCondition ? requirements.specialCondition() : true;
 
   return {

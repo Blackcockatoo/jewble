@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { useStore } from '@/lib/store';
@@ -79,6 +79,49 @@ function slugify(value: string | undefined, fallback: string): string {
     .replace(/\s+/g, '-');
 }
 
+function createDebouncedSave(delay: number) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let latest: PetSaveData | null = null;
+  let pending: Array<{ resolve: () => void; reject: (error: unknown) => void }> = [];
+
+  const flush = async () => {
+    const snapshot = latest;
+    const listeners = pending;
+    pending = [];
+    latest = null;
+
+    if (!snapshot) {
+      listeners.forEach(listener => listener.resolve());
+      return;
+    }
+
+    try {
+      await savePet(snapshot);
+      listeners.forEach(listener => listener.resolve());
+    } catch (error) {
+      listeners.forEach(listener => listener.reject(error));
+      throw error;
+    }
+  };
+
+  return (data: PetSaveData) =>
+    new Promise<void>((resolve, reject) => {
+      latest = data;
+      pending.push({ resolve, reject });
+
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(() => {
+        timeout = null;
+        flush().catch(err => {
+          console.warn('Debounced save flush failed:', err);
+        });
+      }, delay);
+    });
+}
+
 const PET_ID = 'metapet-primary';
 
 export default function Home() {
@@ -97,6 +140,8 @@ export default function Home() {
   const [currentPetId, setCurrentPetId] = useState<string | null>(null);
   const [petName, setPetName] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+
+  const debouncedSave = useMemo(() => createDebouncedSave(1_000), []);
 
   const crestRef = useRef<PrimeTailId | null>(null);
   const heptaRef = useRef<HeptaDigits | null>(null);
@@ -263,14 +308,14 @@ export default function Home() {
     }
 
     try {
-      const cleanup = setupAutoSave(() => buildSnapshot(), 60_000);
+      const cleanup = setupAutoSave(() => buildSnapshot(), 60_000, debouncedSave);
       autoSaveCleanupRef.current = cleanup;
       setPersistenceActive(true);
     } catch (error) {
       console.warn('Failed to start autosave:', error);
       setPersistenceActive(false);
     }
-  }, [buildSnapshot]);
+  }, [buildSnapshot, debouncedSave]);
 
   const createFreshPet = useCallback(async (): Promise<PetSaveData> => {
     const ensureKey = async () => {
@@ -403,8 +448,10 @@ export default function Home() {
       setAudioError(null);
       await playHepta(heptaCode);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to play audio';
+      const message =
+        error instanceof Error ? error.message : 'Audio unavailable - click to enable';
       setAudioError(message);
+      console.warn('Audio playback failed:', error);
     }
   }, [heptaCode]);
 
@@ -553,7 +600,15 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center">
-        <div className="text-cyan-400 animate-pulse text-xl">Initializing...</div>
+        <div className="text-center space-y-4">
+          <div className="text-5xl animate-bounce" aria-hidden>
+            🧬
+          </div>
+          <div className="space-y-1">
+            <p className="text-white font-semibold">Initializing Meta-Pet...</p>
+            <p className="text-zinc-400 text-sm">Generating genome sequence</p>
+          </div>
+        </div>
       </div>
     );
   }

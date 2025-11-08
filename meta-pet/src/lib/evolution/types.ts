@@ -44,10 +44,10 @@ export const EVOLUTION_REQUIREMENTS: Record<EvolutionState, EvolutionRequirement
     description: 'Stabilize the genome imprint and establish baseline vitals.',
   },
   NEURO: {
-    minAge: 24 * 60 * 60 * 1000, // 24 hours
-    minInteractions: 50,
+    minAge: 5 * 60 * 1000, // 5 minutes for testing (change to 24 hours for production)
+    minInteractions: 10, // Reduced for testing
     minVitalsAverage: 40,
-    description: 'Sustain care for a full day so neural pathways can form.',
+    description: 'Sustain care to form neural pathways.',
   },
   QUANTUM: {
     minAge: 7 * 24 * 60 * 60 * 1000, // 7 days
