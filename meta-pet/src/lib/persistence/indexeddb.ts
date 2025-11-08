@@ -8,10 +8,21 @@ import type { Vitals } from '@/lib/store';
 import type { Genome, DerivedTraits, GenomeHash } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
 import type { HeptaDigits, PrimeTailId, Rotation, Vault } from '@/lib/identity/types';
+import {
+  type Achievement,
+  type BattleStats,
+  type MiniGameProgress,
+  type VimanaState,
+  createDefaultBattleStats,
+  createDefaultMiniGameProgress,
+  createDefaultVimanaState,
+} from '@/lib/progression/types';
 
 const DB_NAME = 'MetaPetDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'pets';
+const VIMANA_FIELDS = ['calm', 'neuro', 'quantum', 'earth'] as const;
+const VIMANA_REWARDS = ['mood', 'energy', 'hygiene', 'mystery'] as const;
 
 export interface PetSaveData {
   id: string; // pet ID from crest
@@ -21,6 +32,10 @@ export interface PetSaveData {
   genomeHash: GenomeHash;
   traits: DerivedTraits;
   evolution: EvolutionData;
+  achievements: Achievement[];
+  battle: BattleStats;
+  miniGames: MiniGameProgress;
+  vimana: VimanaState;
   crest: PrimeTailId;
   heptaDigits: HeptaDigits;
   lastSaved: number;
@@ -67,6 +82,10 @@ export async function savePet(data: PetSaveData): Promise<void> {
         blue60: [...data.genome.blue60],
         black60: [...data.genome.black60],
       },
+      achievements: data.achievements.map(entry => ({ ...entry })),
+      battle: { ...data.battle },
+      miniGames: { ...data.miniGames },
+      vimana: cloneVimana(data.vimana),
       heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
       lastSaved: Date.now(),
     };
@@ -97,7 +116,8 @@ export async function loadPet(id: string): Promise<PetSaveData | null> {
 
     request.onsuccess = () => {
       db.close();
-      resolve(request.result || null);
+      const raw = request.result;
+      resolve(raw ? normalizePetData(raw) : null);
     };
     request.onerror = () => {
       db.close();
@@ -119,7 +139,9 @@ export async function getAllPets(): Promise<PetSaveData[]> {
 
     request.onsuccess = () => {
       db.close();
-      resolve(request.result || []);
+      const raw = request.result;
+      const items = Array.isArray(raw) ? raw : [];
+      resolve(items.map(item => normalizePetData(item)));
     };
     request.onerror = () => {
       db.close();
@@ -181,6 +203,10 @@ export function exportPetToJSON(data: PetSaveData): string {
       blue60: [...data.genome.blue60],
       black60: [...data.genome.black60],
     },
+    achievements: data.achievements.map(entry => ({ ...entry })),
+    battle: { ...data.battle },
+    miniGames: { ...data.miniGames },
+    vimana: cloneVimana(data.vimana),
     traits: JSON.parse(JSON.stringify(data.traits)),
     crest: { ...data.crest, tail: [...data.crest.tail] as [number, number, number, number] },
     heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
@@ -227,6 +253,38 @@ export function importPetFromJSON(json: string): PetSaveData {
     throw new Error('Invalid pet file: HeptaCode digits malformed');
   }
 
+  const achievements = (() => {
+    if (parsed.achievements === undefined) return [] as Achievement[];
+    if (isValidAchievements(parsed.achievements)) {
+      return parsed.achievements.map(entry => ({ ...entry }));
+    }
+    throw new Error('Invalid pet file: achievements malformed');
+  })();
+
+  const battle = (() => {
+    if (parsed.battle === undefined) return createDefaultBattleStats();
+    if (isValidBattleStats(parsed.battle)) {
+      return { ...parsed.battle };
+    }
+    throw new Error('Invalid pet file: battle stats malformed');
+  })();
+
+  const miniGames = (() => {
+    if (parsed.miniGames === undefined) return createDefaultMiniGameProgress();
+    if (isValidMiniGameProgress(parsed.miniGames)) {
+      return { ...parsed.miniGames };
+    }
+    throw new Error('Invalid pet file: mini-game progress malformed');
+  })();
+
+  const vimana = (() => {
+    if (parsed.vimana === undefined) return createDefaultVimanaState();
+    if (isValidVimanaState(parsed.vimana)) {
+      return cloneVimana(parsed.vimana);
+    }
+    throw new Error('Invalid pet file: vimana state malformed');
+  })();
+
   const createdAt = typeof parsed.createdAt === 'number' ? parsed.createdAt : Date.now();
   const lastSaved = typeof parsed.lastSaved === 'number' ? parsed.lastSaved : Date.now();
 
@@ -238,11 +296,49 @@ export function importPetFromJSON(json: string): PetSaveData {
     genomeHash: parsed.genomeHash,
     traits: parsed.traits as DerivedTraits,
     evolution: parsed.evolution,
+    achievements,
+    battle,
+    miniGames,
+    vimana,
     crest: parsed.crest,
     heptaDigits: Object.freeze([...parsed.heptaDigits]) as HeptaDigits,
     createdAt,
     lastSaved,
   };
+}
+
+function cloneVimana(value: VimanaState): VimanaState {
+  return {
+    ...value,
+    cells: value.cells.map(cell => ({ ...cell })),
+  };
+}
+
+function normalizePetData(raw: unknown): PetSaveData {
+  const base = raw && typeof raw === 'object' ? raw : {};
+
+  const typed = base as Partial<PetSaveData>;
+
+  const achievements = isValidAchievements(typed.achievements)
+    ? typed.achievements.map(entry => ({ ...entry }))
+    : [];
+  const battle = isValidBattleStats(typed.battle)
+    ? { ...typed.battle }
+    : createDefaultBattleStats();
+  const miniGames = isValidMiniGameProgress(typed.miniGames)
+    ? { ...typed.miniGames }
+    : createDefaultMiniGameProgress();
+  const vimana = isValidVimanaState(typed.vimana)
+    ? cloneVimana(typed.vimana)
+    : createDefaultVimanaState();
+
+  return {
+    ...(typed as PetSaveData),
+    achievements,
+    battle,
+    miniGames,
+    vimana,
+  } as PetSaveData;
 }
 
 function isValidVitals(value: unknown): value is Vitals {
@@ -292,6 +388,84 @@ function isValidEvolution(value: unknown): value is EvolutionData {
     typeof evo.experience === 'number' &&
     typeof evo.totalInteractions === 'number' &&
     typeof evo.canEvolve === 'boolean'
+  );
+}
+
+function isValidAchievements(value: unknown): value is Achievement[] {
+  return (
+    Array.isArray(value) &&
+    value.every(entry => {
+      if (!entry || typeof entry !== 'object') return false;
+      const achievement = entry as Achievement;
+      const earnedAt = achievement.earnedAt;
+      return (
+        typeof achievement.id === 'string' &&
+        typeof achievement.title === 'string' &&
+        typeof achievement.description === 'string' &&
+        (earnedAt === undefined || typeof earnedAt === 'number')
+      );
+    })
+  );
+}
+
+function isValidBattleStats(value: unknown): value is BattleStats {
+  if (!value || typeof value !== 'object') return false;
+  const stats = value as BattleStats;
+  const lastResultValid = stats.lastResult === null || stats.lastResult === 'win' || stats.lastResult === 'loss';
+  const lastOpponentValid = stats.lastOpponent === null || typeof stats.lastOpponent === 'string';
+  return (
+    typeof stats.wins === 'number' &&
+    typeof stats.losses === 'number' &&
+    typeof stats.streak === 'number' &&
+    lastResultValid &&
+    lastOpponentValid &&
+    typeof stats.energyShield === 'number'
+  );
+}
+
+function isValidMiniGameProgress(value: unknown): value is MiniGameProgress {
+  if (!value || typeof value !== 'object') return false;
+  const progress = value as MiniGameProgress;
+  const lastPlayedValid = progress.lastPlayedAt === null || typeof progress.lastPlayedAt === 'number';
+  return (
+    typeof progress.memoryHighScore === 'number' &&
+    typeof progress.rhythmHighScore === 'number' &&
+    typeof progress.focusStreak === 'number' &&
+    lastPlayedValid
+  );
+}
+
+function isValidVimanaState(value: unknown): value is VimanaState {
+  if (!value || typeof value !== 'object') return false;
+  const state = value as VimanaState;
+  const lastScanValid = state.lastScanAt === null || typeof state.lastScanAt === 'number';
+  return (
+    Array.isArray(state.cells) &&
+    state.cells.every(isValidVimanaCell) &&
+    typeof state.activeCellId === 'string' &&
+    typeof state.anomaliesFound === 'number' &&
+    typeof state.anomaliesResolved === 'number' &&
+    typeof state.scansPerformed === 'number' &&
+    lastScanValid
+  );
+}
+
+function isValidVimanaCell(value: unknown): value is VimanaState['cells'][number] {
+  if (!value || typeof value !== 'object') return false;
+  const cell = value as VimanaState['cells'][number];
+  const fieldValid = VIMANA_FIELDS.includes(cell.field as (typeof VIMANA_FIELDS)[number]);
+  const rewardValid = VIMANA_REWARDS.includes(cell.reward as (typeof VIMANA_REWARDS)[number]);
+  return (
+    typeof cell.id === 'string' &&
+    typeof cell.label === 'string' &&
+    typeof cell.field === 'string' &&
+    fieldValid &&
+    typeof cell.discovered === 'boolean' &&
+    typeof cell.anomaly === 'boolean' &&
+    typeof cell.energy === 'number' &&
+    typeof cell.reward === 'string' &&
+    rewardValid &&
+    (cell.visitedAt === undefined || typeof cell.visitedAt === 'number')
   );
 }
 

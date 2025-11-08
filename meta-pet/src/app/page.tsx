@@ -9,6 +9,7 @@ import { TraitPanel } from '@/components/TraitPanel';
 import { PetSprite } from '@/components/PetSprite';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
+import { AchievementShelf } from '@/components/AchievementShelf';
 import { Button } from '@/components/ui/button';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
 import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
@@ -26,6 +27,11 @@ import {
 } from '@/lib/persistence/indexeddb';
 import { EvolutionPanel } from '@/components/EvolutionPanel';
 import { initializeEvolution } from '@/lib/evolution';
+import {
+  createDefaultBattleStats,
+  createDefaultMiniGameProgress,
+  createDefaultVimanaState,
+} from '@/lib/progression/types';
 import {
   Sparkles,
   Shield,
@@ -205,6 +211,13 @@ export default function Home() {
       genomeHash: genomeHashRef.current,
       traits: state.traits,
       evolution: state.evolution,
+      achievements: state.achievements.map(entry => ({ ...entry })),
+      battle: { ...state.battle },
+      miniGames: { ...state.miniGames },
+      vimana: {
+        ...state.vimana,
+        cells: state.vimana.cells.map(cell => ({ ...cell })),
+      },
       crest: crestRef.current,
       heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
       createdAt: createdAtRef.current ?? Date.now(),
@@ -229,6 +242,13 @@ export default function Home() {
           genomeHash: genomeHashRef.current,
           traits: state.traits,
           evolution: state.evolution,
+          achievements: state.achievements.map(entry => ({ ...entry })),
+          battle: { ...state.battle },
+          miniGames: { ...state.miniGames },
+          vimana: {
+            ...state.vimana,
+            cells: state.vimana.cells.map(cell => ({ ...cell })),
+          },
           crest: crestRef.current,
           heptaDigits: Array.from(heptaRef.current) as HeptaDigits,
           lastSaved: Date.now(),
@@ -278,6 +298,15 @@ export default function Home() {
       },
       traits: pet.traits,
       evolution: { ...pet.evolution },
+      achievements: pet.achievements?.map(entry => ({ ...entry })) ?? [],
+      battle: pet.battle ? { ...pet.battle } : createDefaultBattleStats(),
+      miniGames: pet.miniGames ? { ...pet.miniGames } : createDefaultMiniGameProgress(),
+      vimana: pet.vimana
+        ? {
+            ...pet.vimana,
+            cells: pet.vimana.cells.map(cell => ({ ...cell })),
+          }
+        : createDefaultVimanaState(),
     });
 
     const digits = Object.freeze([...pet.heptaDigits]) as HeptaDigits;
@@ -373,6 +402,10 @@ export default function Home() {
       genomeHash: genomeHashValue,
       traits,
       evolution: initializeEvolution(),
+      achievements: [],
+      battle: createDefaultBattleStats(),
+      miniGames: createDefaultMiniGameProgress(),
+      vimana: createDefaultVimanaState(),
       crest: crestValue,
       heptaDigits: Object.freeze([...heptaDigits]) as HeptaDigits,
       createdAt: created,
@@ -866,14 +899,18 @@ export default function Home() {
                     })
                   )}
                 </div>
-              </div>
             </div>
+          </div>
 
-            {/* Evolution */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-cyan-300" />
-                Evolution Progress
+          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+            <AchievementShelf />
+          </div>
+
+          {/* Evolution */}
+          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-cyan-300" />
+              Evolution Progress
               </h2>
               <EvolutionPanel />
             </div>
