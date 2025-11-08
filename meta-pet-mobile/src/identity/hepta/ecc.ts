@@ -80,12 +80,51 @@ function correctBlock(block: number[]): number[] | null {
     return [...data, parityA, parityB];
   }
 
-  if (diffA === 0 || diffB === 0) {
+  const parityMismatchA = diffA !== 0;
+  const parityMismatchB = diffB !== 0;
+
+  const correction = tryCorrectData({
+    data,
+    parityA,
+    parityB,
+    sum,
+    diffA,
+    diffB,
+  });
+
+  if (correction?.type === 'success') {
+    return correction.block;
+  }
+
+  if (!parityMismatchA || !parityMismatchB || correction?.type === 'ambiguous') {
     const correctedParityA = computeParitySum(data);
     const correctedParityB = computeParitySquares(data);
     return [...data, correctedParityA, correctedParityB];
   }
 
+  return null;
+}
+
+type DataCorrectionResult =
+  | { type: 'success'; block: number[] }
+  | { type: 'ambiguous' }
+  | null;
+
+function tryCorrectData({
+  data,
+  parityA,
+  parityB,
+  sum,
+  diffA,
+  diffB,
+}: {
+  data: number[];
+  parityA: number;
+  parityB: number;
+  sum: number;
+  diffA: number;
+  diffB: number;
+}): DataCorrectionResult {
   const errorMagnitude = (BASE - diffA) % BASE;
   if (errorMagnitude === 0) {
     return null;
@@ -102,6 +141,8 @@ function correctBlock(block: number[]): number[] | null {
   const originalValue = ((rhs - errorSquare + BASE) % BASE * inverseTwoE) % BASE;
 
   let correctedIndex = -1;
+  let firstMatchIndex = -1;
+  let matches = 0;
 
   for (let i = 0; i < DATA_PER_BLOCK; i++) {
     const sumExcluding = (sum - data[i] + BASE) % BASE;
@@ -110,14 +151,25 @@ function correctBlock(block: number[]): number[] | null {
     if (candidate === originalValue) {
       const delta = (data[i] - originalValue + BASE) % BASE;
       if (delta === errorMagnitude) {
+        if (firstMatchIndex === -1) {
+          firstMatchIndex = i;
+        }
         correctedIndex = i;
-        break;
+        matches++;
       }
     }
   }
 
-  if (correctedIndex === -1) {
+  if (matches === 0) {
     return null;
+  }
+
+  if (matches > 1) {
+    if (diffB === 0) {
+      return { type: 'ambiguous' };
+    }
+
+    correctedIndex = firstMatchIndex;
   }
 
   const correctedData = [...data];
@@ -126,7 +178,10 @@ function correctBlock(block: number[]): number[] | null {
   const correctedParityA = computeParitySum(correctedData);
   const correctedParityB = computeParitySquares(correctedData);
 
-  return [...correctedData, correctedParityA, correctedParityB];
+  return {
+    type: 'success',
+    block: [...correctedData, correctedParityA, correctedParityB],
+  };
 }
 
 export function getEccInfo(encoded: number[]): {

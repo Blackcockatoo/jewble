@@ -1,10 +1,18 @@
 module.exports = function (api) {
   api.cache(true);
+
+  let moduleResolverPlugin;
+  try {
+    moduleResolverPlugin = require('babel-plugin-module-resolver');
+  } catch (error) {
+    moduleResolverPlugin = require('./babel-module-resolver-fallback');
+  }
+
   return {
     presets: ['babel-preset-expo'],
     plugins: [
       [
-        'module-resolver',
+        moduleResolverPlugin,
         {
           root: ['./'],
           alias: {
