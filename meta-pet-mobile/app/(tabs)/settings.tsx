@@ -6,10 +6,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useTheme } from '../../src/providers/ThemeProvider';
 import { useStore } from '../../src/store';
 import { SeedOfLifeGlyph } from '../../src/ui/components/SeedOfLifeGlyph';
 import { persistence } from '../../src/store/persistence';
+import { isConsentValid } from '../../src/identity/consent';
 
 interface SettingRowProps {
   label: string;
@@ -50,6 +53,10 @@ export default function SettingsScreen() {
   const toggleAudio = useStore((s) => s.toggleAudio);
   const toggleHaptics = useStore((s) => s.toggleHaptics);
   const evolution = useStore((s) => s.evolution);
+  const exportData = useStore((s) => s.exportData);
+  const consent = useStore((s) => s.consent);
+  const hydrate = useStore((s) => s.hydrate);
+  const consentValid = isConsentValid(consent);
 
   const handleToggleDarkMode = () => {
     if (hapticsEnabled) {
@@ -82,21 +89,68 @@ export default function SettingsScreen() {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             persistence.clearAll();
+            hydrate();
             if (hapticsEnabled) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             }
-            Alert.alert('Data Reset', 'All data has been cleared. Restart the app to start fresh.');
+            Alert.alert('Data Reset', 'All data has been cleared. You can start fresh now.');
           },
         },
       ]
     );
   };
 
-  const handleExportData = () => {
-    // TODO: Implement data export
-    Alert.alert('Export Data', 'Data export coming soon!');
+  const handleExportData = async () => {
+    if (!consentValid) {
+      Alert.alert(
+        'Consent Required',
+        'Please review and accept the privacy consent before exporting your data.'
+      );
+      return;
+    }
+
+    try {
+      if (hapticsEnabled) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      const payload = exportData();
+      const directory = FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
+
+      if (!directory) {
+        throw new Error('No writable directory available for export.');
+      }
+
+      const timestamp = new Date(payload.exportedAt).toISOString().replace(/[:.]/g, '-');
+      const fileUri = `${directory}meta-pet-export-${timestamp}.json`;
+
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(payload, null, 2));
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Share Meta-Pet Export',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Export Created', `Your data export was saved to:\n${fileUri}`);
+      }
+
+      if (hapticsEnabled) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error('Failed to export data', error);
+      if (hapticsEnabled) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      Alert.alert(
+        'Export Failed',
+        'We were unable to create an export package. Please try again.'
+      );
+    }
   };
 
   return (
@@ -156,12 +210,19 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Data</Text>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            style={[
+              styles.actionButton,
+              { backgroundColor: theme.surface, borderColor: theme.border, opacity: consentValid ? 1 : 0.5 },
+            ]}
             onPress={handleExportData}
             activeOpacity={0.7}
+            disabled={!consentValid}
           >
             <Text style={[styles.actionButtonText, { color: theme.text }]}>Export Data</Text>
           </TouchableOpacity>
+          {!consentValid && (
+            <Text style={[styles.helperText, { color: theme.textTertiary }]}>Accept the privacy consent to enable exports.</Text>
+          )}
           <TouchableOpacity
             style={[styles.actionButton, styles.dangerButton, { borderColor: theme.ui.error }]}
             onPress={handleResetData}
@@ -254,6 +315,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  helperText: {
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: 12,
   },
   dangerButton: {
