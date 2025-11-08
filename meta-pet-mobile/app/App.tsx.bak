@@ -1,4 +1,4 @@
-_import { Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { AppState } from "react-native";
 import { FEATURES } from "../src/config";

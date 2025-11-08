@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm start)",
+      "Bash(npx expo:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 60 npx expo start:*)",
+      "Bash(dir:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(node --version:*)",
+      "Bash(npx @expo/cli@latest start)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
