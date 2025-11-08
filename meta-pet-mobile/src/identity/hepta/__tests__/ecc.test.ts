@@ -14,17 +14,15 @@ describe('ECC (Error Correction Code)', () => {
       expect(() => eccEncode([1, 2, 3])).toThrow('ECC expects 30 data digits');
     });
 
-    it('should add 6 parity digits', () => {
+    it('should add 12 parity digits (two per block)', () => {
       const data = Array(30).fill(0);
       const encoded = eccEncode(data);
 
-      // Last digit of each 7-symbol block is parity
-      expect(encoded[6]).toBeDefined(); // Block 1 parity
-      expect(encoded[13]).toBeDefined(); // Block 2 parity
-      expect(encoded[20]).toBeDefined(); // Block 3 parity
-      expect(encoded[27]).toBeDefined(); // Block 4 parity
-      expect(encoded[34]).toBeDefined(); // Block 5 parity
-      expect(encoded[41]).toBeDefined(); // Block 6 parity
+      for (let block = 0; block < 6; block++) {
+        const base = block * 7;
+        expect(encoded[base + 5]).toBeDefined(); // parity A
+        expect(encoded[base + 6]).toBeDefined(); // parity B
+      }
     });
   });
 
