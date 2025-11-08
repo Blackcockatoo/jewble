@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  B$S Meta-Pet Icon Placeholder
+  Use this SVG to generate icon.png (1024x1024)
+  Convert to PNG using: https://cloudconvert.com/svg-to-png
+  or use Inkscape, GIMP, or ImageMagick
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#0A0A0A"/>
+
+  <!-- Seed of Life - Sacred Geometry -->
+  <g transform="translate(512, 512)" stroke="#D4AF37" stroke-width="8" fill="none">
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="140"/>
+
+    <!-- 6 surrounding circles -->
+    <circle cx="140" cy="0" r="140"/>
+    <circle cx="70" cy="121.24" r="140"/>
+    <circle cx="-70" cy="121.24" r="140"/>
+    <circle cx="-140" cy="0" r="140"/>
+    <circle cx="-70" cy="-121.24" r="140"/>
+    <circle cx="70" cy="-121.24" r="140"/>
+  </g>
+
+  <!-- Optional: Add small "MP" text at bottom -->
+  <text x="512" y="880" font-family="Arial, sans-serif" font-size="80" font-weight="bold"
+        fill="#D4AF37" text-anchor="middle">META-PET</text>
+</svg>

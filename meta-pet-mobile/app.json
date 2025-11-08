@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "B$S Meta-Pet",
+    "slug": "meta-pet-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bss.metapet",
+      "infoPlist": {
+        "UIBackgroundModes": []
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.bss.metapet",
+      "permissions": []
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          },
+          "ios": {
+            "deploymentTarget": "13.4"
+          }
+        }
+      ]
+    ],
+    "scheme": "metapet",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
