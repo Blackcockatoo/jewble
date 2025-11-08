@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  B$S Meta-Pet Splash Screen Placeholder
+  Use this SVG to generate splash.png (1284x2778)
+  iPhone 14 Pro Max resolution
+-->
+<svg width="1284" height="2778" viewBox="0 0 1284 2778" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1284" height="2778" fill="#0A0A0A"/>
+
+  <!-- Seed of Life - Centered -->
+  <g transform="translate(642, 1200)" stroke="#D4AF37" stroke-width="6" fill="none" opacity="0.9">
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="120"/>
+
+    <!-- 6 surrounding circles -->
+    <circle cx="120" cy="0" r="120"/>
+    <circle cx="60" cy="103.92" r="120"/>
+    <circle cx="-60" cy="103.92" r="120"/>
+    <circle cx="-120" cy="0" r="120"/>
+    <circle cx="-60" cy="-103.92" r="120"/>
+    <circle cx="60" cy="-103.92" r="120"/>
+  </g>
+
+  <!-- App Name -->
+  <text x="642" y="1500" font-family="Arial, sans-serif" font-size="72" font-weight="bold"
+        fill="#D4AF37" text-anchor="middle" letter-spacing="4">META-PET</text>
+
+  <!-- Tagline -->
+  <text x="642" y="1580" font-family="Arial, sans-serif" font-size="28"
+        fill="#8B7EC8" text-anchor="middle" letter-spacing="2" opacity="0.8">Sacred Companion</text>
+
+  <!-- B$S Logo/Text -->
+  <text x="642" y="2600" font-family="Arial, sans-serif" font-size="24"
+        fill="#666666" text-anchor="middle" opacity="0.5">B$S</text>
+</svg>
