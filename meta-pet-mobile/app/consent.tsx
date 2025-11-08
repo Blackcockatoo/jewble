@@ -3,26 +3,34 @@
  * Privacy and identity consent modal
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../src/providers/ThemeProvider';
 import { useStore } from '../src/store';
 import { SeedOfLifeGlyph } from '../src/ui/components/SeedOfLifeGlyph';
+import { isConsentValid } from '../src/identity/consent';
 
 export default function ConsentScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const hapticsEnabled = useStore((s) => s.hapticsEnabled);
-  const [accepted, setAccepted] = useState(false);
+  const consent = useStore((s) => s.consent);
+  const acceptConsent = useStore((s) => s.acceptConsent);
+  const revokeConsent = useStore((s) => s.revokeConsent);
+  const consentAccepted = isConsentValid(consent);
 
   const handleAccept = () => {
+    if (consentAccepted) {
+      router.back();
+      return;
+    }
+
     if (hapticsEnabled) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-    setAccepted(true);
-    // TODO: Save consent to persistence
+    acceptConsent();
     setTimeout(() => {
       router.back();
     }, 500);
@@ -32,6 +40,7 @@ export default function ConsentScreen() {
     if (hapticsEnabled) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
+    revokeConsent();
     router.back();
   };
 
@@ -93,12 +102,17 @@ export default function ConsentScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.button, styles.acceptButton, { backgroundColor: theme.primary }]}
+            style={[
+              styles.button,
+              styles.acceptButton,
+              { backgroundColor: theme.primary, opacity: consentAccepted ? 0.6 : 1 },
+            ]}
             onPress={handleAccept}
             activeOpacity={0.8}
+            disabled={consentAccepted}
           >
             <Text style={[styles.buttonText, { color: theme.background }]}>
-              I Understand & Accept
+              {consentAccepted ? 'Consent Already Granted' : 'I Understand & Accept'}
             </Text>
           </TouchableOpacity>
 

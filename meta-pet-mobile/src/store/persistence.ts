@@ -8,6 +8,7 @@ import type { Vitals } from '../engine/state';
 import type { Genome, DerivedTraits } from '../engine/genome';
 import type { EvolutionData } from '../engine/evolution';
 import type { Achievement, BattleStats, MiniGameProgress, VimanaState } from '../engine/progression/types';
+import type { ConsentState } from '../identity/types';
 
 const storage = new MMKV();
 
@@ -24,6 +25,7 @@ const KEYS = {
   DARK_MODE: 'meta-pet:darkMode',
   AUDIO_ENABLED: 'meta-pet:audioEnabled',
   HAPTICS_ENABLED: 'meta-pet:hapticsEnabled',
+  CONSENT: 'meta-pet:consent',
 };
 
 export const persistence = {
@@ -127,6 +129,15 @@ export const persistence = {
   },
   loadHapticsEnabled: (): boolean => {
     return storage.getBoolean(KEYS.HAPTICS_ENABLED) ?? true;
+  },
+
+  // Consent
+  saveConsent: (consent: ConsentState) => {
+    storage.set(KEYS.CONSENT, JSON.stringify(consent));
+  },
+  loadConsent: (): ConsentState | null => {
+    const data = storage.getString(KEYS.CONSENT);
+    return data ? JSON.parse(data) : null;
   },
 
   // Clear all data

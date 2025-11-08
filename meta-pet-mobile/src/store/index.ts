@@ -14,7 +14,23 @@ import { initializeEvolution, gainExperience, checkEvolutionEligibility, evolveP
 import { tick, calculateElapsedTicks } from '../engine/sim';
 import type { Achievement, BattleStats, MiniGameProgress, VimanaState } from '../engine/progression/types';
 import { createDefaultBattleStats, createDefaultMiniGameProgress, createDefaultVimanaState } from '../engine/progression/types';
+import type { ConsentState } from '../identity/types';
+import { createDefaultConsent, grantConsent, revokeConsent as revokeConsentState, isConsentValid } from '../identity/consent';
 import { persistence } from './persistence';
+
+export interface ExportPayload {
+  version: string;
+  exportedAt: number;
+  genome: Genome | null;
+  traits: DerivedTraits | null;
+  vitals: Vitals;
+  evolution: EvolutionData;
+  achievements: Achievement[];
+  battle: BattleStats;
+  miniGames: MiniGameProgress;
+  vimana: VimanaState;
+  consent: ConsentState;
+}
 
 export interface State {
   // Core State
@@ -37,6 +53,7 @@ export interface State {
   darkMode: boolean;
   audioEnabled: boolean;
   hapticsEnabled: boolean;
+  consent: ConsentState;
 
   // Core Actions
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
@@ -64,6 +81,11 @@ export interface State {
   toggleDarkMode: () => void;
   toggleAudio: () => void;
   toggleHaptics: () => void;
+  acceptConsent: () => void;
+  revokeConsent: () => void;
+
+  // Data Management
+  exportData: () => ExportPayload;
 }
 
 type VimanaReward = VimanaState['cells'][number]['reward'];
@@ -101,6 +123,7 @@ export const useStore = create<State>((set, get) => ({
   darkMode: true,
   audioEnabled: true,
   hapticsEnabled: true,
+  consent: createDefaultConsent(),
 
   // Generate new pet
   generateNewPet() {
@@ -145,6 +168,7 @@ export const useStore = create<State>((set, get) => ({
     const darkMode = persistence.loadDarkMode();
     const audioEnabled = persistence.loadAudioEnabled();
     const hapticsEnabled = persistence.loadHapticsEnabled();
+    const savedConsent = persistence.loadConsent();
 
     // Calculate elapsed ticks if we have a last update time
     let vitals = savedVitals || DEFAULT_VITALS;
@@ -163,6 +187,10 @@ export const useStore = create<State>((set, get) => ({
       }
     }
 
+    const consent = savedConsent && isConsentValid(savedConsent)
+      ? savedConsent
+      : createDefaultConsent();
+
     set({
       vitals,
       genome: savedGenome,
@@ -176,12 +204,14 @@ export const useStore = create<State>((set, get) => ({
       darkMode,
       audioEnabled,
       hapticsEnabled,
+      consent,
     });
 
     // Save updated state
     persistence.saveVitals(vitals);
     persistence.saveEvolution(evolution);
     persistence.saveLastUpdate(Date.now());
+    persistence.saveConsent(consent);
   },
 
   // Start vitals tick
@@ -434,6 +464,35 @@ export const useStore = create<State>((set, get) => ({
       persistence.saveHapticsEnabled(newValue);
       return { hapticsEnabled: newValue };
     });
+  },
+
+  acceptConsent() {
+    const consent = grantConsent();
+    set({ consent });
+    persistence.saveConsent(consent);
+  },
+
+  revokeConsent() {
+    const consent = revokeConsentState();
+    set({ consent });
+    persistence.saveConsent(consent);
+  },
+
+  exportData() {
+    const state = get();
+    return {
+      version: '1.0.0',
+      exportedAt: Date.now(),
+      genome: state.genome,
+      traits: state.traits,
+      vitals: state.vitals,
+      evolution: state.evolution,
+      achievements: state.achievements,
+      battle: state.battle,
+      miniGames: state.miniGames,
+      vimana: state.vimana,
+      consent: state.consent,
+    };
   },
 }));
 
