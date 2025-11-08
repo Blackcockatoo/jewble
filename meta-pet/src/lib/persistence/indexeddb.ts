@@ -155,12 +155,13 @@ export async function deletePet(id: string): Promise<void> {
  */
 export function setupAutoSave(
   getPetData: () => PetSaveData,
-  intervalMs = 60000 // 1 minute
+  intervalMs = 60000, // 1 minute
+  persist: (data: PetSaveData) => Promise<void> | void = savePet
 ): () => void {
   const intervalId = setInterval(async () => {
     try {
       const data = getPetData();
-      await savePet(data);
+      await persist(data);
       console.log('[AutoSave] Pet data saved', new Date().toISOString());
     } catch (error) {
       console.error('[AutoSave] Failed to save:', error);
