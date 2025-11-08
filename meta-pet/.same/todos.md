@@ -7,6 +7,8 @@
 - [ ] Performance profiling pass for dashboard and map rendering hot paths
 - [ ] Closed beta onboarding funnel copy and email automation
 - [ ] Auto-regression test harness for nightly smoke suite (CI + visual diffs)
+- [ ] Breeding system UI (wire up `breedPets`, selection flows, and result preview)
+- [ ] Integrate Vimana exploration map into the main dashboard layout
 
 ### Recently Completed
 - [x] Prime-Tail Crest identity system
@@ -63,3 +65,14 @@
 13. [ ] **Platform Integrations** – Evaluate app store builds, PWA install prompts, and desktop packaging.
 14. [ ] **Live Ops Tooling** – Build content scheduler, reward injection tools, and automated event rotation.
 15. [ ] **Player Community Programs** – Launch ambassador cohort, mod guidelines, and feedback forum cadence.
+
+### Next Steps (Suggested Priority)
+1. [ ] **Dashboard Integration** – Mount Vimana map, battle arena, mini-games, and achievements panels on the home page with responsive layout sections.
+2. [ ] **Breeding System** – Build pairing UI, surface `predictOffspring`, and persist breeding outcomes.
+3. [ ] **Privacy Presets** – Connect preset selection to crest/hepta encoding flows and expose them in HUD actions.
+4. [ ] **Battle Progression** – Surface opponents log, add cooldown timers, and persist shield state between sessions.
+5. [ ] **Mini-game Expansions** – Add rhythm pattern generator + meditation mini-game, sync high scores to achievements.
+6. [ ] **Vimana Map UX** – Add fog-of-war animations, anomaly events, and reward tooltips; persist discoveries to saves.
+7. [ ] **Breeding Lore & Achievements** – Unlock achievements for lineage milestones and write stage copy.
+8. [ ] **Narrative Events** – Rotate daily prompts that affect mood/energy modifiers across systems.
+9. [ ] **Testing & QA** – Add unit coverage for breeding calculations, battle probability, and store mutations.
