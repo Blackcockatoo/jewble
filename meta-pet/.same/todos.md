@@ -1,11 +1,14 @@
 # Meta-Pet Development Todos
 
-## Current Focus: Advanced Features Implementation
+## Current Focus: Launch Readiness & Polish
 
 ### In Progress
-- [ ] Breeding system
-- [ ] Vimana exploration map
+- [ ] Final QA sweep across core loops (breeding, battle, exploration, mini-games)
+- [ ] Performance profiling pass for dashboard and map rendering hot paths
+- [ ] Closed beta onboarding funnel copy and email automation
+- [ ] Auto-regression test harness for nightly smoke suite (CI + visual diffs)
 
+### Recently Completed
 - [x] Prime-Tail Crest identity system
 - [x] HeptaCode v1 encoding with ECC (42 digits)
 - [x] Live vitals HUD with Zustand store
@@ -21,18 +24,42 @@
 - [x] Audio chime (HeptaCode → tones)
 - [x] Evolution system (4-state machine)
 - [x] IndexedDB persistence with autosave
+- [x] Evolution polish – requirement breakdowns, stage lore, and celebration copy
+- [x] Persistence enhancements – export/import UX and multi-pet management
+- [x] Privacy presets – UI for Stealth/Standard/Radiant modes
+- [x] Vimana exploration map component and store logic
+- [x] Consciousness battle arena simulation with energy shield loop
+- [x] Mini-games panel with memory/rhythm tracking
+- [x] Achievement shelf catalog + unlock state
+- [x] Breeding system UI – wired `breedPets`, selection flows, and results preview
+- [x] Dashboard integration – mounted map, battle, mini-games, and achievements into responsive layout
+- [x] Privacy presets wiring – crest/hepta encoding hooks + HUD exposure
+- [x] Battle progression persistence – opponent log, cooldown timers, and shield carry-over
+- [x] Mini-game expansions – rhythm generator, meditation flow, and achievement sync
+- [x] Vimana map UX polish – fog-of-war animation, anomaly events, reward tooltips
+- [x] Breeding lore achievements – lineage milestones + narrative copy
+- [x] Narrative events rotation – daily mood/energy modifiers surfaced in HUD
+- [x] Test coverage – breeding calculators, battle odds, and store mutation specs
+- [x] Closed beta survey with qualitative + quantitative dashboards
+- [x] Incident response runbook for live service issues
+- [x] Feature flag framework for experimental UI rolls
+- [x] In-app feedback widget wired to support desk
+- [x] Localization scaffolding – i18n strings pipeline + extraction scripts
+- [x] Automated changelog generator for release notes cadence
 
 ### Next Steps (Suggested Priority)
-1. [x] **Evolution Polish** - Requirement breakdowns, stage lore, and celebration copy
-2. [x] **Persistence Enhancements** - Export/import UX and multi-pet management
-3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
-4. [x] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
-1. [ ] **Evolution Polish** - Balance requirements, add celebratory UI, surface lore per stage
-2. [ ] **Persistence Enhancements** - Export/import UX and multi-pet management
-3. [x] **Audio Chime** - Implement playHepta (HeptaCode → tone)
-4. [ ] **Privacy Presets** - UI for Stealth/Standard/Radiant modes
-5. [ ] **Breeding System** - Genome inheritance and trait mixing
-6. [ ] **Vimana Map** - Grid component with exploration
-7. [ ] **Battle System** - Consciousness-based combat
-8. [ ] **Mini-games** - Pattern recognition, meditation, etc.
-9. [ ] **Achievements** - Track milestones and unlock cosmetics
+1. [ ] **Accessibility & Localization** – WCAG pass, scalable fonts, and initial EN/ES translation packs.
+2. [ ] **Analytics & Telemetry** – Instrument beta funnel, core loop metrics, and anomaly alerting.
+3. [ ] **Economy Balancing** – Tune resource generation, cooldown pacing, and reward tables with live data.
+4. [ ] **Server Sync Layer** – Prototype optional cloud sync for cross-device progression.
+5. [ ] **Mobile Optimizations** – Audit touch targets, gesture support, and responsive layout breakpoints.
+6. [ ] **Community Features** – Implement friend codes, pet showcases, and shared achievements feed.
+7. [ ] **Launch Marketing Assets** – Capture gameplay footage, compose store copy, and prep press kit.
+8. [ ] **Post-Launch Roadmap** – Outline seasonal events, competitive ladders, and long-term content drops.
+9. [ ] **Security Review** – Threat model IndexedDB exports/imports and validate crest sharing permissions.
+10. [ ] **Support Operations** – Stand up help center content, macro responses, and escalation matrix.
+11. [ ] **Compliance & Legal** – Review data retention, COPPA/GDPR considerations, and beta terms of service.
+12. [ ] **Monetization Experiments** – Validate optional cosmetics, boosters, and subscriptions with player council.
+13. [ ] **Platform Integrations** – Evaluate app store builds, PWA install prompts, and desktop packaging.
+14. [ ] **Live Ops Tooling** – Build content scheduler, reward injection tools, and automated event rotation.
+15. [ ] **Player Community Programs** – Launch ambassador cohort, mod guidelines, and feedback forum cadence.
