@@ -3,6 +3,7 @@ import type { Genome, DerivedTraits } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
 import { initializeEvolution, gainExperience, checkEvolutionEligibility, evolvePet } from '@/lib/evolution';
 import {
+  ACHIEVEMENT_CATALOG,
   type Achievement,
   type BattleStats,
   type MiniGameProgress,
@@ -30,7 +31,16 @@ interface State {
   vimana: VimanaState;
   tickId?: number;
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
-  hydrate: (data: { vitals: Vitals; genome: Genome; traits: DerivedTraits; evolution: EvolutionData }) => void;
+  hydrate: (data: {
+    vitals: Vitals;
+    genome: Genome;
+    traits: DerivedTraits;
+    evolution: EvolutionData;
+    achievements?: Achievement[];
+    battle?: BattleStats;
+    miniGames?: MiniGameProgress;
+    vimana?: VimanaState;
+  }) => void;
   startTick: () => void;
   stopTick: () => void;
   feed: () => void;
@@ -40,6 +50,7 @@ interface State {
   tryEvolve: () => boolean;
   recordBattle: (result: 'win' | 'loss', opponent: string) => void;
   updateMiniGameScore: (game: 'memory' | 'rhythm', score: number) => void;
+  recordVimanaRun: (score: number, lines: number, level: number) => void;
   exploreCell: (cellId: string) => void;
   resolveAnomaly: (cellId: string) => void;
 }
@@ -67,6 +78,26 @@ function applyVimanaReward(reward: VimanaReward, vitals: Vitals): Vitals {
   }
 }
 
+const achievementDefinitions = new Map(ACHIEVEMENT_CATALOG.map(item => [item.id, item]));
+
+function unlockAchievement(list: Achievement[], id: Achievement['id']): Achievement[] {
+  if (list.some(entry => entry.id === id)) {
+    return list;
+  }
+
+  const definition = achievementDefinitions.get(id);
+  if (!definition) {
+    return list;
+  }
+
+  return [...list, { ...definition, earnedAt: Date.now() }];
+}
+
+const cloneVimanaState = (vimana: VimanaState): VimanaState => ({
+  ...vimana,
+  cells: vimana.cells.map(cell => ({ ...cell })),
+});
+
 export const useStore = create<State>((set, get) => ({
   vitals: {
     hunger: 30,
@@ -86,12 +117,16 @@ export const useStore = create<State>((set, get) => ({
     set({ genome, traits });
   },
 
-  hydrate({ vitals, genome, traits, evolution }) {
+  hydrate({ vitals, genome, traits, evolution, achievements, battle, miniGames, vimana }) {
     set(state => ({
       vitals: { ...vitals },
       genome,
       traits,
       evolution: { ...evolution },
+      achievements: achievements ? achievements.map(entry => ({ ...entry })) : state.achievements,
+      battle: battle ? { ...battle } : state.battle,
+      miniGames: miniGames ? { ...miniGames } : state.miniGames,
+      vimana: vimana ? cloneVimanaState(vimana) : state.vimana,
       tickId: state.tickId,
     }));
   },
@@ -126,7 +161,20 @@ export const useStore = create<State>((set, get) => ({
         next.energyShield = clamp(next.energyShield - 10, 0, 100);
       }
 
-      return { battle: next };
+      let achievements = state.achievements;
+      if (result === 'win') {
+        achievements = unlockAchievement(achievements, 'battle-first-win');
+        if (next.streak >= 3) {
+          achievements = unlockAchievement(achievements, 'battle-streak');
+        }
+      }
+
+      const resultState: Partial<State> = { battle: next };
+      if (achievements !== state.achievements) {
+        resultState.achievements = achievements;
+      }
+
+      return resultState;
     });
   },
 
@@ -140,13 +188,60 @@ export const useStore = create<State>((set, get) => ({
         next.rhythmHighScore = Math.max(next.rhythmHighScore, score);
       }
 
-      return { miniGames: next };
+      let achievements = state.achievements;
+      if (game === 'memory' && next.memoryHighScore >= 10) {
+        achievements = unlockAchievement(achievements, 'minigame-memory');
+      }
+      if (game === 'rhythm' && next.rhythmHighScore >= 12) {
+        achievements = unlockAchievement(achievements, 'minigame-rhythm');
+      }
+
+      const result: Partial<State> = { miniGames: next };
+      if (achievements !== state.achievements) {
+        result.achievements = achievements;
+      }
+
+      return result;
+    });
+  },
+
+  recordVimanaRun(score, linesCleared, levelReached) {
+    set(state => {
+      const next: MiniGameProgress = {
+        ...state.miniGames,
+        lastPlayedAt: Date.now(),
+        vimanaLastScore: score,
+        vimanaLastLines: linesCleared,
+        vimanaLastLevel: levelReached,
+        vimanaHighScore: Math.max(state.miniGames.vimanaHighScore, score),
+        vimanaMaxLines: Math.max(state.miniGames.vimanaMaxLines, linesCleared),
+        vimanaMaxLevel: Math.max(state.miniGames.vimanaMaxLevel, levelReached),
+      };
+
+      const sustainedFocus = score >= 500 && linesCleared >= 5;
+      next.focusStreak = sustainedFocus ? state.miniGames.focusStreak + 1 : 0;
+
+      let achievements = state.achievements;
+      if (next.vimanaHighScore >= 1500) {
+        achievements = unlockAchievement(achievements, 'minigame-vimana-score');
+      }
+      if (next.vimanaMaxLines >= 20) {
+        achievements = unlockAchievement(achievements, 'minigame-vimana-lines');
+      }
+
+      const result: Partial<State> = { miniGames: next };
+      if (achievements !== state.achievements) {
+        result.achievements = achievements;
+      }
+
+      return result;
     });
   },
 
   exploreCell(cellId) {
     set(state => {
       const { vimana, vitals } = state;
+      const previousCell = vimana.cells.find(cell => cell.id === cellId);
       const cells = vimana.cells.map(cell => {
         if (cell.id !== cellId) return cell;
         return {
@@ -164,7 +259,12 @@ export const useStore = create<State>((set, get) => ({
 
       const anomaliesFound = cells.filter(cell => cell.anomaly && cell.discovered).length;
 
-      return {
+      let achievements = state.achievements;
+      if (!previousCell?.discovered && target?.discovered) {
+        achievements = unlockAchievement(achievements, 'explorer-first-step');
+      }
+
+      const result: Partial<State> = {
         vitals: updatedVitals,
         vimana: {
           ...vimana,
@@ -175,12 +275,19 @@ export const useStore = create<State>((set, get) => ({
           lastScanAt: Date.now(),
         },
       };
+
+      if (achievements !== state.achievements) {
+        result.achievements = achievements;
+      }
+
+      return result;
     });
   },
 
   resolveAnomaly(cellId) {
     set(state => {
       const { vimana, vitals } = state;
+      const previousCell = vimana.cells.find(cell => cell.id === cellId);
       const cells = vimana.cells.map(cell => {
         if (cell.id !== cellId) return cell;
         if (!cell.anomaly) return cell;
@@ -200,14 +307,31 @@ export const useStore = create<State>((set, get) => ({
 
       const anomaliesFound = cells.filter(cell => cell.anomaly && cell.discovered).length;
 
-      return {
+      let anomaliesResolved = vimana.anomaliesResolved;
+      if (previousCell?.anomaly) {
+        anomaliesResolved += 1;
+      }
+
+      let achievements = state.achievements;
+      if (anomaliesResolved >= 3) {
+        achievements = unlockAchievement(achievements, 'explorer-anomaly-hunter');
+      }
+
+      const result: Partial<State> = {
         vitals: updatedVitals,
         vimana: {
           ...vimana,
           cells,
           anomaliesFound,
+          anomaliesResolved,
         },
       };
+
+      if (achievements !== state.achievements) {
+        result.achievements = achievements;
+      }
+
+      return result;
     });
   },
 
