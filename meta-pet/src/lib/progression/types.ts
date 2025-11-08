@@ -15,6 +15,7 @@ export interface VimanaState {
   cells: VimanaCell[];
   activeCellId: string;
   anomaliesFound: number;
+  anomaliesResolved: number;
   scansPerformed: number;
   lastScanAt: number | null;
 }
@@ -103,6 +104,7 @@ export function createDefaultVimanaState(): VimanaState {
     cells: baseCells,
     activeCellId: baseCells[0].id,
     anomaliesFound: baseCells.filter(cell => cell.anomaly && cell.discovered).length,
+    anomaliesResolved: 0,
     scansPerformed: 0,
     lastScanAt: Date.now(),
   };
