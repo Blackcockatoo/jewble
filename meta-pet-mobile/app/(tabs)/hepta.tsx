@@ -11,12 +11,15 @@ import { useStore } from '../../src/store';
 import { HeptaTag } from '../../src/ui/components/HeptaTag';
 import { SeedOfLifeGlyph } from '../../src/ui/components/SeedOfLifeGlyph';
 import { playHepta } from '../../src/ui/audio/playHepta.native';
+import { decodeGenome } from '../../src/engine/genome';
+import type { Genome } from '../../src/engine/genome';
 
 export default function HeptaScreen() {
   const { theme } = useTheme();
   const genome = useStore((s) => s.genome);
   const traits = useStore((s) => s.traits);
   const generateNewPet = useStore((s) => s.generateNewPet);
+  const setGenome = useStore((s) => s.setGenome);
   const audioEnabled = useStore((s) => s.audioEnabled);
   const hapticsEnabled = useStore((s) => s.hapticsEnabled);
 
@@ -43,14 +46,47 @@ export default function HeptaScreen() {
     Alert.alert('New Pet Generated!', 'Your Meta-Pet has been created with a new genome.');
   };
 
-  const handleImportCode = () => {
+  const handleImportCode = async () => {
     if (!inputCode.trim()) {
       Alert.alert('Error', 'Please enter a hepta code');
       return;
     }
 
-    // TODO: Implement hepta code import logic
-    Alert.alert('Import', 'Hepta code import coming soon!');
+    const sanitized = inputCode.replace(/[^0-6]/g, '');
+    if (sanitized.length !== 180) {
+      Alert.alert(
+        'Invalid Hepta Code',
+        'Hepta codes must contain 180 digits representing all three vaults.'
+      );
+      return;
+    }
+
+    const digits = sanitized.split('').map((char) => Number.parseInt(char, 10));
+    if (digits.some((digit) => Number.isNaN(digit) || digit < 0 || digit > 6)) {
+      Alert.alert('Invalid Hepta Code', 'Only digits 0-6 are allowed in a hepta code.');
+      return;
+    }
+
+    const genome: Genome = {
+      red60: digits.slice(0, 60),
+      blue60: digits.slice(60, 120),
+      black60: digits.slice(120, 180),
+    };
+
+    try {
+      const traitsFromGenome = decodeGenome(genome);
+      setGenome(genome, traitsFromGenome);
+      setInputCode('');
+
+      if (hapticsEnabled) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
+      Alert.alert('Hepta Imported', 'Your Meta-Pet genome has been updated.');
+    } catch (error) {
+      console.error('Failed to import hepta code:', error);
+      Alert.alert('Import Failed', 'Something went wrong while decoding the hepta code.');
+    }
   };
 
   return (

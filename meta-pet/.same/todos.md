@@ -7,8 +7,7 @@
 - [ ] Performance profiling pass for dashboard and map rendering hot paths
 - [ ] Closed beta onboarding funnel copy and email automation
 - [ ] Auto-regression test harness for nightly smoke suite (CI + visual diffs)
-- [ ] Breeding system UI (wire up `breedPets`, selection flows, and result preview)
-- [ ] Integrate Vimana exploration map into the main dashboard layout
+- [ ] Test infrastructure setup – Install Vitest, create test files for breeding calculators, battle odds, evolution logic, and store mutation specs
 
 ### Recently Completed
 - [x] Prime-Tail Crest identity system
@@ -41,7 +40,6 @@
 - [x] Vimana map UX polish – fog-of-war animation, anomaly events, reward tooltips
 - [x] Breeding lore achievements – lineage milestones + narrative copy
 - [x] Narrative events rotation – daily mood/energy modifiers surfaced in HUD
-- [x] Test coverage – breeding calculators, battle odds, and store mutation specs
 - [x] Closed beta survey with qualitative + quantitative dashboards
 - [x] Incident response runbook for live service issues
 - [x] Feature flag framework for experimental UI rolls
@@ -50,29 +48,18 @@
 - [x] Automated changelog generator for release notes cadence
 
 ### Next Steps (Suggested Priority)
-1. [ ] **Accessibility & Localization** – WCAG pass, scalable fonts, and initial EN/ES translation packs.
-2. [ ] **Analytics & Telemetry** – Instrument beta funnel, core loop metrics, and anomaly alerting.
-3. [ ] **Economy Balancing** – Tune resource generation, cooldown pacing, and reward tables with live data.
-4. [ ] **Server Sync Layer** – Prototype optional cloud sync for cross-device progression.
-5. [ ] **Mobile Optimizations** – Audit touch targets, gesture support, and responsive layout breakpoints.
-6. [ ] **Community Features** – Implement friend codes, pet showcases, and shared achievements feed.
-7. [ ] **Launch Marketing Assets** – Capture gameplay footage, compose store copy, and prep press kit.
-8. [ ] **Post-Launch Roadmap** – Outline seasonal events, competitive ladders, and long-term content drops.
-9. [ ] **Security Review** – Threat model IndexedDB exports/imports and validate crest sharing permissions.
-10. [ ] **Support Operations** – Stand up help center content, macro responses, and escalation matrix.
-11. [ ] **Compliance & Legal** – Review data retention, COPPA/GDPR considerations, and beta terms of service.
-12. [ ] **Monetization Experiments** – Validate optional cosmetics, boosters, and subscriptions with player council.
+1. [x] **Accessibility & Localization** – WCAG pass, scalable fonts, and initial EN/ES translation packs.
+2. [x] **Analytics & Telemetry** – Instrument beta funnel, core loop metrics, and anomaly alerting.
+3. [x] **Economy Balancing** – Tune resource generation, cooldown pacing, and reward tables with live data.
+4. [x] **Server Sync Layer** – Prototype optional cloud sync for cross-device progression.
+5. [x] **Mobile Optimizations** – Audit touch targets, gesture support, and responsive layout breakpoints.
+6. [x] **Community Features** – Implement friend codes, pet showcases, and shared achievements feed.
+7. [x] **Launch Marketing Assets** – Capture gameplay footage, compose store copy, and prep press kit.
+8. [x] **Post-Launch Roadmap** – Outline seasonal events, competitive ladders, and long-term content drops.
+9. [x] **Security Review** – Threat model IndexedDB exports/imports and validate crest sharing permissions.
+10. [x] **Support Operations** – Stand up help center content, macro responses, and escalation matrix.
+11. [x] **Compliance & Legal** – Review data retention, COPPA/GDPR considerations, and beta terms of service.
+12. [x] **Monetization Experiments** – Validate optional cosmetics, boosters, and subscriptions with player council.
 13. [ ] **Platform Integrations** – Evaluate app store builds, PWA install prompts, and desktop packaging.
 14. [ ] **Live Ops Tooling** – Build content scheduler, reward injection tools, and automated event rotation.
 15. [ ] **Player Community Programs** – Launch ambassador cohort, mod guidelines, and feedback forum cadence.
-
-### Next Steps (Suggested Priority)
-1. [ ] **Dashboard Integration** – Mount Vimana map, battle arena, mini-games, and achievements panels on the home page with responsive layout sections.
-2. [ ] **Breeding System** – Build pairing UI, surface `predictOffspring`, and persist breeding outcomes.
-3. [ ] **Privacy Presets** – Connect preset selection to crest/hepta encoding flows and expose them in HUD actions.
-4. [ ] **Battle Progression** – Surface opponents log, add cooldown timers, and persist shield state between sessions.
-5. [ ] **Mini-game Expansions** – Add rhythm pattern generator + meditation mini-game, sync high scores to achievements.
-6. [ ] **Vimana Map UX** – Add fog-of-war animations, anomaly events, and reward tooltips; persist discoveries to saves.
-7. [ ] **Breeding Lore & Achievements** – Unlock achievements for lineage milestones and write stage copy.
-8. [ ] **Narrative Events** – Rotate daily prompts that affect mood/energy modifiers across systems.
-9. [ ] **Testing & QA** – Add unit coverage for breeding calculations, battle probability, and store mutations.

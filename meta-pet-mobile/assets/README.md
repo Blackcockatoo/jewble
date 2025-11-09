@@ -77,7 +77,40 @@ Place custom fonts in `/assets/fonts` directory:
 
 ## Generating Assets
 
-You can use tools like:
+### Quick Start - Convert SVG Placeholders
+
+The `PLACEHOLDER_ICON.svg` and `PLACEHOLDER_SPLASH.svg` files are ready to convert:
+
+**Method 1: Online Converter (Easiest)**
+1. Visit [CloudConvert](https://cloudconvert.com/svg-to-png)
+2. Upload `PLACEHOLDER_ICON.svg`
+   - Convert to PNG at 1024x1024 → save as `icons/icon.png`
+   - Convert to PNG at 1024x1024 → save as `icons/adaptive-icon.png`
+   - Convert to PNG at 48x48 → save as `icons/favicon.png`
+3. Upload `PLACEHOLDER_SPLASH.svg`
+   - Convert to PNG at 1284x2778 → save as `splash.png`
+
+**Method 2: Using Inkscape (Free Desktop Tool)**
+```bash
+# Install Inkscape from https://inkscape.org
+inkscape --export-type=png --export-width=1024 --export-height=1024 PLACEHOLDER_ICON.svg -o icons/icon.png
+inkscape --export-type=png --export-width=1024 --export-height=1024 PLACEHOLDER_ICON.svg -o icons/adaptive-icon.png
+inkscape --export-type=png --export-width=48 --export-height=48 PLACEHOLDER_ICON.svg -o icons/favicon.png
+inkscape --export-type=png --export-width=1284 --export-height=2778 PLACEHOLDER_SPLASH.svg -o splash.png
+```
+
+**Method 3: Using ImageMagick**
+```bash
+# Install ImageMagick from https://imagemagick.org
+magick PLACEHOLDER_ICON.svg -resize 1024x1024 icons/icon.png
+magick PLACEHOLDER_ICON.svg -resize 1024x1024 icons/adaptive-icon.png
+magick PLACEHOLDER_ICON.svg -resize 48x48 icons/favicon.png
+magick PLACEHOLDER_SPLASH.svg -resize 1284x2778 splash.png
+```
+
+### Other Design Tools
+
+You can also use these tools to create custom designs:
 
 1. **Figma** - For designing app icons and splash screens
 2. **Affinity Designer** - For vector graphics
