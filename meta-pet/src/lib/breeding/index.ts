@@ -40,6 +40,16 @@ export function breedPets(
 
     case 'MUTATION':
       offspring = breedWithMutation(parent1, parent2);
+  const fingerprint = fingerprintParents(parent1, parent2);
+  const rng = createSeededRng(`${fingerprint}|${mode}`);
+
+  switch (mode) {
+    case 'DOMINANT':
+      offspring = breedDominant(parent1, parent2, rng);
+      break;
+
+    case 'MUTATION':
+      offspring = breedWithMutation(parent1, parent2, rng);
       break;
 
     case 'BALANCED':
@@ -51,6 +61,9 @@ export function breedPets(
   const traits = decodeGenome(offspring);
   const inheritanceMap = calculateInheritanceMap(parent1, parent2, offspring);
   const fingerprint = fingerprintParents(parent1, parent2);
+  const lineageKey = generateLineageKey(fingerprint, mode, offspring);
+
+  const inheritanceMap = calculateInheritanceMap(parent1, parent2, offspring);
   const lineageKey = generateLineageKey(fingerprint, mode, offspring);
 
   return { offspring, traits, inheritanceMap, lineageKey };
@@ -84,19 +97,23 @@ function breedBalanced(parent1: Genome, parent2: Genome): Genome {
 /**
  * Dominant breeding - one parent contributes more
  */
-function breedDominant(parent1: Genome, parent2: Genome): Genome {
+function breedDominant(
+  parent1: Genome,
+  parent2: Genome,
+  rng: () => number
+): Genome {
   const red60: number[] = [];
   const blue60: number[] = [];
   const black60: number[] = [];
 
   // Randomly select dominant parent
-  const dominantIsParent1 = Math.random() > 0.5;
+  const dominantIsParent1 = rng() > 0.5;
   const dominant = dominantIsParent1 ? parent1 : parent2;
   const recessive = dominantIsParent1 ? parent2 : parent1;
 
   for (let i = 0; i < 60; i++) {
     // 70% chance from dominant parent
-    const useDominant = Math.random() < 0.7;
+    const useDominant = rng() < 0.7;
 
     if (useDominant) {
       red60.push(dominant.red60[i]);
@@ -115,20 +132,24 @@ function breedDominant(parent1: Genome, parent2: Genome): Genome {
 /**
  * Mutation breeding - random mutations in some genes
  */
-function breedWithMutation(parent1: Genome, parent2: Genome): Genome {
+function breedWithMutation(
+  parent1: Genome,
+  parent2: Genome,
+  rng: () => number
+): Genome {
   // Start with balanced breeding
   const offspring = breedBalanced(parent1, parent2);
 
   // Apply random mutations (5-10% of genes)
-  const mutationRate = 0.05 + Math.random() * 0.05;
+  const mutationRate = 0.05 + rng() * 0.05;
   const genesToMutate = Math.floor(60 * mutationRate);
 
   for (let i = 0; i < genesToMutate; i++) {
-    const position = Math.floor(Math.random() * 60);
-    const newValue = Math.floor(Math.random() * 7); // base-7
+    const position = Math.floor(rng() * 60);
+    const newValue = Math.floor(rng() * 7); // base-7
 
     // Randomly mutate one of the three arrays
-    const arrayChoice = Math.floor(Math.random() * 3);
+    const arrayChoice = Math.floor(rng() * 3);
     if (arrayChoice === 0) {
       offspring.red60[position] = newValue;
     } else if (arrayChoice === 1) {
@@ -232,6 +253,34 @@ function generateLineageKey(
   return `${primary}${secondary}`;
 }
 
+function createSeededRng(seed: string): () => number {
+  const seedFactory = xmur3(seed);
+  const state = mulberry32(seedFactory());
+  return () => state();
+}
+
+function xmur3(str: string): () => number {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  };
+}
+
+function mulberry32(a: number): () => number {
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function fnv1a(input: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i++) {
@@ -276,11 +325,13 @@ export function predictOffspring(
   parent1: Genome,
   parent2: Genome
 ): { possibleTraits: string[]; confidence: number } {
+  const fingerprint = fingerprintParents(parent1, parent2);
+
   // Sample a few potential offspring
   const samples = [
     breedBalanced(parent1, parent2),
-    breedDominant(parent1, parent2),
-    breedWithMutation(parent1, parent2),
+    breedDominant(parent1, parent2, createSeededRng(`${fingerprint}|DOMINANT|preview`)),
+    breedWithMutation(parent1, parent2, createSeededRng(`${fingerprint}|MUTATION|preview`)),
   ];
 
   const traits = samples.map(s => decodeGenome(s));

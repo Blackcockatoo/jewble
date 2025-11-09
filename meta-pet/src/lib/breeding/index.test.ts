@@ -112,6 +112,15 @@ describe('Breeding System', () => {
 
       const uniqueResults = new Set(runs);
       expect(uniqueResults.size).toBeGreaterThan(1);
+    it('should produce deterministic offspring for identical inputs', () => {
+      const parent1 = createTestGenome(1);
+      const parent2 = createTestGenome(5);
+
+      const first = breedPets(parent1, parent2, 'MUTATION');
+      const second = breedPets(parent1, parent2, 'MUTATION');
+
+      expect(first.offspring).toEqual(second.offspring);
+      expect(first.lineageKey).toBe(second.lineageKey);
     });
 
     it('should reflect dominant inheritance in the map when applicable', () => {
@@ -265,6 +274,7 @@ describe('Breeding System', () => {
     });
 
     it('should provide consistent confidence for repeated previews', () => {
+    it('should provide stable previews for repeated calls', () => {
       const parent1 = createTestGenome(1);
       const parent2 = createTestGenome(3);
 
@@ -272,6 +282,7 @@ describe('Breeding System', () => {
       const previewB = predictOffspring(parent1, parent2);
 
       expect(previewA.confidence).toBe(previewB.confidence);
+      expect(previewA).toEqual(previewB);
     });
   });
 
