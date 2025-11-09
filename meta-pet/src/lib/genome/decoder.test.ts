@@ -99,9 +99,9 @@ describe('Genome Decoder', () => {
       const genome = createTestGenome(0);
       const traits = decodeGenome(genome);
 
-      const sum = traits.physical.proportions.head +
-                  traits.physical.proportions.limbs +
-                  traits.physical.proportions.tail;
+      const sum = traits.physical.proportions.headRatio +
+                  traits.physical.proportions.limbRatio +
+                  traits.physical.proportions.tailRatio;
 
       expect(sum).toBeCloseTo(1, 2);
     });
@@ -143,11 +143,20 @@ describe('Genome Decoder', () => {
       expect(traits.personality.curiosity).toBeGreaterThanOrEqual(0);
       expect(traits.personality.curiosity).toBeLessThanOrEqual(100);
 
-      expect(traits.personality.patience).toBeGreaterThanOrEqual(0);
-      expect(traits.personality.patience).toBeLessThanOrEqual(100);
+      expect(traits.personality.discipline).toBeGreaterThanOrEqual(0);
+      expect(traits.personality.discipline).toBeLessThanOrEqual(100);
 
-      expect(traits.personality.bravery).toBeGreaterThanOrEqual(0);
-      expect(traits.personality.bravery).toBeLessThanOrEqual(100);
+      expect(traits.personality.affection).toBeGreaterThanOrEqual(0);
+      expect(traits.personality.affection).toBeLessThanOrEqual(100);
+
+      expect(traits.personality.independence).toBeGreaterThanOrEqual(0);
+      expect(traits.personality.independence).toBeLessThanOrEqual(100);
+
+      expect(traits.personality.playfulness).toBeGreaterThanOrEqual(0);
+      expect(traits.personality.playfulness).toBeLessThanOrEqual(100);
+
+      expect(traits.personality.loyalty).toBeGreaterThanOrEqual(0);
+      expect(traits.personality.loyalty).toBeLessThanOrEqual(100);
     });
 
     it('should decode valid quirks array', () => {
@@ -167,8 +176,9 @@ describe('Genome Decoder', () => {
       const traits = decodeGenome(genome);
 
       const validPaths = [
-        'Harmony Guardian', 'Chaos Trickster', 'Void Walker',
-        'Light Bringer', 'Earth Shaper', 'Storm Caller', 'Dream Weaver'
+        'Celestial Ascendant', 'Primal Beast', 'Mystic Sage',
+        'Guardian Sentinel', 'Chaos Trickster', 'Harmonic Healer',
+        'Void Walker'
       ];
 
       expect(validPaths).toContain(traits.latent.evolutionPath);
@@ -188,20 +198,28 @@ describe('Genome Decoder', () => {
       const genome = createTestGenome(0);
       const traits = decodeGenome(genome);
 
-      expect(traits.latent.potential).toBeGreaterThanOrEqual(0);
-      expect(traits.latent.potential).toBeLessThanOrEqual(100);
+      expect(traits.latent.potential.physical).toBeGreaterThanOrEqual(0);
+      expect(traits.latent.potential.physical).toBeLessThanOrEqual(100);
+
+      expect(traits.latent.potential.mental).toBeGreaterThanOrEqual(0);
+      expect(traits.latent.potential.mental).toBeLessThanOrEqual(100);
+
+      expect(traits.latent.potential.social).toBeGreaterThanOrEqual(0);
+      expect(traits.latent.potential.social).toBeLessThanOrEqual(100);
     });
 
-    it('should decode valid affinity', () => {
+    it('should decode hidden genes array', () => {
       const genome = createTestGenome(0);
       const traits = decodeGenome(genome);
 
-      const validAffinities = [
-        'Fire', 'Water', 'Earth', 'Air',
-        'Light', 'Shadow', 'Void'
-      ];
+      expect(Array.isArray(traits.latent.hiddenGenes)).toBe(true);
+      expect(traits.latent.hiddenGenes).toHaveLength(15); // digits 45-59
 
-      expect(validAffinities).toContain(traits.latent.affinity);
+      // Should be valid base-7 digits
+      for (const gene of traits.latent.hiddenGenes) {
+        expect(gene).toBeGreaterThanOrEqual(0);
+        expect(gene).toBeLessThanOrEqual(6);
+      }
     });
   });
 

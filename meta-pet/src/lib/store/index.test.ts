@@ -222,12 +222,21 @@ describe('Store State Management', () => {
     });
 
     it('should increase energy shield on win', () => {
+      // Set shield to a lower value so it can increase (default is 100, which is max)
+      useStore.setState({
+        battle: {
+          ...useStore.getState().battle,
+          energyShield: 50,
+        },
+      });
+
       const initialShield = useStore.getState().battle.energyShield;
 
       useStore.getState().recordBattle('win', 'Opponent1');
 
       const newShield = useStore.getState().battle.energyShield;
       expect(newShield).toBeGreaterThan(initialShield);
+      expect(newShield).toBe(55); // 50 + 5
     });
 
     it('should decrease energy shield on loss', () => {

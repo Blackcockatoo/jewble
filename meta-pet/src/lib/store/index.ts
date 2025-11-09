@@ -342,7 +342,7 @@ export const useStore = create<State>((set, get) => ({
     set(state => ({
       vitals: {
         ...state.vitals,
-        hunger: clamp(state.vitals.hunger - 20), // reduce hunger
+        hunger: clamp(state.vitals.hunger + 20), // increase fullness (100 = full)
         energy: clamp(state.vitals.energy + 5),
         mood: clamp(state.vitals.mood + 3),
       },
