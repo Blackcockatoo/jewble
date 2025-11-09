@@ -33,6 +33,12 @@ export interface MiniGameProgress {
   memoryHighScore: number;
   rhythmHighScore: number;
   focusStreak: number;
+  vimanaHighScore: number;
+  vimanaMaxLines: number;
+  vimanaMaxLevel: number;
+  vimanaLastScore: number;
+  vimanaLastLines: number;
+  vimanaLastLevel: number;
   lastPlayedAt: number | null;
 }
 
@@ -82,6 +88,16 @@ export const ACHIEVEMENT_CATALOG: Achievement[] = [
     description: 'Hit a rhythm score of 12 or higher.',
   },
   {
+    id: 'minigame-vimana-score',
+    title: 'Grid Navigator',
+    description: 'Score 1,500 or more in the Vimana Tetris field.',
+  },
+  {
+    id: 'minigame-vimana-lines',
+    title: 'Line Harmonizer',
+    description: 'Clear 20 lines in a single Vimana Tetris run.',
+  },
+  {
     id: 'breeding-first',
     title: 'New Lineage',
     description: 'Breed two pets to create a new companion.',
@@ -126,6 +142,12 @@ export function createDefaultMiniGameProgress(): MiniGameProgress {
     memoryHighScore: 0,
     rhythmHighScore: 0,
     focusStreak: 0,
+    vimanaHighScore: 0,
+    vimanaMaxLines: 0,
+    vimanaMaxLevel: 0,
+    vimanaLastScore: 0,
+    vimanaLastLines: 0,
+    vimanaLastLevel: 0,
     lastPlayedAt: null,
   };
 }
