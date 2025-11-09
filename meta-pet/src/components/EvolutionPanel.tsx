@@ -15,6 +15,7 @@ import {
 import { Zap, Clock, TrendingUp, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 import { Button } from './ui/button';
+import { Progress } from './ui/progress';
 
 type StageSequence = readonly EvolutionState[];
 
@@ -110,29 +111,29 @@ export function EvolutionPanel() {
       <section className="grid grid-cols-2 gap-3 text-sm">
         <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2 text-zinc-400">
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-4 h-4" aria-hidden="true" />
             <span>Experience</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-zinc-700 rounded-full overflow-hidden">
-              <div
-                className="h-full transition-all duration-300"
-                style={{
-                  width: `${experiencePercent}%`,
-                  backgroundColor: visuals.colors[0],
-                }}
-              />
-            </div>
+            <Progress
+              value={experiencePercent}
+              label="Evolution experience progress"
+              valueText={`${experiencePercent}% to next evolution`}
+              className="flex-1 h-2 bg-zinc-700"
+              barStyle={{ backgroundColor: visuals.colors[0] }}
+            />
             <span className="text-white font-medium">{experiencePercent}%</span>
           </div>
         </div>
 
         <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3 space-y-2">
           <div className="flex items-center gap-2 text-zinc-400">
-            <Zap className="w-4 h-4" />
+            <Zap className="w-4 h-4" aria-hidden="true" />
             <span>Interactions</span>
           </div>
-          <div className="text-white font-medium text-lg">{evolution.totalInteractions}</div>
+          <div className="text-white font-medium text-lg" aria-label={`${evolution.totalInteractions} total interactions with your pet`}>
+            {evolution.totalInteractions}
+          </div>
         </div>
       </section>
 
@@ -142,17 +143,15 @@ export function EvolutionPanel() {
             <span className="text-zinc-400">Next evolution</span>
             <span className="text-white font-medium">{Math.round(progress)}%</span>
           </div>
-          <div className="h-3 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
-            <div
-              className="h-full transition-all duration-500"
-              style={{
-                width: `${progress}%`,
-                background: `linear-gradient(to right, ${visuals.colors[0]}, ${accent})`,
-              }}
-            />
-          </div>
+          <Progress
+            value={progress}
+            label="Progress to next evolution stage"
+            valueText={`${Math.round(progress)}% complete, ${formatDuration(timeRemaining)} remaining`}
+            className="h-3 bg-zinc-800 border border-zinc-700"
+            barStyle={{ background: `linear-gradient(to right, ${visuals.colors[0]}, ${accent})` }}
+          />
           <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <Clock className="w-3 h-3" />
+            <Clock className="w-3 h-3" aria-hidden="true" />
             <span>Time remaining: {formatDuration(timeRemaining)}</span>
           </div>
         </section>
@@ -227,12 +226,13 @@ export function EvolutionPanel() {
           <Button
             onClick={handleEvolve}
             className="w-full gap-2 font-bold text-lg"
+            aria-label={`Evolve your pet to ${nextStageInfo?.title || 'the next stage'}`}
             style={{
               background: `linear-gradient(135deg, ${visuals.colors[0]}, ${accent})`,
               boxShadow: `0 0 20px ${visuals.colors[0]}50`,
             }}
           >
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-5 h-5" aria-hidden="true" />
             Evolve Now!
           </Button>
         </section>
@@ -266,15 +266,13 @@ function RequirementBar({ label, value, helper, color }: RequirementBarProps) {
           {isMet && helper === 'Met' ? 'Met' : helperText}
         </span>
       </div>
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-        <div
-          className="h-full transition-all duration-500"
-          style={{
-            width: `${width}%`,
-            backgroundColor: color,
-          }}
-        />
-      </div>
+      <Progress
+        value={width}
+        label={`${label} requirement for evolution`}
+        valueText={`${width}% complete - ${helperText}`}
+        className="h-2 bg-zinc-800"
+        barStyle={{ backgroundColor: color }}
+      />
     </div>
   );
 }

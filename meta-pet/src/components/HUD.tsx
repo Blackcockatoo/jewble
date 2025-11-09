@@ -3,6 +3,7 @@
 import { useStore } from '@/lib/store';
 import { UtensilsCrossed, Sparkles, Droplets, Zap } from 'lucide-react';
 import { Button } from './ui/button';
+import { Progress } from './ui/progress';
 
 export function HUD() {
   const vitals = useStore(s => s.vitals);
@@ -41,20 +42,20 @@ export function HUD() {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Button onClick={feed} className="gap-2">
-          <UtensilsCrossed className="w-4 h-4" />
+        <Button onClick={feed} className="gap-2" aria-label="Feed your pet to increase hunger level">
+          <UtensilsCrossed className="w-4 h-4" aria-hidden="true" />
           Feed
         </Button>
-        <Button onClick={clean} variant="secondary" className="gap-2">
-          <Droplets className="w-4 h-4" />
+        <Button onClick={clean} variant="secondary" className="gap-2" aria-label="Clean your pet to increase hygiene">
+          <Droplets className="w-4 h-4" aria-hidden="true" />
           Clean
         </Button>
-        <Button onClick={play} variant="outline" className="gap-2">
-          <Sparkles className="w-4 h-4" />
+        <Button onClick={play} variant="outline" className="gap-2" aria-label="Play with your pet to increase mood">
+          <Sparkles className="w-4 h-4" aria-hidden="true" />
           Play
         </Button>
-        <Button onClick={sleep} variant="ghost" className="gap-2">
-          <Zap className="w-4 h-4" />
+        <Button onClick={sleep} variant="ghost" className="gap-2" aria-label="Let your pet sleep to restore energy">
+          <Zap className="w-4 h-4" aria-hidden="true" />
           Sleep
         </Button>
       </div>
@@ -70,23 +71,33 @@ interface StatBarProps {
 }
 
 function StatBar({ label, value, icon, color }: StatBarProps) {
+  // Create descriptive text for screen readers based on value ranges
+  const getValueDescription = (val: number): string => {
+    if (val >= 80) return `${Math.round(val)}% - excellent`;
+    if (val >= 60) return `${Math.round(val)}% - good`;
+    if (val >= 40) return `${Math.round(val)}% - moderate`;
+    if (val >= 20) return `${Math.round(val)}% - low`;
+    return `${Math.round(val)}% - critical`;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1 text-sm">
         <div className="flex items-center gap-2 text-zinc-300">
-          {icon}
+          <span aria-hidden="true">{icon}</span>
           <span>{label}</span>
         </div>
         <span className="font-bold text-white tabular-nums">
           {Math.round(value)}%
         </span>
       </div>
-      <div className="h-3 bg-zinc-800 rounded-xl overflow-hidden border border-zinc-700">
-        <div
-          className={`h-full bg-gradient-to-r ${color} transition-all duration-500`}
-          style={{ width: `${value}%` }}
-        />
-      </div>
+      <Progress
+        value={value}
+        label={`${label} level`}
+        valueText={getValueDescription(value)}
+        className="h-3 border border-zinc-700 rounded-xl"
+        barClassName={`bg-gradient-to-r ${color}`}
+      />
     </div>
   );
 }

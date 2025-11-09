@@ -75,10 +75,10 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Gamepad2 className="w-5 h-5 text-emerald-300" />
+          <Gamepad2 className="w-5 h-5 text-emerald-300" aria-hidden="true" />
           Conscious Mini-Games
         </h2>
-        <div className="text-xs text-zinc-400">
+        <div className="text-xs text-zinc-400" aria-label={`Current focus streak: ${miniGames.focusStreak} games`}>
           Focus streak: <span className="font-semibold text-emerald-300">{miniGames.focusStreak}</span>
         </div>
       </div>
@@ -86,15 +86,15 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
-            <BrainCircuit className="w-4 h-4 text-emerald-300" />
+            <BrainCircuit className="w-4 h-4 text-emerald-300" aria-hidden="true" />
             Memory Sequence
           </div>
           <p className="text-xs text-zinc-400">Higher mood and energy produce better recall performance.</p>
-          <Button onClick={playMemory} className="gap-2">
-            <BrainCircuit className="w-4 h-4" />
+          <Button onClick={playMemory} className="gap-2" aria-label="Play Memory Sequence game to test recall performance">
+            <BrainCircuit className="w-4 h-4" aria-hidden="true" />
             Attempt Memory Shuffle
           </Button>
-          <p className="text-xs text-zinc-400 italic">{memoryLog}</p>
+          <p className="text-xs text-zinc-400 italic" aria-live="polite">{memoryLog}</p>
           <p className="text-xs text-zinc-500">
             Best score: <span className="text-emerald-300 font-semibold">{miniGames.memoryHighScore}</span>
           </p>
@@ -102,15 +102,15 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
-            <Music4 className="w-4 h-4 text-pink-300" />
+            <Music4 className="w-4 h-4 text-pink-300" aria-hidden="true" />
             Rhythm Weave
           </div>
           <p className="text-xs text-zinc-400">Energy and cleanliness align to keep tempo steady.</p>
-          <Button onClick={playRhythm} className="gap-2">
-            <Music4 className="w-4 h-4" />
+          <Button onClick={playRhythm} className="gap-2" aria-label="Play Rhythm Weave game to test tempo alignment">
+            <Music4 className="w-4 h-4" aria-hidden="true" />
             Play Rhythm Pulse
           </Button>
-          <p className="text-xs text-zinc-400 italic">{rhythmLog}</p>
+          <p className="text-xs text-zinc-400 italic" aria-live="polite">{rhythmLog}</p>
           <p className="text-xs text-zinc-500">
             Best score: <span className="text-pink-300 font-semibold">{miniGames.rhythmHighScore}</span>
           </p>
@@ -118,14 +118,14 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
-            <Rocket className="w-4 h-4 text-cyan-300" />
+            <Rocket className="w-4 h-4 text-cyan-300" aria-hidden="true" />
             Vimana Tetris Field
           </div>
           <p className="text-xs text-zinc-400">
             Clear lines to stabilize the craft. Hard drops accelerate anomaly resolution.
           </p>
-          <Button onClick={handleLaunchVimana} className="gap-2">
-            <Rocket className="w-4 h-4" />
+          <Button onClick={handleLaunchVimana} className="gap-2" aria-label="Launch Vimana Tetris simulation game">
+            <Rocket className="w-4 h-4" aria-hidden="true" />
             Launch Simulation
           </Button>
           <p className="text-xs text-zinc-400 italic">{vimanaLog}</p>

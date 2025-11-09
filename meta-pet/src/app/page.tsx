@@ -10,6 +10,7 @@ import { PetSprite } from '@/components/PetSprite';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
 import { AchievementShelf } from '@/components/AchievementShelf';
+import { StatusAnnouncer } from '@/components/StatusAnnouncer';
 import { Button } from '@/components/ui/button';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
 import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
@@ -660,6 +661,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6">
+      <StatusAnnouncer />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

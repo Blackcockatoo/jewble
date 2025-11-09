@@ -42,22 +42,29 @@ export function VimanaMap() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-cyan-300" />
+            <MapPin className="w-5 h-5 text-cyan-300" aria-hidden="true" />
             Vimana Exploration
           </h2>
           <p className="text-xs text-zinc-500">Scan sacred fields to uncover anomalies and mood boosts.</p>
         </div>
-        <div className="text-xs text-zinc-400 text-right">
+        <div className="text-xs text-zinc-400 text-right" aria-label={`${vimana.scansPerformed} scans performed, ${vimana.anomaliesFound} anomalies resolved`}>
           <p>Scans: <span className="text-cyan-300 font-semibold">{vimana.scansPerformed}</span></p>
           <p>Anomalies Resolved: <span className="text-emerald-300 font-semibold">{vimana.anomaliesFound}</span></p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div
+        role="grid"
+        aria-label="Vimana exploration field grid"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+      >
         {vimana.cells.map(cell => (
           <button
             key={cell.id}
             onClick={() => handleSelect(cell.id)}
+            role="gridcell"
+            aria-label={`${cell.label} field - ${cell.field} type - ${cell.discovered ? (cell.anomaly ? 'Anomaly detected' : 'Stable') : 'Not yet discovered'}`}
+            aria-selected={selectedCell?.id === cell.id}
             className={`relative rounded-xl border transition-all p-3 text-left bg-gradient-to-br ${FIELD_THEME[cell.field] ?? 'from-slate-700/30 to-slate-800/30 border-slate-700/60'} ${
               selectedCell?.id === cell.id ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/20' : 'hover:ring-1 hover:ring-cyan-200/60'
             }`}
@@ -77,7 +84,7 @@ export function VimanaMap() {
             <div className="mt-2 text-xs">
               {cell.anomaly ? (
                 <span className="flex items-center gap-1 text-amber-300">
-                  <AlertTriangle className="w-3 h-3" />
+                  <AlertTriangle className="w-3 h-3" aria-hidden="true" />
                   Anomaly Active
                 </span>
               ) : (
@@ -98,7 +105,7 @@ export function VimanaMap() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Radar className="w-5 h-5 text-cyan-300" />
+                <Radar className="w-5 h-5 text-cyan-300" aria-hidden="true" />
                 {selectedCell.label}
               </h3>
               <p className="text-xs text-zinc-400 mt-1">
@@ -111,13 +118,22 @@ export function VimanaMap() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleExplore} className="gap-2">
-                <Radar className="w-4 h-4" />
+              <Button
+                onClick={handleExplore}
+                className="gap-2"
+                aria-label={`Scan ${selectedCell.label} field to ${selectedCell.discovered ? 'refine resonance' : 'discover rewards and anomalies'}`}
+              >
+                <Radar className="w-4 h-4" aria-hidden="true" />
                 Scan Field
               </Button>
               {selectedCell.anomaly && selectedCell.discovered && (
-                <Button onClick={handleResolve} variant="outline" className="gap-2 text-amber-300 border-amber-400/60">
-                  <AlertTriangle className="w-4 h-4" />
+                <Button
+                  onClick={handleResolve}
+                  variant="outline"
+                  className="gap-2 text-amber-300 border-amber-400/60"
+                  aria-label={`Resolve anomaly in ${selectedCell.label} field`}
+                >
+                  <AlertTriangle className="w-4 h-4" aria-hidden="true" />
                   Resolve Anomaly
                 </Button>
               )}

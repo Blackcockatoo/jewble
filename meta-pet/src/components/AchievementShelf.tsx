@@ -10,16 +10,18 @@ export function AchievementShelf() {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-white flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-amber-300" />
+        <Trophy className="w-5 h-5 text-amber-300" aria-hidden="true" />
         Achievements
         <span className="text-xs font-normal text-zinc-400">{achievements.length}/{ACHIEVEMENT_CATALOG.length} unlocked</span>
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" role="list" aria-label="Achievement list">
         {ACHIEVEMENT_CATALOG.map(item => {
           const earned = achievements.find(a => a.id === item.id);
           return (
             <div
               key={item.id}
+              role="listitem"
+              aria-label={`${item.title} - ${earned ? 'Unlocked' : 'Locked'} - ${item.description}`}
               className={`rounded-2xl border p-4 bg-slate-900/60 transition ${
                 earned
                   ? 'border-amber-400/50 shadow-lg shadow-amber-500/10'
@@ -28,10 +30,14 @@ export function AchievementShelf() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                  {earned ? <Trophy className="w-4 h-4 text-amber-300" /> : <Lock className="w-4 h-4 text-zinc-500" />}
+                  {earned ? (
+                    <Trophy className="w-4 h-4 text-amber-300" aria-hidden="true" />
+                  ) : (
+                    <Lock className="w-4 h-4 text-zinc-500" aria-hidden="true" />
+                  )}
                   {item.title}
                 </div>
-                <span className="text-xs text-zinc-500">{earned ? 'Unlocked' : 'Locked'}</span>
+                <span className="text-xs text-zinc-500" aria-hidden="true">{earned ? 'Unlocked' : 'Locked'}</span>
               </div>
               <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{item.description}</p>
               {earned && earned.earnedAt && (
