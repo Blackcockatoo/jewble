@@ -184,9 +184,16 @@ export function setupAutoSave(
     try {
       const data = getPetData();
       await persist(data);
-      console.log('[AutoSave] Pet data saved', new Date().toISOString());
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[AutoSave] Pet data saved', new Date().toISOString());
+      }
     } catch (error) {
-      console.error('[AutoSave] Failed to save:', error);
+      // Only log error message in production, not full error object
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[AutoSave] Failed to save:', error);
+      } else {
+        console.error('[AutoSave] Failed to save pet data');
+      }
     }
   }, intervalMs);
 

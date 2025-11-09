@@ -1,0 +1,76 @@
+# Dependabot configuration for automated dependency updates and security alerts
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Monitor meta-pet web app dependencies
+  - package-ecosystem: "npm"
+    directory: "/meta-pet"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+      - "meta-pet"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # Group minor and patch updates to reduce PR noise
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    # Always create PR for security updates
+    ignore:
+      # Only ignore specific packages if they cause issues
+      # - dependency-name: "example-package"
+
+  # Monitor meta-pet-mobile dependencies
+  - package-ecosystem: "npm"
+    directory: "/meta-pet-mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+      - "mobile"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Monitor GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "ci"
+      - "dependencies"
+    commit-message:
+      prefix: "ci"

@@ -125,7 +125,22 @@ export async function verifyCrest(
 }
 
 /**
- * Generate or retrieve device HMAC key (persisted in IndexedDB)
+ * Generate or retrieve device HMAC key (persisted in localStorage)
+ *
+ * SECURITY NOTE: localStorage is used instead of IndexedDB for simplicity.
+ * Trade-offs:
+ * - localStorage: Synchronous access, simpler API, but accessible to any script on origin
+ * - IndexedDB: Async, more complex, but better isolation
+ *
+ * For single-player offline game, localStorage is acceptable because:
+ * 1. No server validation - crest forgery only affects local user
+ * 2. No multiplayer - cheating doesn't impact other players
+ * 3. Simpler implementation reduces bugs
+ *
+ * For future multiplayer features, consider migrating to:
+ * - IndexedDB with encryption
+ * - Non-extractable CryptoKeys (prevents export)
+ * - Server-side validation
  */
 export async function getDeviceHmacKey(): Promise<CryptoKey> {
   if (typeof window === 'undefined') {
@@ -149,7 +164,12 @@ export async function getDeviceHmacKey(): Promise<CryptoKey> {
       );
     }
   } catch (error) {
-    console.warn('Failed to load persisted HMAC key, generating new one:', error);
+    // Sanitized error logging - don't expose error details in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Failed to load persisted HMAC key, generating new one:', error);
+    } else {
+      console.warn('Failed to load HMAC key, generating new one');
+    }
   }
 
   const key = await crypto.subtle.generateKey(
@@ -166,7 +186,12 @@ export async function getDeviceHmacKey(): Promise<CryptoKey> {
       window.localStorage.setItem(STORAGE_KEY, encoded);
     }
   } catch (error) {
-    console.warn('Failed to persist HMAC key:', error);
+    // Sanitized error logging
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Failed to persist HMAC key:', error);
+    } else {
+      console.warn('Failed to persist HMAC key');
+    }
     raw = await crypto.subtle.exportKey('raw', key);
   }
 
