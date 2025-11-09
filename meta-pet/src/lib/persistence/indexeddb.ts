@@ -271,14 +271,8 @@ export function importPetFromJSON(json: string): PetSaveData {
 
   const miniGames = (() => {
     if (parsed.miniGames === undefined) return createDefaultMiniGameProgress();
-    if (parsed.miniGames && typeof parsed.miniGames === 'object') {
-      const merged = {
-        ...createDefaultMiniGameProgress(),
-        ...(parsed.miniGames as Partial<MiniGameProgress>),
-      };
-      if (isValidMiniGameProgress(merged)) {
-        return merged;
-      }
+    if (isValidMiniGameProgress(parsed.miniGames)) {
+      return { ...parsed.miniGames };
     }
     throw new Error('Invalid pet file: mini-game progress malformed');
   })();
@@ -331,18 +325,9 @@ function normalizePetData(raw: unknown): PetSaveData {
   const battle = isValidBattleStats(typed.battle)
     ? { ...typed.battle }
     : createDefaultBattleStats();
-  const miniGames = (() => {
-    if (!typed.miniGames || typeof typed.miniGames !== 'object') {
-      return createDefaultMiniGameProgress();
-    }
-
-    const merged = {
-      ...createDefaultMiniGameProgress(),
-      ...(typed.miniGames as Partial<MiniGameProgress>),
-    };
-
-    return isValidMiniGameProgress(merged) ? merged : createDefaultMiniGameProgress();
-  })();
+  const miniGames = isValidMiniGameProgress(typed.miniGames)
+    ? { ...typed.miniGames }
+    : createDefaultMiniGameProgress();
   const vimana = isValidVimanaState(typed.vimana)
     ? cloneVimana(typed.vimana)
     : createDefaultVimanaState();
@@ -446,12 +431,6 @@ function isValidMiniGameProgress(value: unknown): value is MiniGameProgress {
     typeof progress.memoryHighScore === 'number' &&
     typeof progress.rhythmHighScore === 'number' &&
     typeof progress.focusStreak === 'number' &&
-    typeof progress.vimanaHighScore === 'number' &&
-    typeof progress.vimanaMaxLines === 'number' &&
-    typeof progress.vimanaMaxLevel === 'number' &&
-    typeof progress.vimanaLastScore === 'number' &&
-    typeof progress.vimanaLastLines === 'number' &&
-    typeof progress.vimanaLastLevel === 'number' &&
     lastPlayedValid
   );
 }

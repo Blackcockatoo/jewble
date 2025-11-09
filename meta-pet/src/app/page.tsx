@@ -10,7 +10,6 @@ import { PetSprite } from '@/components/PetSprite';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
 import { AchievementShelf } from '@/components/AchievementShelf';
-import { MiniGamesPanel } from '@/components/MiniGamesPanel';
 import { Button } from '@/components/ui/button';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
 import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
@@ -900,9 +899,6 @@ export default function Home() {
                     })
                   )}
                 </div>
-            </div>
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <MiniGamesPanel petName={petName.trim() || undefined} />
             </div>
           </div>
 
