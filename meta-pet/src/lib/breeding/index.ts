@@ -15,6 +15,7 @@ export interface BreedingResult {
     blue: 'parent1' | 'parent2' | 'mixed';
     black: 'parent1' | 'parent2' | 'mixed';
   };
+  lineageKey: string;
 }
 
 /**
@@ -31,29 +32,28 @@ export function breedPets(
   mode: 'DOMINANT' | 'BALANCED' | 'MUTATION' = 'BALANCED'
 ): BreedingResult {
   let offspring: Genome;
-  let inheritanceMap: BreedingResult['inheritanceMap'];
 
   switch (mode) {
     case 'DOMINANT':
       offspring = breedDominant(parent1, parent2);
-      inheritanceMap = { red: 'mixed', blue: 'mixed', black: 'mixed' };
       break;
 
     case 'MUTATION':
       offspring = breedWithMutation(parent1, parent2);
-      inheritanceMap = { red: 'mixed', blue: 'mixed', black: 'mixed' };
       break;
 
     case 'BALANCED':
     default:
       offspring = breedBalanced(parent1, parent2);
-      inheritanceMap = { red: 'mixed', blue: 'mixed', black: 'mixed' };
       break;
   }
 
   const traits = decodeGenome(offspring);
+  const inheritanceMap = calculateInheritanceMap(parent1, parent2, offspring);
+  const fingerprint = fingerprintParents(parent1, parent2);
+  const lineageKey = generateLineageKey(fingerprint, mode, offspring);
 
-  return { offspring, traits, inheritanceMap };
+  return { offspring, traits, inheritanceMap, lineageKey };
 }
 
 /**
@@ -139,6 +139,106 @@ function breedWithMutation(parent1: Genome, parent2: Genome): Genome {
   }
 
   return offspring;
+}
+
+function calculateInheritanceMap(
+  parent1: Genome,
+  parent2: Genome,
+  offspring: Genome
+): BreedingResult['inheritanceMap'] {
+  return {
+    red: determineInheritance(parent1.red60, parent2.red60, offspring.red60),
+    blue: determineInheritance(parent1.blue60, parent2.blue60, offspring.blue60),
+    black: determineInheritance(parent1.black60, parent2.black60, offspring.black60),
+  };
+}
+
+function determineInheritance(
+  parent1Genes: number[],
+  parent2Genes: number[],
+  offspringGenes: number[]
+): 'parent1' | 'parent2' | 'mixed' {
+  let parent1Matches = 0;
+  let parent2Matches = 0;
+  let unmatched = 0;
+
+  for (let i = 0; i < offspringGenes.length; i++) {
+    const childGene = offspringGenes[i];
+    const p1Gene = parent1Genes[i];
+    const p2Gene = parent2Genes[i];
+
+    const matchesParent1 = childGene === p1Gene;
+    const matchesParent2 = childGene === p2Gene;
+
+    if (matchesParent1 && matchesParent2) {
+      parent1Matches++;
+      parent2Matches++;
+    } else if (matchesParent1) {
+      parent1Matches++;
+    } else if (matchesParent2) {
+      parent2Matches++;
+    } else {
+      unmatched++;
+    }
+  }
+
+  const total = offspringGenes.length;
+  const majorityThreshold = Math.floor(total / 2) + 1;
+
+  if (parent1Matches >= majorityThreshold && parent1Matches > parent2Matches) {
+    return 'parent1';
+  }
+
+  if (parent2Matches >= majorityThreshold && parent2Matches > parent1Matches) {
+    return 'parent2';
+  }
+
+  if (unmatched === 0 && parent1Matches === parent2Matches && parent1Matches > 0) {
+    return 'mixed';
+  }
+
+  if (parent1Matches === 0 && parent2Matches === 0) {
+    return 'mixed';
+  }
+
+  if (parent1Matches === parent2Matches) {
+    return 'mixed';
+  }
+
+  if (unmatched > 0 && (parent1Matches < majorityThreshold && parent2Matches < majorityThreshold)) {
+    return 'mixed';
+  }
+
+  return parent1Matches > parent2Matches ? 'parent1' : 'parent2';
+}
+
+function fingerprintParents(parent1: Genome, parent2: Genome): string {
+  const serialized = [serializeGenome(parent1), serializeGenome(parent2)].sort();
+  return serialized.join('|');
+}
+
+function serializeGenome(genome: Genome): string {
+  return `${genome.red60.join('')}:${genome.blue60.join('')}:${genome.black60.join('')}`;
+}
+
+function generateLineageKey(
+  fingerprint: string,
+  mode: 'DOMINANT' | 'BALANCED' | 'MUTATION',
+  offspring: Genome
+): string {
+  const offspringSignature = serializeGenome(offspring);
+  const primary = fnv1a(`${fingerprint}|${mode}|${offspringSignature}`);
+  const secondary = fnv1a(`${offspringSignature}|${mode}|${fingerprint}`);
+  return `${primary}${secondary}`;
+}
+
+function fnv1a(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 /**

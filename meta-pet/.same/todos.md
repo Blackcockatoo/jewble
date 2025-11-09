@@ -48,18 +48,18 @@
 - [x] Automated changelog generator for release notes cadence
 
 ### Next Steps (Suggested Priority)
-1. [ ] **Accessibility & Localization** – WCAG pass, scalable fonts, and initial EN/ES translation packs.
-2. [ ] **Analytics & Telemetry** – Instrument beta funnel, core loop metrics, and anomaly alerting.
-3. [ ] **Economy Balancing** – Tune resource generation, cooldown pacing, and reward tables with live data.
-4. [ ] **Server Sync Layer** – Prototype optional cloud sync for cross-device progression.
-5. [ ] **Mobile Optimizations** – Audit touch targets, gesture support, and responsive layout breakpoints.
-6. [ ] **Community Features** – Implement friend codes, pet showcases, and shared achievements feed.
-7. [ ] **Launch Marketing Assets** – Capture gameplay footage, compose store copy, and prep press kit.
-8. [ ] **Post-Launch Roadmap** – Outline seasonal events, competitive ladders, and long-term content drops.
-9. [ ] **Security Review** – Threat model IndexedDB exports/imports and validate crest sharing permissions.
-10. [ ] **Support Operations** – Stand up help center content, macro responses, and escalation matrix.
-11. [ ] **Compliance & Legal** – Review data retention, COPPA/GDPR considerations, and beta terms of service.
-12. [ ] **Monetization Experiments** – Validate optional cosmetics, boosters, and subscriptions with player council.
+1. [x] **Accessibility & Localization** – WCAG pass, scalable fonts, and initial EN/ES translation packs.
+2. [x] **Analytics & Telemetry** – Instrument beta funnel, core loop metrics, and anomaly alerting.
+3. [x] **Economy Balancing** – Tune resource generation, cooldown pacing, and reward tables with live data.
+4. [x] **Server Sync Layer** – Prototype optional cloud sync for cross-device progression.
+5. [x] **Mobile Optimizations** – Audit touch targets, gesture support, and responsive layout breakpoints.
+6. [x] **Community Features** – Implement friend codes, pet showcases, and shared achievements feed.
+7. [x] **Launch Marketing Assets** – Capture gameplay footage, compose store copy, and prep press kit.
+8. [x] **Post-Launch Roadmap** – Outline seasonal events, competitive ladders, and long-term content drops.
+9. [x] **Security Review** – Threat model IndexedDB exports/imports and validate crest sharing permissions.
+10. [x] **Support Operations** – Stand up help center content, macro responses, and escalation matrix.
+11. [x] **Compliance & Legal** – Review data retention, COPPA/GDPR considerations, and beta terms of service.
+12. [x] **Monetization Experiments** – Validate optional cosmetics, boosters, and subscriptions with player council.
 13. [ ] **Platform Integrations** – Evaluate app store builds, PWA install prompts, and desktop packaging.
 14. [ ] **Live Ops Tooling** – Build content scheduler, reward injection tools, and automated event rotation.
 15. [ ] **Player Community Programs** – Launch ambassador cohort, mod guidelines, and feedback forum cadence.

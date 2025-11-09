@@ -28,6 +28,7 @@ describe('Breeding System', () => {
       expect(result.offspring.black60).toHaveLength(60);
       expect(result.traits).toBeDefined();
       expect(result.inheritanceMap).toBeDefined();
+      expect(result.lineageKey).toMatch(/^[0-9a-f]{16}$/);
     });
 
     it('should produce different results for different breeding modes', () => {
@@ -98,6 +99,38 @@ describe('Breeding System', () => {
       expect(result.inheritanceMap.red).toBeDefined();
       expect(result.inheritanceMap.blue).toBeDefined();
       expect(result.inheritanceMap.black).toBeDefined();
+      expect(result.lineageKey).toBeDefined();
+    });
+
+    it('should produce varied mutation results across runs', () => {
+      const parent1 = createTestGenome(1);
+      const parent2 = createTestGenome(5);
+
+      const runs = Array.from({ length: 5 }, () =>
+        JSON.stringify(breedPets(parent1, parent2, 'MUTATION').offspring)
+      );
+
+      const uniqueResults = new Set(runs);
+      expect(uniqueResults.size).toBeGreaterThan(1);
+    });
+
+    it('should reflect dominant inheritance in the map when applicable', () => {
+      const parent1: Genome = {
+        red60: Array(60).fill(0),
+        blue60: Array(60).fill(1),
+        black60: Array(60).fill(2),
+      };
+      const parent2: Genome = {
+        red60: Array(60).fill(3),
+        blue60: Array(60).fill(4),
+        black60: Array(60).fill(5),
+      };
+
+      const result = breedPets(parent1, parent2, 'DOMINANT');
+
+      expect(['parent1', 'parent2']).toContain(result.inheritanceMap.red);
+      expect(['parent1', 'parent2']).toContain(result.inheritanceMap.blue);
+      expect(['parent1', 'parent2']).toContain(result.inheritanceMap.black);
     });
   });
 
@@ -229,6 +262,16 @@ describe('Breeding System', () => {
 
       const uniqueTraits = new Set(prediction.possibleTraits);
       expect(uniqueTraits.size).toBe(prediction.possibleTraits.length);
+    });
+
+    it('should provide consistent confidence for repeated previews', () => {
+      const parent1 = createTestGenome(1);
+      const parent2 = createTestGenome(3);
+
+      const previewA = predictOffspring(parent1, parent2);
+      const previewB = predictOffspring(parent1, parent2);
+
+      expect(previewA.confidence).toBe(previewB.confidence);
     });
   });
 
