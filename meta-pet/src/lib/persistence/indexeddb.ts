@@ -427,12 +427,22 @@ function isValidMiniGameProgress(value: unknown): value is MiniGameProgress {
   if (!value || typeof value !== 'object') return false;
   const progress = value as MiniGameProgress;
   const lastPlayedValid = progress.lastPlayedAt === null || typeof progress.lastPlayedAt === 'number';
-  return (
-    typeof progress.memoryHighScore === 'number' &&
-    typeof progress.rhythmHighScore === 'number' &&
-    typeof progress.focusStreak === 'number' &&
-    lastPlayedValid
+  const numericFields = [
+    progress.memoryHighScore,
+    progress.rhythmHighScore,
+    progress.focusStreak,
+    progress.vimanaHighScore,
+    progress.vimanaMaxLines,
+    progress.vimanaMaxLevel,
+    progress.vimanaLastScore,
+    progress.vimanaLastLines,
+    progress.vimanaLastLevel,
+  ];
+  const statsValid = numericFields.every(
+    field => typeof field === 'number' && Number.isFinite(field)
   );
+
+  return statsValid && lastPlayedValid;
 }
 
 function isValidVimanaState(value: unknown): value is VimanaState {

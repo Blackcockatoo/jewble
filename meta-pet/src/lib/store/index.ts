@@ -205,6 +205,45 @@ export const useStore = create<State>((set, get) => ({
     });
   },
 
+  recordVimanaRun(score, lines, level) {
+    set(state => {
+      const hasProgress = lines > 0 || score > 0;
+      const previous = state.miniGames;
+
+      const nextFocusStreak = hasProgress ? previous.focusStreak + 1 : 0;
+      const nextHighScore = Math.max(previous.vimanaHighScore, score);
+      const nextMaxLines = Math.max(previous.vimanaMaxLines, lines);
+      const nextMaxLevel = Math.max(previous.vimanaMaxLevel, level);
+
+      const next: MiniGameProgress = {
+        ...previous,
+        focusStreak: nextFocusStreak,
+        vimanaHighScore: nextHighScore,
+        vimanaMaxLines: nextMaxLines,
+        vimanaMaxLevel: nextMaxLevel,
+        vimanaLastScore: score,
+        vimanaLastLines: lines,
+        vimanaLastLevel: level,
+        lastPlayedAt: Date.now(),
+      };
+
+      let achievements = state.achievements;
+      if (nextHighScore >= 1500) {
+        achievements = unlockAchievement(achievements, 'minigame-vimana-score');
+      }
+      if (nextMaxLines >= 20) {
+        achievements = unlockAchievement(achievements, 'minigame-vimana-lines');
+      }
+
+      const result: Partial<State> = { miniGames: next };
+      if (achievements !== state.achievements) {
+        result.achievements = achievements;
+      }
+
+      return result;
+    });
+  },
+
   exploreCell(cellId) {
     set(state => {
       const { vimana, vitals } = state;
