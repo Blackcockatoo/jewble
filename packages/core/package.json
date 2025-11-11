@@ -1,0 +1,20 @@
+{
+  "name": "@metapet/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./vitals": "./src/vitals/index.ts",
+    "./evolution": "./src/evolution/index.ts",
+    "./progression": "./src/progression/index.ts",
+    "./genome": "./src/genome/index.ts",
+    "./store": "./src/store/index.ts",
+    "./rng": "./src/rng/index.ts"
+  },
+  "dependencies": {
+    "zustand": "^5.0.8"
+  },
+  "sideEffects": false
+}
