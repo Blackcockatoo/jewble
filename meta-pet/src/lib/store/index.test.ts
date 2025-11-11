@@ -1,7 +1,77 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useStore } from './index';
 import { initializeEvolution } from '@/lib/evolution';
 import type { Genome, DerivedTraits } from '@/lib/genome';
+import {
+  createDefaultBattleStats,
+  createDefaultMiniGameProgress,
+  createDefaultVimanaState,
+} from '@/lib/progression/types';
+
+type TraitOverrides = {
+  physical?: Partial<DerivedTraits['physical']>;
+  personality?: Partial<DerivedTraits['personality']>;
+  latent?:
+    | (Partial<Omit<DerivedTraits['latent'], 'potential' | 'hiddenGenes'>> & {
+        potential?: Partial<DerivedTraits['latent']['potential']>;
+        hiddenGenes?: number[];
+      });
+};
+
+const createMockGenome = (seed = 0): Genome => ({
+  red60: Array.from({ length: 60 }, (_, index) => (seed + index) % 7),
+  blue60: Array.from({ length: 60 }, (_, index) => (seed + index + 1) % 7),
+  black60: Array.from({ length: 60 }, (_, index) => (seed + index + 2) % 7),
+});
+
+const createMockTraits = (overrides: TraitOverrides = {}): DerivedTraits => {
+  const base: DerivedTraits = {
+    physical: {
+      bodyType: 'Spherical',
+      primaryColor: '#FF6B6B',
+      secondaryColor: '#C44569',
+      pattern: 'Solid',
+      texture: 'Smooth',
+      size: 1,
+      proportions: { headRatio: 0.34, limbRatio: 0.33, tailRatio: 0.33 },
+      features: ['Horns'],
+    },
+    personality: {
+      temperament: 'Playful',
+      energy: 80,
+      social: 70,
+      curiosity: 90,
+      discipline: 65,
+      affection: 75,
+      independence: 45,
+      playfulness: 85,
+      loyalty: 68,
+      quirks: ['Bouncy'],
+    },
+    latent: {
+      evolutionPath: 'Light Bringer',
+      rareAbilities: ['Telepathy'],
+      potential: { physical: 82, mental: 78, social: 76 },
+      hiddenGenes: Array.from({ length: 15 }, () => 0),
+    },
+  };
+
+  const latentOverrides = overrides.latent ?? {};
+
+  return {
+    physical: { ...base.physical, ...overrides.physical },
+    personality: { ...base.personality, ...overrides.personality },
+    latent: {
+      ...base.latent,
+      ...latentOverrides,
+      potential: {
+        ...base.latent.potential,
+        ...(latentOverrides.potential ?? {}),
+      },
+      hiddenGenes: latentOverrides.hiddenGenes ?? base.latent.hiddenGenes,
+    },
+  };
+};
 
 describe('Store State Management', () => {
   // Reset store before each test
@@ -17,29 +87,9 @@ describe('Store State Management', () => {
       traits: null,
       evolution: initializeEvolution(),
       achievements: [],
-      battle: {
-        wins: 0,
-        losses: 0,
-        energyShield: 100,
-        streak: 0,
-        lastOpponent: null,
-        lastResult: null,
-      },
-      miniGames: {
-        memoryHighScore: 0,
-        rhythmHighScore: 0,
-        lastPlayedAt: null,
-      },
-      vimana: {
-        cells: Array(9).fill(null).map((_, i) => ({
-          id: `cell-${i}`,
-          explored: false,
-          hasAnomaly: false,
-          reward: null,
-        })),
-        tetrisHighScore: 0,
-        tetrisLastPlayed: null,
-      },
+      battle: createDefaultBattleStats(),
+      miniGames: createDefaultMiniGameProgress(),
+      vimana: createDefaultVimanaState(),
     });
   });
 
@@ -124,38 +174,8 @@ describe('Store State Management', () => {
 
   describe('Genome Management', () => {
     it('should set genome and traits', () => {
-      const testGenome: Genome = {
-        red60: Array(60).fill(1),
-        blue60: Array(60).fill(2),
-        black60: Array(60).fill(3),
-      };
-      const testTraits: DerivedTraits = {
-        physical: {
-          bodyType: 'Spherical',
-          primaryColor: '#FF6B6B',
-          secondaryColor: '#C44569',
-          pattern: 'Solid',
-          texture: 'Smooth',
-          size: 1.0,
-          proportions: { head: 0.33, limbs: 0.33, tail: 0.34 },
-          features: ['Horns'],
-        },
-        personality: {
-          temperament: 'Playful',
-          energy: 80,
-          social: 70,
-          curiosity: 90,
-          patience: 50,
-          bravery: 60,
-          quirks: ['Bouncy'],
-        },
-        latent: {
-          evolutionPath: 'Light Bringer',
-          rareAbilities: ['Telepathy'],
-          potential: 85,
-          affinity: 'Fire',
-        },
-      };
+      const testGenome: Genome = createMockGenome(1);
+      const testTraits: DerivedTraits = createMockTraits();
 
       useStore.getState().setGenome(testGenome, testTraits);
 
@@ -344,38 +364,37 @@ describe('Store State Management', () => {
           mood: 90,
           energy: 65,
         },
-        genome: {
-          red60: Array(60).fill(2),
-          blue60: Array(60).fill(3),
-          black60: Array(60).fill(4),
-        } as Genome,
-        traits: {
+        genome: createMockGenome(2),
+        traits: createMockTraits({
           physical: {
-            bodyType: 'Cubic' as const,
+            bodyType: 'Cubic',
             primaryColor: '#4ECDC4',
             secondaryColor: '#3B3B98',
-            pattern: 'Striped' as const,
-            texture: 'Fuzzy' as const,
+            pattern: 'Striped',
+            texture: 'Fuzzy',
             size: 1.5,
-            proportions: { head: 0.4, limbs: 0.3, tail: 0.3 },
+            proportions: { headRatio: 0.4, limbRatio: 0.3, tailRatio: 0.3 },
             features: ['Wings'],
           },
           personality: {
-            temperament: 'Calm' as const,
+            temperament: 'Calm',
             energy: 60,
             social: 80,
             curiosity: 70,
-            patience: 90,
-            bravery: 50,
+            discipline: 85,
+            affection: 90,
+            independence: 35,
+            playfulness: 55,
+            loyalty: 92,
             quirks: ['Gentle'],
           },
           latent: {
-            evolutionPath: 'Harmony Guardian' as const,
+            evolutionPath: 'Harmony Guardian',
             rareAbilities: ['Healing'],
-            potential: 90,
-            affinity: 'Water' as const,
+            potential: { physical: 88, mental: 90, social: 84 },
+            hiddenGenes: Array.from({ length: 15 }, () => 2),
           },
-        } as DerivedTraits,
+        }),
         evolution: {
           state: 'NEURO' as const,
           birthTime: 1000000,
@@ -400,8 +419,8 @@ describe('Store State Management', () => {
 
       useStore.getState().hydrate({
         vitals: { hunger: 50, hygiene: 50, mood: 50, energy: 50 },
-        genome: { red60: [], blue60: [], black60: [] } as Genome,
-        traits: {} as DerivedTraits,
+        genome: createMockGenome(5),
+        traits: createMockTraits(),
         evolution: initializeEvolution(),
       });
 
