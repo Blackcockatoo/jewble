@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "module": "esnext",
+    "target": "es2019",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "./src"
+  },
+  "include": ["src/**/*"]
+}

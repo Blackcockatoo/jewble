@@ -117,9 +117,9 @@ export const useStore = create<State>((set, get) => ({
   evolution: initializeEvolution(),
   lastUpdateTime: Date.now(),
   achievements: [],
-  battle: createDefaultBattleStats(),
+  battle: createDefaultBattleStats({ energyShield: 50 }),
   miniGames: createDefaultMiniGameProgress(),
-  vimana: createDefaultVimanaState(),
+  vimana: createDefaultVimanaState({ layout: 'grid' }),
   darkMode: true,
   audioEnabled: true,
   hapticsEnabled: true,
@@ -197,9 +197,19 @@ export const useStore = create<State>((set, get) => ({
       traits: savedTraits,
       evolution,
       achievements: savedAchievements,
-      battle: savedBattle || createDefaultBattleStats(),
-      miniGames: savedMiniGames || createDefaultMiniGameProgress(),
-      vimana: savedVimana || createDefaultVimanaState(),
+      battle: savedBattle
+        ? { ...createDefaultBattleStats({ energyShield: 50 }), ...savedBattle }
+        : createDefaultBattleStats({ energyShield: 50 }),
+      miniGames: savedMiniGames
+        ? { ...createDefaultMiniGameProgress(), ...savedMiniGames }
+        : createDefaultMiniGameProgress(),
+      vimana: savedVimana
+        ? {
+            ...createDefaultVimanaState({ layout: 'grid' }),
+            ...savedVimana,
+            cells: savedVimana.cells.map(cell => ({ ...cell })),
+          }
+        : createDefaultVimanaState({ layout: 'grid' }),
       lastUpdateTime: Date.now(),
       darkMode,
       audioEnabled,
