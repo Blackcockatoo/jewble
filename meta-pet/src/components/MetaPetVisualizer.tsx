@@ -34,6 +34,8 @@ interface FormConditionProps {
   readonly active: boolean;
   readonly label: string;
   readonly condition: string;
+  readonly progress: number;
+  readonly accentColor: string;
 }
 
 interface EyeProps {
@@ -50,6 +52,7 @@ interface TailProps {
   readonly color: string;
   readonly secondaryColor: string;
   readonly curiosity: number;
+  readonly energy: number;
 }
 
 interface MetaPetSvgProps {
@@ -60,8 +63,21 @@ interface MetaPetSvgProps {
   readonly black60: number;
   readonly eyeShape: EyeShape;
   readonly tailSplits: number;
+  readonly energy: number;
   readonly curiosity: number;
 }
+
+interface FormEnvironmentProps {
+  readonly form: FormName;
+  readonly colors: FormConfig;
+  readonly energy: number;
+  readonly curiosity: number;
+  readonly red60: number;
+  readonly blue60: number;
+  readonly black60: number;
+}
+
+const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
 const forms: Record<FormName, FormConfig> = {
   explorer: {
@@ -142,6 +158,24 @@ const MetaPetVisualizer = () => {
     return 1;
   }, [activeForm, curiosity]);
 
+  const conditionProgress = useMemo(() => {
+    const sleepEnergy = clamp((30 - energy) / 30);
+    const sleepHealth = clamp((50 - health) / 50);
+    const sleep = Math.min(sleepEnergy, sleepHealth);
+
+    const battleEnergy = clamp((energy - 70) / 30);
+    const battleCuriosity = clamp((curiosity - 60) / 40);
+    const battle = Math.min(battleEnergy, battleCuriosity);
+
+    const studyBond = clamp((bond - 60) / 40);
+    const studyCuriosity = clamp((curiosity - 50) / 50);
+    const study = Math.min(studyBond, studyCuriosity);
+
+    const explorer = clamp(1 - Math.max(sleep, battle, study));
+
+    return { explorer, sleep, study, battle };
+  }, [bond, curiosity, energy, health]);
+
   return (
     <div className="w-full h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white p-6 overflow-auto">
       <div className="max-w-7xl mx-auto">
@@ -170,6 +204,7 @@ const MetaPetVisualizer = () => {
                 black60={black60}
                 eyeShape={eyeShape}
                 tailSplits={tailSplits}
+                energy={energy}
                 curiosity={curiosity}
               />
             </div>
@@ -250,10 +285,34 @@ const MetaPetVisualizer = () => {
             <div className="bg-gray-800/50 rounded-xl p-6 backdrop-blur">
               <h3 className="text-xl font-bold mb-4">Form Conditions</h3>
               <div className="space-y-2 text-sm">
-                <FormCondition active={activeForm === 'explorer'} label="Explorer" condition="Default active state" />
-                <FormCondition active={activeForm === 'sleep'} label="Sleep" condition="Energy &lt; 30 AND Health &lt; 50" />
-                <FormCondition active={activeForm === 'study'} label="Study Buddy" condition="Bond &gt; 60 AND Curiosity &gt; 50" />
-                <FormCondition active={activeForm === 'battle'} label="Battle" condition="Energy &gt; 70 AND Curiosity &gt; 60" />
+                <FormCondition
+                  active={activeForm === 'explorer'}
+                  label="Explorer"
+                  condition="Default active state"
+                  progress={conditionProgress.explorer}
+                  accentColor={forms.explorer.accentColor}
+                />
+                <FormCondition
+                  active={activeForm === 'sleep'}
+                  label="Sleep"
+                  condition="Energy &lt; 30 AND Health &lt; 50"
+                  progress={conditionProgress.sleep}
+                  accentColor={forms.sleep.accentColor}
+                />
+                <FormCondition
+                  active={activeForm === 'study'}
+                  label="Study Buddy"
+                  condition="Bond &gt; 60 AND Curiosity &gt; 50"
+                  progress={conditionProgress.study}
+                  accentColor={forms.study.accentColor}
+                />
+                <FormCondition
+                  active={activeForm === 'battle'}
+                  label="Battle"
+                  condition="Energy &gt; 70 AND Curiosity &gt; 60"
+                  progress={conditionProgress.battle}
+                  accentColor={forms.battle.accentColor}
+                />
               </div>
             </div>
           </div>
@@ -306,19 +365,207 @@ const GenomeBar = ({ label, value, color }: GenomeBarProps) => (
   </div>
 );
 
-const FormCondition = ({ active, label, condition }: FormConditionProps) => (
-  <div
-    className={`p-3 rounded-lg border-2 transition-all ${
-      active ? 'border-cyan-400 bg-cyan-400/10' : 'border-gray-700 bg-gray-700/20'
-    }`}
-  >
-    <div className="flex items-center justify-between">
-      <span className="font-medium">{label}</span>
-      {active && <span className="text-cyan-400 text-xs">● ACTIVE</span>}
+const FormCondition = ({ active, label, condition, progress, accentColor }: FormConditionProps) => {
+  const progressPercent = Math.round(progress * 100);
+  const isPrimed = progress >= 0.8 && !active;
+
+  return (
+    <div
+      className={`p-3 rounded-lg border-2 transition-all ${
+        active || isPrimed
+          ? 'border-cyan-400/80 bg-cyan-400/10 shadow-lg shadow-cyan-500/10'
+          : 'border-gray-700 bg-gray-700/20'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-medium">{label}</span>
+        {active && <span className="text-cyan-400 text-xs">● ACTIVE</span>}
+        {!active && isPrimed && <span className="text-cyan-300 text-xs">⚡ READY</span>}
+      </div>
+      <p className="text-xs text-gray-400 mt-1">{condition}</p>
+      <div className="mt-3 space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-gray-500">
+          <span>Progress</span>
+          <span className="font-mono text-gray-300">{progressPercent}%</span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-gray-700/60 overflow-hidden">
+          <div
+            className="h-full transition-all duration-500 ease-out"
+            style={{
+              width: `${Math.max(progress * 100, active ? 100 : 4)}%`,
+              background: `linear-gradient(90deg, ${accentColor}, ${active ? '#ecfeff' : accentColor})`,
+              boxShadow:
+                active || isPrimed
+                  ? `0 0 12px ${accentColor}55`
+                  : `0 0 6px ${accentColor}22`,
+            }}
+          />
+        </div>
+      </div>
     </div>
-    <p className="text-xs text-gray-400 mt-1">{condition}</p>
-  </div>
-);
+  );
+};
+
+const FormEnvironment = ({
+  form,
+  colors,
+  energy,
+  curiosity,
+  red60,
+  blue60,
+  black60,
+}: FormEnvironmentProps) => {
+  const baseOpacity = 0.35 + red60 / 400;
+  const energyFactor = 0.6 + energy / 160;
+  const curiosityFactor = 0.7 + curiosity / 150;
+  const intensePulse = `${Math.max(2.5, 6 - energy / 20).toFixed(1)}s`;
+  const gentleDrift = `${Math.max(4.5, 14 - curiosity / 8).toFixed(1)}s`;
+
+  if (form === 'explorer') {
+    return (
+      <g opacity={baseOpacity}>
+        <circle cx={150} cy={150} r={110} stroke={`${colors.accentColor}33`} strokeWidth={1} fill="none">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="0 150 150"
+            to="360 150 150"
+            dur={`${(18 / curiosityFactor).toFixed(1)}s`}
+            repeatCount="indefinite"
+          />
+        </circle>
+        <circle cx={150} cy={150} r={80} stroke={`${colors.secondaryAccent}33`} strokeWidth={1} fill="none">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="360 150 150"
+            to="0 150 150"
+            dur={`${(16 / curiosityFactor).toFixed(1)}s`}
+            repeatCount="indefinite"
+          />
+        </circle>
+        {[0, 120, 240].map((angle) => (
+          <g key={angle} transform={`rotate(${angle} 150 150)`}>
+            <circle cx={150} cy={40} r={6} fill={`${colors.accentColor}55`}>
+              <animate attributeName="opacity" values="0.2;0.9;0.2" dur={gentleDrift} repeatCount="indefinite" />
+            </circle>
+            <path
+              d="M 150 52 Q 152 70 150 88"
+              stroke={`${colors.accentColor}66`}
+              strokeWidth={1.5}
+              strokeDasharray="3 4"
+              fill="none"
+            >
+              <animate attributeName="stroke-dashoffset" values="0;10" dur={`${(9 / curiosityFactor).toFixed(1)}s`} repeatCount="indefinite" />
+            </path>
+          </g>
+        ))}
+      </g>
+    );
+  }
+
+  if (form === 'sleep') {
+    return (
+      <g opacity={0.4 + black60 / 500}>
+        <path
+          d="M 40 210 Q 90 180 140 210 T 240 210"
+          stroke="none"
+          fill={`${colors.accentColor}26`}
+        >
+          <animate
+            attributeName="d"
+            values="M 40 210 Q 90 180 140 210 T 240 210;M 40 212 Q 92 186 142 208 T 242 212;M 40 210 Q 90 180 140 210 T 240 210"
+            dur={gentleDrift}
+            repeatCount="indefinite"
+          />
+        </path>
+        <ellipse cx={210} cy={90} rx={38} ry={18} fill={`${colors.secondaryAccent}20`}>
+          <animate attributeName="cx" values="210;200;210" dur={`${(10 / energyFactor).toFixed(1)}s`} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.2;0.45;0.2" dur={intensePulse} repeatCount="indefinite" />
+        </ellipse>
+        <path
+          d="M 70 80 Q 110 60 150 80"
+          stroke={`${colors.secondaryAccent}40`}
+          strokeWidth={2}
+          fill="none"
+        >
+          <animate attributeName="stroke-dashoffset" values="0;30" dur={`${(20 / energyFactor).toFixed(1)}s`} repeatCount="indefinite" />
+        </path>
+      </g>
+    );
+  }
+
+  if (form === 'study') {
+    return (
+      <g opacity={0.36 + blue60 / 300}>
+        <rect x={60} y={60} width={180} height={180} rx={24} ry={24} fill="none" stroke={`${colors.accentColor}33`} strokeWidth={1}>
+          <animate attributeName="stroke-dashoffset" values="0;24" dur={`${(12 / curiosityFactor).toFixed(1)}s`} repeatCount="indefinite" />
+        </rect>
+        {[0, 1, 2].map((index) => (
+          <text
+            key={index}
+            x={150}
+            y={90 + index * 36}
+            textAnchor="middle"
+            fontSize={14}
+            fill={`${colors.secondaryAccent}88`}
+            className="font-mono"
+            opacity={0.4 + index * 0.1}
+          >
+            <animate attributeName="opacity" values="0.3;0.7;0.3" dur={`${(8 + index * 2 / curiosityFactor).toFixed(1)}s`} repeatCount="indefinite" />
+            {['∑', 'ψ', 'λ'][index]}
+          </text>
+        ))}
+        <g stroke={`${colors.accentColor}44`} strokeWidth={0.8}>
+          {[0, 40, 80].map((offset) => (
+            <line key={offset} x1={60} y1={120 + offset} x2={240} y2={120 + offset} strokeDasharray="2 6">
+              <animate attributeName="stroke-dashoffset" values="0;30" dur={`${(15 / curiosityFactor).toFixed(1)}s`} repeatCount="indefinite" />
+            </line>
+          ))}
+        </g>
+      </g>
+    );
+  }
+
+  if (form === 'battle') {
+    return (
+      <g opacity={0.45 + energy / 220}>
+        <path
+          d="M 40 150 Q 100 60 150 150 T 260 150"
+          stroke={`${colors.accentColor}66`}
+          strokeWidth={2}
+          strokeDasharray="6 10"
+          fill="none"
+        >
+          <animate attributeName="stroke-dashoffset" values="0;80" dur={`${(7 / energyFactor).toFixed(1)}s`} repeatCount="indefinite" />
+        </path>
+        {[120, 180].map((x, index) => (
+          <polyline
+            key={x}
+            points={`${x - 35},210 ${x},120 ${x + 35},210`}
+            stroke={index % 2 === 0 ? `${colors.secondaryAccent}AA` : `${colors.accentColor}AA`}
+            strokeWidth={2.2}
+            fill="none"
+            filter="url(#glow)"
+          >
+            <animate
+              attributeName="stroke-dashoffset"
+              values="0;40"
+              dur={`${(4.5 / energyFactor).toFixed(1)}s`}
+              repeatCount="indefinite"
+            />
+            <animate attributeName="opacity" values="0.5;1;0.5" dur={`${(5 / energyFactor).toFixed(1)}s`} repeatCount="indefinite" />
+          </polyline>
+        ))}
+        <circle cx={150} cy={150} r={46} stroke={`${colors.accentColor}55`} strokeWidth={1.5} fill="none">
+          <animateTransform attributeName="transform" type="rotate" from="0 150 150" to="-360 150 150" dur={`${(6 / energyFactor).toFixed(1)}s`} repeatCount="indefinite" />
+        </circle>
+      </g>
+    );
+  }
+
+  return null;
+};
 
 const MetaPetSVG = ({
   form,
@@ -328,6 +575,7 @@ const MetaPetSVG = ({
   black60,
   eyeShape,
   tailSplits,
+  energy,
   curiosity,
 }: MetaPetSvgProps) => {
   const isAsleep = form === 'sleep';
@@ -355,6 +603,16 @@ const MetaPetSVG = ({
           <stop offset="100%" style={{ stopColor: '#5F9FFF', stopOpacity: 0 }} />
         </radialGradient>
       </defs>
+
+      <FormEnvironment
+        form={form}
+        colors={colors}
+        energy={energy}
+        curiosity={curiosity}
+        red60={red60}
+        blue60={blue60}
+        black60={black60}
+      />
 
       <g className={isAsleep ? 'animate-pulse' : ''}>
         <ellipse
@@ -401,6 +659,46 @@ const MetaPetSVG = ({
         >
           <animate attributeName="stroke-dashoffset" from="0" to="10" dur="2s" repeatCount="indefinite" />
         </path>
+
+        {!isAsleep && (
+          <>
+            <path
+              d="M 110 150 Q 150 110 190 150 Q 150 200 110 150"
+              fill="url(#red60Grad)"
+              opacity={Math.min(0.55, red60 / 110)}
+            >
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                dur={`${Math.max(4, 12 - red60 / 15).toFixed(1)}s`}
+                repeatCount="indefinite"
+                additive="sum"
+                values="-3 150 150;3 150 150;-3 150 150"
+              />
+            </path>
+            <ellipse
+              cx={150}
+              cy={isStudy ? 118 : 122}
+              rx={isBattle ? 38 : 45}
+              ry={isBattle ? 24 : 28}
+              fill="none"
+              stroke="url(#blue60Grad)"
+              strokeWidth={2}
+              opacity={Math.min(0.7, blue60 / 90)}
+            >
+              <animate attributeName="stroke-dashoffset" values="0;30" dur={`${Math.max(3.8, 11 - blue60 / 12).toFixed(1)}s`} repeatCount="indefinite" />
+            </ellipse>
+            <circle
+              cx={isBattle ? 150 : 140 + curiosity / 12}
+              cy={isStudy ? 128 : 132}
+              r={isStudy ? 10 : 8}
+              fill="url(#blue60Grad)"
+              opacity={Math.min(0.6, blue60 / 100)}
+            >
+              <animate attributeName="r" values={`${isStudy ? 9 : 7};${isStudy ? 12 : 9};${isStudy ? 9 : 7}`} dur={`${Math.max(3, 9 - blue60 / 18).toFixed(1)}s`} repeatCount="indefinite" />
+            </circle>
+          </>
+        )}
 
         {!isAsleep && (
           <>
@@ -514,6 +812,7 @@ const MetaPetSVG = ({
           splits={tailSplits}
           color={colors.accentColor}
           secondaryColor={colors.secondaryAccent}
+          energy={energy}
           curiosity={curiosity}
         />
 
@@ -577,9 +876,13 @@ const Eye = ({ cx, cy, shape, color, size = 12 }: EyeProps) => {
   );
 };
 
-const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => {
+const Tail = ({ form, splits, color, secondaryColor, curiosity, energy }: TailProps) => {
   const isAsleep = form === 'sleep';
   const isBattle = form === 'battle';
+  const energyFactor = Math.max(0.5, Math.min(1.5, energy / 50));
+  const gentleDuration = `${(2.5 / energyFactor).toFixed(2)}s`;
+  const livelyDuration = `${(1.8 / energyFactor).toFixed(2)}s`;
+  const fierceDuration = `${(1.2 / energyFactor).toFixed(2)}s`;
 
   if (isAsleep) {
     return (
@@ -606,7 +909,7 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="d"
             values="M 150 190 Q 140 220 130 250;M 150 190 Q 135 220 125 250;M 150 190 Q 140 220 130 250"
-            dur="1s"
+            dur={fierceDuration}
             repeatCount="indefinite"
           />
         </path>
@@ -614,7 +917,7 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="d"
             values="M 150 190 Q 150 230 150 260;M 150 190 Q 148 230 150 260;M 150 190 Q 150 230 150 260"
-            dur="1.2s"
+            dur={livelyDuration}
             repeatCount="indefinite"
           />
         </path>
@@ -622,18 +925,18 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="d"
             values="M 150 190 Q 160 220 170 250;M 150 190 Q 165 220 175 250;M 150 190 Q 160 220 170 250"
-            dur="0.9s"
+            dur={fierceDuration}
             repeatCount="indefinite"
           />
         </path>
         <circle cx={130} cy={250} r={4} fill={color} opacity={0.8}>
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;1;0.5" dur={livelyDuration} repeatCount="indefinite" />
         </circle>
         <circle cx={150} cy={260} r={4} fill={secondaryColor} opacity={0.8}>
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;1;0.5" dur={livelyDuration} repeatCount="indefinite" />
         </circle>
         <circle cx={170} cy={250} r={4} fill={color} opacity={0.8}>
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;1;0.5" dur={livelyDuration} repeatCount="indefinite" />
         </circle>
       </g>
     );
@@ -647,7 +950,7 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="d"
             values="M 150 230 Q 140 240 135 255;M 150 230 Q 138 240 133 255;M 150 230 Q 140 240 135 255"
-            dur="2s"
+            dur={livelyDuration}
             repeatCount="indefinite"
           />
         </path>
@@ -655,7 +958,7 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="d"
             values="M 150 230 Q 160 240 165 255;M 150 230 Q 162 240 167 255;M 150 230 Q 160 240 165 255"
-            dur="2s"
+            dur={livelyDuration}
             repeatCount="indefinite"
           />
         </path>
@@ -663,7 +966,7 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="opacity"
             values={`${curiosity / 150};${curiosity / 80};${curiosity / 150}`}
-            dur="2s"
+            dur={livelyDuration}
             repeatCount="indefinite"
           />
         </circle>
@@ -671,7 +974,7 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
           <animate
             attributeName="opacity"
             values={`${curiosity / 150};${curiosity / 80};${curiosity / 150}`}
-            dur="2s"
+            dur={livelyDuration}
             repeatCount="indefinite"
           />
         </circle>
@@ -691,12 +994,12 @@ const Tail = ({ form, splits, color, secondaryColor, curiosity }: TailProps) => 
         <animate
           attributeName="d"
           values="M 150 190 Q 160 220 165 250;M 150 190 Q 155 220 160 250;M 150 190 Q 160 220 165 250"
-          dur="2.5s"
+          dur={gentleDuration}
           repeatCount="indefinite"
         />
       </path>
       <circle cx={165} cy={250} r={6} fill={secondaryColor} opacity={0.8} filter="url(#glow)">
-        <animate attributeName="r" values="6;8;6" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="r" values="6;8;6" dur={livelyDuration} repeatCount="indefinite" />
       </circle>
     </g>
   );
