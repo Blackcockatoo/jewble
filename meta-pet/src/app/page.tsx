@@ -43,7 +43,9 @@ import {
   Upload,
   Plus,
   Trash2,
+  Zap,
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface PetSummary {
   id: string;
@@ -670,9 +672,15 @@ export default function Home() {
             </h1>
             <Sparkles className="w-8 h-8 text-pink-400" />
           </div>
-          <p className="text-zinc-400 text-sm">
+          <p className="text-zinc-400 text-sm mb-3">
             Prime-Tail Crest • HeptaCode v1 • Live Vitals
           </p>
+          <Link href="/scaffold">
+            <Button variant="outline" size="sm" className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10">
+              <Zap className="w-4 h-4" />
+              View Scaffold Demo
+            </Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
