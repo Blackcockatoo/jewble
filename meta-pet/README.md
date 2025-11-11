@@ -184,17 +184,56 @@ useEffect(() => {
 <button onClick={feed}>Feed</button>
 ```
 
-### 5. Offline Archives
+### 5. Offline Archives & Sealed Exports
 ```ts
 import { exportPetToJSON, importPetFromJSON, savePet } from '@/lib/persistence/indexeddb';
+import { createSealedExport, importSealedExport, verifySealedExport } from '@/lib/persistence/sealed';
+import { getDeviceHmacKey } from '@/lib/identity/crest';
 
-const petJSON = exportPetToJSON(snapshot); // Generate downloadable backup
+// Regular JSON export (for debugging)
+const petJSON = exportPetToJSON(snapshot);
 
-const imported = importPetFromJSON(petJSON);
-await savePet(imported); // Restores to IndexedDB and hydrates via the UI selector
+// Sealed export (cryptographically signed for tamper-evidence)
+const hmacKey = await getDeviceHmacKey();
+const sealedExport = await createSealedExport(snapshot, hmacKey);
+
+// Verify sealed export before importing
+const verification = await verifySealedExport(sealedExport, hmacKey);
+if (verification.valid) {
+  const imported = await importSealedExport(sealedExport, hmacKey);
+  await savePet(imported); // Restores to IndexedDB
+}
 ```
 
-### 6. Privacy Presets
+### 6. Breeding System
+```ts
+import { breedPets, canBreed, predictOffspring, calculateSimilarity } from '@/lib/breeding';
+
+// Check if two pets can breed (both must be at SPECIATION stage)
+if (canBreed(pet1Evolution.state, pet2Evolution.state)) {
+  // Preview possible offspring
+  const preview = predictOffspring(pet1Genome, pet2Genome);
+  console.log('Possible traits:', preview.possibleTraits);
+  console.log('Prediction confidence:', preview.confidence);
+
+  // Breed with different modes
+  const balanced = breedPets(pet1Genome, pet2Genome, 'BALANCED'); // 50/50 mix
+  const dominant = breedPets(pet1Genome, pet2Genome, 'DOMINANT'); // 70/30 split
+  const mutation = breedPets(pet1Genome, pet2Genome, 'MUTATION'); // Random mutations
+
+  // Check genetic similarity
+  const similarity = calculateSimilarity(pet1Genome, pet2Genome);
+  console.log('Parents are', similarity.toFixed(1), '% similar');
+
+  // Access offspring data
+  console.log('Offspring genome:', balanced.offspring);
+  console.log('Inherited traits:', balanced.traits);
+  console.log('Inheritance map:', balanced.inheritanceMap);
+  console.log('Lineage key:', balanced.lineageKey);
+}
+```
+
+### 7. Privacy Presets
 
 The dashboard ships with three share-level presets that re-encode the 42-digit HeptaCode on demand:
 
@@ -222,12 +261,12 @@ Changing the preset regenerates the digits with a fresh nonce and stores the cho
 - [ ] Privacy presets (Stealth/Standard/Radiant)
 - [ ] Consent grants (pairwise, time-boxed)
 
-### Phase 2: Game Loop
+### Phase 2: Game Loop ✅ COMPLETE
 - [x] Vitals tick (real-time)
 - [x] 4-state machine (genetics → neuro → quantum → speciation)
 - [x] Evolution gates + transitions
-- [ ] Sealed export/import
-- [ ] Breeding system (genome inheritance)
+- [x] Sealed export/import (cryptographically signed)
+- [x] Breeding system (genome inheritance)
 
 ### Phase 3: Vimana Integration
 - [ ] Grid map component
@@ -266,24 +305,34 @@ Changing the preset regenerates the digits with a fresh nonce and stores the cho
 
 ## Current Status
 
-**Version 5** ✅
+**Version 6 - Phase 2 Complete** ✅
 - Identity core: **WORKING**
 - Genome system: **WORKING** (Red60/Blue60/Black60 encoding + trait derivation)
 - Visual pet sprite: **WORKING** (genome-driven SVG rendering)
 - Vitals loop: **WORKING**
+- Evolution system: **WORKING** (4-stage state machine)
+- Breeding system: **WORKING** (3 modes with genetic inheritance)
+- Sealed export/import: **WORKING** (cryptographically signed backups)
 - HeptaCode: **PARTIAL** (needs ECC fix)
 - Visual components: **WORKING**
+
+**Phase 2 Completed:**
+- ✅ Real-time vitals tick with background-pause
+- ✅ 4-state evolution (GENETICS → NEURO → QUANTUM → SPECIATION)
+- ✅ Evolution gates and transitions with requirements
+- ✅ Breeding system (DOMINANT, BALANCED, MUTATION modes)
+- ✅ Sealed export/import with HMAC signatures
 
 **Known Issues:**
 - HeptaCode ECC needs to output 42 digits (currently variable)
 - Need to test decode path
 - Audio (playHepta) not implemented yet
 
-**Recent Additions (v4-v5):**
-- ✨ Complete genome encoding system (deterministic from DNA hashes)
-- 🎨 Visual pet sprite that reflects genome traits
-- 📊 TraitPanel component showing all derived traits
-- 🎭 Animated behaviors based on vitals
+**Recent Additions (v6):**
+- 🔐 Sealed export/import with cryptographic signatures
+- 🧬 Complete breeding system with genetic inheritance
+- 📊 Offspring prediction and similarity calculation
+- 🔒 Tamper-evident pet backups
 
 ---
 
