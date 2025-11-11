@@ -675,12 +675,30 @@ export default function Home() {
           <p className="text-zinc-400 text-sm mb-3">
             Prime-Tail Crest • HeptaCode v1 • Live Vitals
           </p>
-          <Link href="/scaffold">
-            <Button variant="outline" size="sm" className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10">
-              <Zap className="w-4 h-4" />
-              View Scaffold Demo
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+            >
+              <Link href="/scaffold">
+                <Zap className="w-4 h-4" />
+                View Scaffold Demo
+              </Link>
             </Button>
-          </Link>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="gap-2 border-fuchsia-500/30 text-fuchsia-300 hover:bg-fuchsia-500/10"
+            >
+              <Link href="/genome-explorer">
+                <Dna className="w-4 h-4" />
+                Genome Explorer
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
