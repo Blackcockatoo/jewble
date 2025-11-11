@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['@metapet/core'],
   allowedDevOrigins: ["*.preview.same-app.com"],
   images: {
     unoptimized: true,

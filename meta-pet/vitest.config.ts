@@ -24,6 +24,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@metapet/core': path.resolve(__dirname, '../packages/core/src'),
+      zustand: path.resolve(__dirname, './node_modules/zustand'),
     },
   },
 });

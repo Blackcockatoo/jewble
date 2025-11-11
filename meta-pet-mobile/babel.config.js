@@ -23,6 +23,7 @@ module.exports = function (api) {
             '@/store': './src/store',
             '@/providers': './src/providers',
             '@/config': './src/config',
+            '@metapet/core': '../packages/core/src',
           },
         },
       ],

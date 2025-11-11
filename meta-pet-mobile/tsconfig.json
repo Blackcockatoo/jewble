@@ -10,7 +10,9 @@
       "@/identity/*": ["./src/identity/*"],
       "@/store": ["./src/store/index"],
       "@/providers/*": ["./src/providers/*"],
-      "@/config": ["./src/config"]
+      "@/config": ["./src/config"],
+      "@metapet/core": ["../packages/core/src/index"],
+      "@metapet/core/*": ["../packages/core/src/*"]
     },
     "skipLibCheck": true,
     "jsx": "react-native"
