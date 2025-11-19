@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Activity, Compass, Dna, Hash, Shield, Sparkles, Waves, Zap } from 'lucide-react';
 
 // ===== TYPE DEFINITIONS =====
 type Bigish = bigint | number;
@@ -300,72 +299,6 @@ const AuraliaMetaPet: React.FC = () => {
 
   const { red60, blue60, black60 } = computeGenome();
 
-  const crest = useMemo(() => {
-    const vaults: Array<'Amber' | 'Blue' | 'Violet'> = ['Amber', 'Blue', 'Violet'];
-    const average = (red60 + blue60 + black60) / 3;
-    const vaultIndex = Math.min(vaults.length - 1, Math.max(0, Math.floor(average / 34)));
-    const rotation = (energy + curiosity + bond) % 2 === 0 ? 'CW' : 'CCW';
-    const tail = Array.from({ length: 4 }, (_, i) => {
-      const pulseVal = field.pulse[(i * 11 + Math.floor(energy / 3)) % field.pulse.length];
-      const ringVal = field.ring[(i * 7 + Math.floor(bond / 4)) % field.ring.length];
-      return (pulseVal * 7 + ringVal) % 60;
-    });
-    const dnaHash = field.hash(`dna-${seedName}-${energy}`).toString(16);
-    const signature = field.hash(`sig-${seedName}-${bond}-${curiosity}`).toString(16);
-    return { vault: vaults[vaultIndex], rotation, tail, dnaHash, signature };
-  }, [field, seedName, red60, blue60, black60, energy, curiosity, bond]);
-
-  const crestPower = Math.round((red60 + blue60 + black60) / 3);
-
-  const heptaDigits = useMemo(() => {
-    const digits = Array.from({ length: 42 }, (_, idx) => {
-      const pulseVal = field.pulse[(idx * 3 + energy) % field.pulse.length];
-      const ringVal = field.ring[(idx * 5 + bond + seedName.length) % field.ring.length];
-      return (pulseVal + ringVal) % 7;
-    });
-    return digits;
-  }, [field, seedName, energy, bond]);
-
-  const heptaChecksum = useMemo(
-    () => heptaDigits.reduce((acc, digit, idx) => acc + digit * (idx + 1), 0) % 97,
-    [heptaDigits]
-  );
-
-  const heptaPreview = useMemo(() => heptaDigits.slice(0, 14).join(' · '), [heptaDigits]);
-  const heptaDigitsLine = useMemo(() => heptaDigits.join(', '), [heptaDigits]);
-  const crestTail = useMemo(() => crest.tail.join(', '), [crest]);
-
-  const seedCipher = useMemo(
-    () => field.hash(`seed:${seedName}`).toString(36).slice(0, 12).toUpperCase(),
-    [field, seedName]
-  );
-
-  const resonanceIndex = useMemo(
-    () => Math.round(energy * 0.4 + curiosity * 0.3 + bond * 0.3),
-    [energy, curiosity, bond]
-  );
-
-  const aiAura = useMemo(() => {
-    switch (aiState.mode) {
-      case 'observing':
-        return 'Surveying harmonic field';
-      case 'focusing':
-        return 'Locking onto a sigil thread';
-      case 'playing':
-        return 'Conducting resonance ritual';
-      default:
-        return 'Dormant, listening for cues';
-    }
-  }, [aiState.mode]);
-
-  const sentinelFocus = useMemo(() => {
-    if (selectedSigilPoint !== null) return `Point ${selectedSigilPoint + 1}`;
-    if (aiFocus) return `Point ${aiFocus.hash.toUpperCase()}`;
-    return 'Free roaming';
-  }, [selectedSigilPoint, aiFocus]);
-
-  const activatedCount = activatedPoints.size;
-
   const generateSigil = useCallback((seed: string): SigilPoint[] => {
     const h = field.hash(seed);
     const points: SigilPoint[] = [];
@@ -528,157 +461,48 @@ const AuraliaMetaPet: React.FC = () => {
   const fibNum = field.fib(5 + (curiosity % 10));
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-gray-950 via-blue-950 to-slate-950 text-white p-6 font-sans relative overflow-hidden">
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900 text-white p-6 font-sans">
       <style>{`
         @keyframes breathe { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.05); } }
         @keyframes breathePulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
         @keyframes orbitalDrift { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes auroraFlow { 0% { transform: translate(-10%, -10%) scale(1); } 50% { transform: translate(5%, 5%) scale(1.05); } 100% { transform: translate(-5%, 10%) scale(0.98); } }
         .breathe-anim { animation: breathe 4s ease-in-out infinite; }
         .orbital-drift { animation: orbitalDrift 20s linear infinite; }
-        .aurora-panel { position: relative; overflow: hidden; }
-        .aurora-panel::after { content: ''; position: absolute; inset: -30%; background: radial-gradient(circle at 20% 20%, rgba(78, 205, 196, 0.18), transparent 55%), radial-gradient(circle at 80% 0%, rgba(244, 185, 66, 0.12), transparent 50%); filter: blur(20px); opacity: 0.8; animation: auroraFlow 14s ease-in-out infinite alternate; pointer-events: none; }
       `}</style>
 
-      <div className="absolute inset-0 pointer-events-none opacity-35">
-        <div className="absolute -top-32 left-0 right-0 h-96 bg-gradient-to-r from-cyan-500/40 via-purple-500/30 to-pink-500/40 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-gradient-to-br from-amber-400/30 via-orange-500/10 to-transparent blur-3xl" />
-      </div>
-
-      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-        <header className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 border border-white/10 text-[0.65rem] tracking-[0.35em] uppercase text-slate-300">
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>MOSSPRIME // SENTINEL</span>
-          </div>
-          <h1 className="text-5xl font-light" style={{ background: `linear-gradient(135deg, ${currentForm.primaryGold}, ${currentForm.tealAccent})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Auralia Guardian Nexus
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-light mb-2" style={{ background: `linear-gradient(135deg, ${currentForm.primaryGold}, ${currentForm.tealAccent})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Auralia Guardian
           </h1>
-          <p className="text-sm text-slate-300 max-w-3xl mx-auto">
-            Genome-driven metamorphosis rendered as a living HUD. Adjust the seed, attune the field, and watch the MossPrime guardian evolve.
+          <div className="h-px bg-gradient-to-r from-transparent via-yellow-600 to-transparent opacity-50 max-w-md mx-auto" />
+          <p className="text-sm text-gray-400 mt-3 font-light">
+            MossPrimeSeed • Genome-driven metamorphosis • Living mathematics
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <InfoChip icon={<Activity className="w-4 h-4 text-amber-300" />} label="Lucas" value={lucasNum.toString()} />
-            <InfoChip icon={<Dna className="w-4 h-4 text-purple-300" />} label="Fibonacci" value={fibNum.toString()} />
-            <InfoChip icon={<Shield className="w-4 h-4 text-cyan-300" />} label="Form" value={currentForm.name} />
-            <InfoChip icon={<Compass className="w-4 h-4 text-pink-300" />} label="Focus" value={sentinelFocus} />
-          </div>
-        </header>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard
-            title="Energy Flux"
-            value={`${energy}%`}
-            description="Vital current"
-            icon={<Zap className="w-4 h-4 text-amber-300" />}
-            progress={energy}
-            accent="linear-gradient(90deg, #F4B942, #FF6B35)"
-            footnote={`${energy >= 50 ? '+' : ''}${Math.round(energy - 50)} flux from base`}
-          />
-          <StatCard
-            title="Curiosity"
-            value={`${curiosity}%`}
-            description="Quantum wonder"
-            icon={<Sparkles className="w-4 h-4 text-purple-300" />}
-            progress={curiosity}
-            accent="linear-gradient(90deg, #7C3AED, #4ECDC4)"
-            footnote={`${curiosity >= 50 ? '+' : ''}${Math.round(curiosity - 50)} harmonic drift`}
-          />
-          <StatCard
-            title="Bond Resonance"
-            value={`${bond}%`}
-            description="Heart-sync"
-            icon={<Waves className="w-4 h-4 text-cyan-300" />}
-            progress={bond}
-            accent="linear-gradient(90deg, #4ECDC4, #A29BFE)"
-            footnote={`${bond >= 50 ? '+' : ''}${Math.round(bond - 50)} empathy`}
-          />
-          <StatCard
-            title="Vitality"
-            value={`${health}%`}
-            description="Core shell"
-            icon={<Activity className="w-4 h-4 text-rose-300" />}
-            progress={health}
-            accent="linear-gradient(90deg, #F87171, #FBBF24)"
-            footnote={`${health >= 50 ? '+' : ''}${Math.round(health - 50)} stability`}
-          />
         </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <div className="aurora-panel bg-gray-900/70 rounded-2xl border border-white/5 p-6 xl:col-span-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Seed Input</p>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-              <input
-                type="text"
-                value={seedName}
-                onChange={(e) => setSeedName(e.target.value.toUpperCase())}
-                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-center font-mono text-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-                placeholder="AURALIA"
-              />
-              <div className="flex items-center justify-center px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 uppercase tracking-[0.4em]">
-                Seed Vault
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 mt-3">
-              Seed strings tune the MossPrime pulse lattice. Try different names to mint new sigil geometries.
-            </p>
+        <div className="mb-6 max-w-md mx-auto flex gap-4">
+          <div className="flex-1 bg-gray-900/80 rounded-xl p-4 border border-yellow-600/20">
+            <label className="text-sm font-light text-gray-400 block mb-2">Guardian Seed Name</label>
+            <input type="text" value={seedName} onChange={(e) => setSeedName(e.target.value.toUpperCase())} className="w-full bg-gray-950 border border-yellow-600/30 rounded-lg px-4 py-2 text-center font-mono text-yellow-500 focus:outline-none focus:border-yellow-600" placeholder="AURALIA" />
           </div>
-          <div className="aurora-panel bg-gray-900/70 rounded-2xl border border-white/5 p-6 space-y-4">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Sound Field</p>
-            <button
-              onClick={() => setAudioEnabled(!audioEnabled)}
-              className={`w-full rounded-xl border border-white/10 px-4 py-3 text-lg font-semibold transition ${audioEnabled ? 'bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 text-emerald-200' : 'bg-black/30 text-slate-300'}`}
-              aria-pressed={audioEnabled}
-              aria-label="Toggle audio"
-            >
-              {audioEnabled ? 'Soundscape Active' : 'Enable Drone'}
+          <div className="bg-gray-900/80 rounded-xl p-4 border border-yellow-600/20">
+            <label className="text-sm font-light text-gray-400 block mb-2">Audio</label>
+            <button onClick={() => setAudioEnabled(!audioEnabled)} className="px-4 py-2 rounded-lg bg-gray-950 border border-yellow-600/30 hover:border-yellow-600 transition-colors" aria-pressed={audioEnabled} aria-label="Toggle audio">
+              {audioEnabled ? '🔊' : '🔇'}
             </button>
-            <p className="text-sm text-slate-400 flex items-center gap-2">
-              <Waves className="w-4 h-4 text-cyan-300" /> {aiAura}
-            </p>
-          </div>
-          <div className="aurora-panel bg-gray-900/70 rounded-2xl border border-white/5 p-6 space-y-4">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Seed Cipher</p>
-            <p className="text-2xl font-mono text-cyan-300">{seedCipher}</p>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <DataRow label="Crest Power" value={<span className="text-amber-300 font-semibold">{crestPower}%</span>} />
-              <DataRow label="Resonance" value={<span className="text-teal-300 font-semibold">{resonanceIndex}%</span>} />
-            </div>
-            <p className="text-xs text-slate-500 font-mono">Lucas {lucasNum.toString()} • Fib {fibNum.toString()}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-8">
-          <div className="space-y-6">
-            <div className="aurora-panel bg-gray-900/80 rounded-2xl p-6 border border-white/5">
-              <div
-                className="aspect-square bg-gradient-to-br from-blue-950/40 to-gray-900/40 rounded-xl flex items-center justify-center relative overflow-hidden"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={() => setEyePos({ x: 0, y: 0 })}
-              >
-                <div className="absolute inset-0 opacity-40 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
-
-                <div className="absolute top-6 left-6 z-20 bg-black/40 border border-white/10 rounded-2xl px-4 py-3 backdrop-blur">
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Form</p>
-                  <p className="text-lg font-semibold">{currentForm.name}</p>
-                  <p className="text-[0.7rem] text-slate-300">{currentForm.description}</p>
-                </div>
-
-                <div className="absolute top-6 right-6 z-20 bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-right backdrop-blur">
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Cipher</p>
-                  <p className="font-mono text-cyan-300">{seedCipher}</p>
-                  <p className="text-[0.7rem] text-slate-400">AI {aiState.mode}</p>
-                </div>
-
-                <div className="absolute bottom-6 left-6 z-20 space-y-1 text-xs">
-                  <div className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-emerald-200 font-mono">Resonance {resonanceIndex}%</div>
-                  <div className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-amber-200 font-mono">Focus {sentinelFocus}</div>
-                </div>
-
-                <div className="absolute bottom-6 right-6 z-20 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs text-slate-200 font-mono">
-                  {activatedCount}/7 sigils linked
-                </div>
-
-                <svg ref={svgRef} viewBox="0 0 400 400" className="w-full h-full max-w-lg relative z-10" role="img" aria-label="Auralia guardian avatar">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-gray-900/80 rounded-2xl p-8 border border-yellow-600/20">
+            <div 
+              className="aspect-square bg-gradient-to-br from-blue-950/30 to-gray-900/30 rounded-xl flex items-center justify-center relative overflow-hidden"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() => setEyePos({ x: 0, y: 0 })}
+            >
+              <div className="absolute inset-0 opacity-30 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
+              
+              <svg ref={svgRef} viewBox="0 0 400 400" className="w-full h-full max-w-lg relative z-10" role="img" aria-label="Auralia guardian avatar">
                 <defs>
                   <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                   <filter id="strongGlow"><feGaussianBlur stdDeviation="6" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -798,192 +622,75 @@ const AuraliaMetaPet: React.FC = () => {
                   return <path key={c.id} d={d} stroke={c.id % 2 === 0 ? currentForm.primaryGold : currentForm.tealAccent} strokeWidth="1" fill="none" opacity={c.life} filter="url(#glow)" strokeLinecap="round" />;
                 })}
               </svg>
-              </div>
+            </div>
+            
+            <div className="mt-6 text-center p-4 bg-gray-950/50 rounded-lg border border-yellow-600/20">
+              <p key={whisper.key} className="text-sm text-yellow-300/80 italic font-light animate-pulse">
+                "{whisper.text}"
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="aurora-panel bg-gray-900/80 rounded-2xl border border-white/5 p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Prime-Tail Crest</p>
-                    <h3 className="text-2xl font-semibold">Vault {crest.vault}</h3>
-                  </div>
-                  <Shield className="w-8 h-8 text-amber-300" />
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <DataRow label="Rotation" value={<span className="text-cyan-300 font-semibold">{crest.rotation}</span>} />
-                  <DataRow label="Crest Power" value={<span className="text-amber-300 font-semibold">{crestPower}%</span>} />
-                  <DataRow label="Tail" value={<span className="text-slate-100 font-mono">[{crestTail}]</span>} />
-                  <DataRow label="Linked" value={<span className="text-slate-100 font-semibold">{activatedCount}/7</span>} />
-                </div>
-                <div className="text-xs font-mono text-slate-400 space-y-1">
-                  <p>DNA {crest.dnaHash.slice(0, 16)}...</p>
-                  <p>Signature {crest.signature.slice(0, 16)}...</p>
-                </div>
-              </div>
-              <div className="aurora-panel bg-gray-900/80 rounded-2xl border border-white/5 p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-slate-400">HeptaCode v1</p>
-                    <h3 className="text-2xl font-semibold">42-digit sequence</h3>
-                  </div>
-                  <Hash className="w-8 h-8 text-purple-300" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-center">
-                    <HeptaTag digits={heptaDigits} size={220} />
-                  </div>
-                  <div className="flex items-center justify-center">
-                    <SeedOfLifeGlyph digits={heptaDigits} size={220} />
-                  </div>
-                </div>
-                <p className="text-xs text-slate-400 font-mono">
-                  {heptaPreview} • checksum {heptaChecksum}
-                </p>
-                <p className="text-[0.65rem] text-slate-500 font-mono break-all">
-                  Digits: [{heptaDigitsLine}]
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="aurora-panel bg-gray-900/70 rounded-2xl border border-white/5 p-6">
-                <p className="text-xs uppercase tracking-[0.4em] text-slate-400 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-300" /> Whisper Feed
-                </p>
-                <p key={whisper.key} className="mt-4 text-lg text-amber-200 italic font-light animate-pulse">
-                  "{whisper.text}"
-                </p>
-              </div>
-              <div className="aurora-panel bg-gray-900/70 rounded-2xl border border-white/5 p-6 space-y-2">
-                <h3 className="text-lg font-semibold text-white">Guardian Status</h3>
-                <DataRow label="AI Mode" value={<span className="text-amber-300 font-semibold uppercase">{aiState.mode}</span>} />
-                <DataRow label="Focus" value={<span className="text-cyan-200 font-semibold">{sentinelFocus}</span>} />
-                <DataRow label="Resonance" value={<span className="text-emerald-300 font-semibold">{resonanceIndex}%</span>} />
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400" style={{ width: `${resonanceIndex}%` }} />
-                </div>
-              </div>
+            <div className="mt-6 p-4 bg-gray-950/50 rounded-lg border border-yellow-600/20">
+              <h3 className="text-lg font-semibold text-yellow-400 mb-2">Guardian Status: {currentForm.name}</h3>
+              <p className="text-sm text-gray-400">{currentForm.description}</p>
+              <p className="text-sm text-gray-400 mt-2">AI Mode: <span className="font-mono text-yellow-500">{aiState.mode}</span></p>
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="aurora-panel bg-gray-900/80 rounded-2xl p-6 border border-white/5 space-y-4">
-              <h3 className="text-xl font-semibold text-white">Essence Attunement</h3>
+            <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
+              <h3 className="text-xl font-semibold text-yellow-400 mb-4">Essence Attunement</h3>
               <div className="space-y-4">
-                <div className="bg-black/30 rounded-xl border border-white/5 p-3">
-                  <div className="flex items-center justify-between text-sm text-slate-300">
-                    <span>Energy Flow</span>
-                    <span className="font-mono text-amber-300">{energy}%</span>
-                  </div>
-                  <input type="range" min="0" max="100" value={energy} onChange={(e) => setEnergy(Number(e.target.value))} className="w-full mt-2 h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-400" />
-                </div>
-                <div className="bg-black/30 rounded-xl border border-white/5 p-3">
-                  <div className="flex items-center justify-between text-sm text-slate-300">
-                    <span>Curiosity Spark</span>
-                    <span className="font-mono text-purple-300">{curiosity}%</span>
-                  </div>
-                  <input type="range" min="0" max="100" value={curiosity} onChange={(e) => setCuriosity(Number(e.target.value))} className="w-full mt-2 h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-purple-400" />
-                </div>
-                <div className="bg-black/30 rounded-xl border border-white/5 p-3">
-                  <div className="flex items-center justify-between text-sm text-slate-300">
-                    <span>Bond Resonance</span>
-                    <span className="font-mono text-cyan-300">{bond}%</span>
-                  </div>
-                  <input type="range" min="0" max="100" value={bond} onChange={(e) => setBond(Number(e.target.value))} className="w-full mt-2 h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-cyan-400" />
-                </div>
-                <div className="bg-black/30 rounded-xl border border-white/5 p-3">
-                  <div className="flex items-center justify-between text-sm text-slate-300">
-                    <span>Vitality Core</span>
-                    <span className="font-mono text-rose-300">{health}%</span>
-                  </div>
-                  <input type="range" min="0" max="100" value={health} onChange={(e) => setHealth(Number(e.target.value))} className="w-full mt-2 h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-rose-400" />
-                </div>
+                <div><label className="block text-sm font-medium text-gray-300">Energy Flow ({energy})</label><input type="range" min="0" max="100" value={energy} onChange={(e) => setEnergy(Number(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" /></div>
+                <div><label className="block text-sm font-medium text-gray-300">Curiosity Spark ({curiosity})</label><input type="range" min="0" max="100" value={curiosity} onChange={(e) => setCuriosity(Number(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" /></div>
+                <div><label className="block text-sm font-medium text-gray-300">Bond Resonance ({bond})</label><input type="range" min="0" max="100" value={bond} onChange={(e) => setBond(Number(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" /></div>
+                <div><label className="block text-sm font-medium text-gray-300">Vitality Core ({health})</label><input type="range" min="0" max="100" value={health} onChange={(e) => setHealth(Number(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" /></div>
               </div>
             </div>
 
-            <div className="aurora-panel bg-gray-900/80 rounded-2xl p-6 border border-white/5">
-              <h3 className="text-xl font-semibold text-white mb-4">Sacred Mathematics</h3>
+            <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
+              <h3 className="text-xl font-semibold text-yellow-400 mb-4">Sacred Mathematics</h3>
               <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="p-4 rounded-2xl bg-black/30 border border-white/5">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Lucas Number</p>
-                  <p className="text-3xl font-mono text-amber-300 mt-2">{lucasNum.toString()}</p>
-                  <p className="text-xs text-slate-500 mt-1">Spiral cadence</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-black/30 border border-white/5">
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Fibonacci</p>
-                  <p className="text-3xl font-mono text-cyan-300 mt-2">{fibNum.toString()}</p>
-                  <p className="text-xs text-slate-500 mt-1">Growth factor</p>
-                </div>
+                <div className="p-3 bg-gray-950/50 rounded-lg"><p className="text-sm text-gray-400">Lucas Number</p><p className="text-2xl font-mono text-yellow-500">{lucasNum.toString()}</p></div>
+                <div className="p-3 bg-gray-950/50 rounded-lg"><p className="text-sm text-gray-400">Fibonacci Number</p><p className="text-2xl font-mono text-yellow-500">{fibNum.toString()}</p></div>
               </div>
             </div>
 
-            <div className="aurora-panel bg-gray-900/80 rounded-2xl p-6 border border-white/5">
-              <h3 className="text-xl font-semibold text-white mb-4">Trinity Genome Vaults</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
-                    <span>Red-60 • Spine Energy</span>
-                    <span className="font-mono text-amber-300">{red60.toFixed(2)}%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden mt-2">
-                    <div className="h-full bg-gradient-to-r from-red-500 to-amber-400" style={{ width: `${red60}%` }} />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
-                    <span>Blue-60 • Form Integrity</span>
-                    <span className="font-mono text-cyan-300">{blue60.toFixed(2)}%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden mt-2">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-400" style={{ width: `${blue60}%` }} />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
-                    <span>Black-60 • Mystery Halo</span>
-                    <span className="font-mono text-slate-200">{black60.toFixed(2)}%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden mt-2">
-                    <div className="h-full bg-gradient-to-r from-slate-500 to-slate-300" style={{ width: `${black60}%` }} />
-                  </div>
-                </div>
+            <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
+              <h3 className="text-xl font-semibold text-yellow-400 mb-4">Trinity Genome Vaults</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-gray-400"><span>Red-60 (Spine Energy)</span><span className="font-mono text-yellow-500">{red60.toFixed(2)}%</span></div>
+                <div className="w-full bg-gray-700 rounded-full h-2"><div className="bg-red-500 h-2 rounded-full" style={{ width: `${red60}%` }}></div></div>
+                
+                <div className="flex justify-between text-sm text-gray-400 pt-2"><span>Blue-60 (Form Integrity)</span><span className="font-mono text-yellow-500">{blue60.toFixed(2)}%</span></div>
+                <div className="w-full bg-gray-700 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${blue60}%` }}></div></div>
+                
+                <div className="flex justify-between text-sm text-gray-400 pt-2"><span>Black-60 (Mystery Halo)</span><span className="font-mono text-yellow-500">{black60.toFixed(2)}%</span></div>
+                <div className="w-full bg-gray-700 rounded-full h-2"><div className="bg-gray-500 h-2 rounded-full" style={{ width: `${black60}%` }}></div></div>
               </div>
             </div>
 
-            <div className="aurora-panel bg-gray-900/80 rounded-2xl p-6 border border-white/5">
-              <h3 className="text-xl font-semibold text-white mb-4">Seed Patterns (First 10 Digits)</h3>
+            <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
+              <h3 className="text-xl font-semibold text-yellow-400 mb-4">Seed Patterns (First 10 Digits)</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">Pulse (Chaotic)</p>
-                  <div className="grid grid-cols-5 gap-2">
+                  <p className="text-sm text-gray-400 mb-2">Pulse (Chaotic)</p>
+                  <div className="flex space-x-1">
                     {field.pulse.slice(0, 10).map((d, i) => (
-                      <button
-                        key={i}
-                        onClick={() => audioEnabled && playNote(d % 7)}
-                        className="relative h-12 rounded-xl border border-white/10 bg-black/30 text-white font-mono text-sm flex flex-col items-center justify-center overflow-hidden hover:border-amber-400 transition"
-                        aria-label={`Pulse digit ${d}`}
-                      >
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-amber-400/30 to-transparent" style={{ height: `${d * 10}%` }} />
-                        <span className="relative z-10 text-[0.65rem] text-slate-400">#{i + 1}</span>
-                        <span className="relative z-10 text-lg">{d}</span>
+                      <button key={i} onClick={() => audioEnabled && playNote(d % 7)} className="flex-1 h-8 bg-gray-700 rounded-sm hover:bg-yellow-600 transition-colors relative" aria-label={`Pulse digit ${d}`}>
+                        <div className="absolute bottom-0 left-0 right-0 bg-yellow-500/50" style={{ height: `${d * 10}%` }}></div>
+                        <span className="relative text-xs font-mono">{d}</span>
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">Ring (Harmonic)</p>
-                  <div className="grid grid-cols-5 gap-2">
+                  <p className="text-sm text-gray-400 mb-2">Ring (Harmonic)</p>
+                  <div className="flex space-x-1">
                     {field.ring.slice(0, 10).map((d, i) => (
-                      <button
-                        key={i}
-                        onClick={() => audioEnabled && playNote(d % 7)}
-                        className="relative h-12 rounded-xl border border-white/10 bg-black/30 text-white font-mono text-sm flex flex-col items-center justify-center overflow-hidden hover:border-teal-400 transition"
-                        aria-label={`Ring digit ${d}`}
-                      >
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-teal-400/30 to-transparent" style={{ height: `${d * 10}%` }} />
-                        <span className="relative z-10 text-[0.65rem] text-slate-400">#{i + 1}</span>
-                        <span className="relative z-10 text-lg">{d}</span>
+                      <button key={i} onClick={() => audioEnabled && playNote(d % 7)} className="flex-1 h-8 bg-gray-700 rounded-sm hover:bg-teal-600 transition-colors relative" aria-label={`Ring digit ${d}`}>
+                        <div className="absolute bottom-0 left-0 right-0 bg-teal-500/50" style={{ height: `${d * 10}%` }}></div>
+                        <span className="relative text-xs font-mono">{d}</span>
                       </button>
                     ))}
                   </div>
@@ -996,215 +703,5 @@ const AuraliaMetaPet: React.FC = () => {
     </div>
   );
 };
-
-const HEPTA_COLORS = ['#FF6B6B', '#F59E42', '#FFD93D', '#6BCF7F', '#4ECDC4', '#A66FB5', '#C44569'];
-
-type StatCardProps = {
-  title: string;
-  value: string;
-  description: string;
-  icon: React.ReactNode;
-  progress: number;
-  accent: string;
-  footnote?: string;
-};
-
-function StatCard({ title, value, description, icon, progress, accent, footnote }: StatCardProps) {
-  return (
-    <div className="aurora-panel bg-gray-900/70 rounded-2xl border border-white/5 p-4 space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{title}</p>
-          <p className="text-3xl font-semibold text-white">{value}</p>
-          <p className="text-sm text-slate-400">{description}</p>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white">
-          {icon}
-        </div>
-      </div>
-      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, progress))}%`, background: accent }} />
-      </div>
-      {footnote && <p className="text-[0.7rem] text-slate-500">{footnote}</p>}
-    </div>
-  );
-}
-
-type InfoChipProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-};
-
-function InfoChip({ icon, label, value }: InfoChipProps) {
-  return (
-    <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 flex items-center gap-3 text-left">
-      <div className="text-sm text-cyan-200">{icon}</div>
-      <div>
-        <p className="text-[0.6rem] uppercase tracking-[0.3em] text-slate-400">{label}</p>
-        <p className="text-sm font-semibold text-white">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-type DataRowProps = {
-  label: string;
-  value: React.ReactNode;
-};
-
-function DataRow({ label, value }: DataRowProps) {
-  return (
-    <div className="flex items-center justify-between text-sm text-slate-300">
-      <span className="text-slate-400">{label}</span>
-      <span className="ml-4">{value}</span>
-    </div>
-  );
-}
-
-interface HeptaTagProps {
-  digits: number[];
-  size?: number;
-}
-
-function HeptaTag({ digits, size = 220 }: HeptaTagProps) {
-  const normalized = normalizeHeptaDigits(digits);
-  const cx = size / 2;
-  const cy = size / 2;
-  const rings = [
-    { radius: size * 0.42, count: 14, start: 0 },
-    { radius: size * 0.3, count: 14, start: 14 },
-    { radius: size * 0.18, count: 14, start: 28 },
-  ];
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="drop-shadow-lg">
-      <defs>
-        <radialGradient id="hepta-bg" cx="50%" cy="50%">
-          <stop offset="0%" stopColor="#101225" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#05060f" stopOpacity="1" />
-        </radialGradient>
-      </defs>
-      <circle cx={cx} cy={cy} r={size * 0.48} fill="url(#hepta-bg)" />
-      {rings.map((ring, ringIdx) => {
-        const angleStep = (Math.PI * 2) / ring.count;
-        return (
-          <g key={ringIdx}>
-            {Array.from({ length: ring.count }).map((_, i) => {
-              const digitIdx = ring.start + i;
-              const digit = normalized[digitIdx] ?? 0;
-              const angle = i * angleStep - Math.PI / 2;
-              const x = cx + ring.radius * Math.cos(angle);
-              const y = cy + ring.radius * Math.sin(angle);
-              return (
-                <g key={`${ringIdx}-${i}`}>
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={size * 0.04}
-                    fill={HEPTA_COLORS[digit % HEPTA_COLORS.length]}
-                    stroke="white"
-                    strokeWidth="1"
-                    opacity={0.9}
-                  />
-                  <text
-                    x={x}
-                    y={y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={size * 0.03}
-                    fill="white"
-                    fontWeight="bold"
-                    className="select-none"
-                  >
-                    {digit}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        );
-      })}
-      <text
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={size * 0.06}
-        fill="#4ECDC4"
-        fontWeight="bold"
-        className="select-none"
-      >
-        HEPTA
-      </text>
-    </svg>
-  );
-}
-
-interface SeedOfLifeGlyphProps {
-  digits: number[];
-  size?: number;
-}
-
-function SeedOfLifeGlyph({ digits, size = 220 }: SeedOfLifeGlyphProps) {
-  const normalized = normalizeHeptaDigits(digits);
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size * 0.22;
-  const spacing = r * 1.1;
-  const positions = [
-    { x: cx, y: cy },
-    { x: cx + spacing, y: cy },
-    { x: cx + spacing * Math.cos(Math.PI / 3), y: cy + spacing * Math.sin(Math.PI / 3) },
-    { x: cx - spacing * Math.cos(Math.PI / 3), y: cy + spacing * Math.sin(Math.PI / 3) },
-    { x: cx - spacing, y: cy },
-    { x: cx - spacing * Math.cos(Math.PI / 3), y: cy - spacing * Math.sin(Math.PI / 3) },
-    { x: cx + spacing * Math.cos(Math.PI / 3), y: cy - spacing * Math.sin(Math.PI / 3) },
-  ];
-  const circleColors = positions.map((_, i) => {
-    const start = i * 6;
-    const chunk = normalized.slice(start, start + 6);
-    const avg = chunk.reduce((sum, d) => sum + d, 0) / chunk.length;
-    return HEPTA_COLORS[Math.round(avg) % HEPTA_COLORS.length];
-  });
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="drop-shadow-xl">
-      <rect width={size} height={size} fill="#05060f" rx={16} />
-      {positions.map((pos, i) => (
-        <circle
-          key={i}
-          cx={pos.x}
-          cy={pos.y}
-          r={r}
-          fill={circleColors[i]}
-          fillOpacity={0.25}
-          stroke={circleColors[i]}
-          strokeWidth={3}
-          strokeOpacity={0.8}
-        />
-      ))}
-      <circle cx={cx} cy={cy} r={r * 0.3} fill="white" fillOpacity={0.05} stroke="#4ECDC4" strokeWidth={2} />
-      <text
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={size * 0.05}
-        fill="#4ECDC4"
-        fontWeight="bold"
-        className="select-none"
-      >
-        7
-      </text>
-    </svg>
-  );
-}
-
-function normalizeHeptaDigits(digits: number[]): number[] {
-  if (digits.length === 42) return digits;
-  if (digits.length === 0) return new Array(42).fill(0);
-  return Array.from({ length: 42 }, (_, idx) => digits[idx % digits.length]);
-}
 
 export default AuraliaMetaPet;
