@@ -7,12 +7,26 @@ type SigilPoint = { x: number; y: number; hash: string; };
 type Particle = { id: number; x: number; y: number; vx: number; vy: number; color: string; size: number; };
 type Crackle = { id: number; x: number; y: number; life: number; };
 type SigilPulse = { id: number; x: number; y: number; life: number; color: string; };
-type FormKey = 'radiant' | 'meditation' | 'sage' | 'vigilant';
+type FormKey = 'radiant' | 'meditation' | 'sage' | 'vigilant' | 'celestial' | 'wild';
 type Form = { name: string; baseColor: string; primaryGold: string; secondaryGold: string; tealAccent: string; eyeColor: string; glowColor: string; description: string; };
 type Stats = { energy: number; curiosity: number; bond: number; };
 type AudioOscillator = { gain: GainNode };
 type AudioContextRef = { ctx: AudioContext; noteOscs: AudioOscillator[]; droneOscs: AudioOscillator[]; };
-type AIState = { mode: 'idle' | 'observing' | 'focusing' | 'playing'; target: number | null; since: number; };
+type AIState = { mode: 'idle' | 'observing' | 'focusing' | 'playing' | 'dreaming'; target: number | null; since: number; };
+type BondHistoryEntry = { timestamp: number; bond: number; event: string; };
+type GuardianSaveData = {
+  seedName: string;
+  energy: number;
+  curiosity: number;
+  bond: number;
+  health: number;
+  bondHistory: BondHistoryEntry[];
+  activatedPoints: number[];
+  createdAt: number;
+  lastSaved: number;
+  totalInteractions: number;
+  dreamCount: number;
+};
 
 // ===== MOSSPRIMESEED CORE =====
 const RED = "113031491493585389543778774590997079619617525721567332336510";
@@ -218,8 +232,54 @@ const useAuraliaAudio = (enabled: boolean, stats: Stats) => {
   return { playNote };
 };
 
+// ===== PERSISTENCE HELPERS =====
+const STORAGE_KEY = 'auralia_guardian_state';
+
+const saveGuardianState = (data: GuardianSaveData): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save Guardian state:', e);
+  }
+};
+
+const loadGuardianState = (): GuardianSaveData | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch (e) {
+    console.error('Failed to load Guardian state:', e);
+    return null;
+  }
+};
+
+// ===== TIME & ENVIRONMENT AWARENESS =====
+const getTimeOfDay = (): 'dawn' | 'day' | 'dusk' | 'night' => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 8) return 'dawn';
+  if (hour >= 8 && hour < 17) return 'day';
+  if (hour >= 17 && hour < 20) return 'dusk';
+  return 'night';
+};
+
+const getTimeTheme = (timeOfDay: 'dawn' | 'day' | 'dusk' | 'night') => {
+  const themes = {
+    dawn: { bg: 'from-orange-900 via-pink-900 to-purple-900', accent: '#FFB347', glow: 'rgba(255, 179, 71, 0.3)' },
+    day: { bg: 'from-blue-900 via-cyan-900 to-teal-900', accent: '#4ECDC4', glow: 'rgba(78, 205, 196, 0.3)' },
+    dusk: { bg: 'from-purple-900 via-indigo-900 to-blue-900', accent: '#B8A5D6', glow: 'rgba(184, 165, 214, 0.3)' },
+    night: { bg: 'from-gray-900 via-blue-950 to-gray-900', accent: '#6B7FD7', glow: 'rgba(107, 127, 215, 0.3)' }
+  };
+  return themes[timeOfDay];
+};
+
 // ===== GUARDIAN AI & AUTONOMOUS BEHAVIOR HOOK =====
-const useGuardianAI = (field: Field, sigilPoints: SigilPoint[], onWhisper: (text: string) => void, onFocusChange: (target: SigilPoint | null) => void): AIState => {
+const useGuardianAI = (
+  field: Field,
+  sigilPoints: SigilPoint[],
+  onWhisper: (text: string) => void,
+  onFocusChange: (target: SigilPoint | null) => void,
+  onDreamComplete: (insight: string) => void
+): AIState => {
   const [state, setState] = useState<AIState>({ mode: 'idle', target: null, since: Date.now() });
 
   useEffect(() => {
@@ -228,8 +288,21 @@ const useGuardianAI = (field: Field, sigilPoints: SigilPoint[], onWhisper: (text
       const timeInState = (now - state.since) / 1000;
 
       if (state.mode === 'idle' && timeInState > 5 + field.prng() * 5) {
-        const nextMode = field.prng() > 0.3 ? 'observing' : 'focusing';
-        const whisper = nextMode === 'observing' ? 'The field shifts...' : 'A point of interest.';
+        const rand = field.prng();
+        let nextMode: AIState['mode'];
+        let whisper: string;
+
+        if (rand > 0.7) {
+          nextMode = 'dreaming';
+          whisper = 'Drifting into the pattern realm...';
+        } else if (rand > 0.3) {
+          nextMode = 'observing';
+          whisper = 'The field shifts...';
+        } else {
+          nextMode = 'focusing';
+          whisper = 'A point of interest.';
+        }
+
         setState({ mode: nextMode, target: null, since: now });
         onWhisper(whisper);
       } else if (state.mode === 'observing' && timeInState > 4 + field.prng() * 4) {
@@ -243,12 +316,27 @@ const useGuardianAI = (field: Field, sigilPoints: SigilPoint[], onWhisper: (text
       } else if (state.mode === 'playing' && timeInState > 2) {
         setState({ mode: 'idle', target: null, since: now });
         onFocusChange(null);
+      } else if (state.mode === 'dreaming' && timeInState > 8 + field.prng() * 7) {
+        // Dream complete - generate insight
+        const insights = [
+          'The spirals speak of cycles within cycles...',
+          'Seven points, infinite connections.',
+          'In stillness, patterns emerge.',
+          'The seed remembers all iterations.',
+          'Between pulse and ring, a hidden harmony.',
+          'Your attention shapes the field.',
+          'Time is but another dimension of the lattice.'
+        ];
+        const insight = insights[Math.floor(field.prng() * insights.length)];
+        onDreamComplete(insight);
+        setState({ mode: 'idle', target: null, since: now });
+        onWhisper(insight);
       }
     };
 
     const intervalId = setInterval(tick, 1000);
     return () => clearInterval(intervalId);
-  }, [state, field, sigilPoints, onWhisper, onFocusChange]);
+  }, [state, field, sigilPoints, onWhisper, onFocusChange, onDreamComplete]);
 
   return state;
 };
@@ -266,23 +354,83 @@ const AuraliaMetaPet: React.FC = () => {
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
   const [transitioning, setTransitioning] = useState<boolean>(false);
   const prevFormRef = useRef<FormKey>('radiant');
-  
+
   const [particles, setParticles] = useState<Particle[]>([]);
   const [eyePos, setEyePos] = useState<{ x: number; y: number; }>({ x: 0, y: 0 });
   const [crackles, setCrackles] = useState<Crackle[]>([]);
   const [sigilPulses, setSigilPulses] = useState<SigilPulse[]>([]);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const [whisper, setWhisper] = useState<{ text: string; key: number }>({ text: 'The Guardian is dormant.', key: 0 });
+  const [whisper, setWhisper] = useState<{ text: string; key: number }>({ text: 'The Guardian awakens...', key: 0 });
   const [aiFocus, setAiFocus] = useState<SigilPoint | null>(null);
   const [activatedPoints, setActivatedPoints] = useState<Set<number>>(new Set());
   const [isBlinking, setIsBlinking] = useState<boolean>(false);
+  const [bondHistory, setBondHistory] = useState<BondHistoryEntry[]>([]);
+  const [totalInteractions, setTotalInteractions] = useState<number>(0);
+  const [dreamCount, setDreamCount] = useState<number>(0);
+  const [createdAt] = useState<number>(() => Date.now());
+  const [timeOfDay, setTimeOfDay] = useState<'dawn' | 'day' | 'dusk' | 'night'>(() => getTimeOfDay());
 
   const stats = useMemo(() => ({ energy, curiosity, bond }), [energy, curiosity, bond]);
   const { playNote } = useAuraliaAudio(audioEnabled, stats);
 
+  const addToBondHistory = useCallback((event: string) => {
+    setBondHistory(prev => [...prev.slice(-29), { timestamp: Date.now(), bond, event }]);
+  }, [bond]);
+
   const handleWhisper = useCallback((text: string) => setWhisper({ text, key: Date.now() }), []);
   const handleFocusChange = useCallback((target: SigilPoint | null) => setAiFocus(target), []);
+  const handleDreamComplete = useCallback((insight: string) => {
+    setDreamCount(prev => prev + 1);
+    addToBondHistory(`Dream #${dreamCount + 1}: ${insight}`);
+  }, [dreamCount, addToBondHistory]);
+
+  // Load saved state on mount
+  useEffect(() => {
+    const saved = loadGuardianState();
+    if (saved) {
+      setSeedName(saved.seedName);
+      setEnergy(saved.energy);
+      setCuriosity(saved.curiosity);
+      setBond(saved.bond);
+      setHealth(saved.health);
+      setBondHistory(saved.bondHistory || []);
+      setActivatedPoints(new Set(saved.activatedPoints || []));
+      setTotalInteractions(saved.totalInteractions || 0);
+      setDreamCount(saved.dreamCount || 0);
+      handleWhisper('Welcome back. The patterns remember you.');
+    }
+  }, [handleWhisper]);
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const saveData: GuardianSaveData = {
+        seedName,
+        energy,
+        curiosity,
+        bond,
+        health,
+        bondHistory,
+        activatedPoints: Array.from(activatedPoints),
+        createdAt,
+        lastSaved: Date.now(),
+        totalInteractions,
+        dreamCount
+      };
+      saveGuardianState(saveData);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [seedName, energy, curiosity, bond, health, bondHistory, activatedPoints, createdAt, totalInteractions, dreamCount]);
+
+  // Update time of day every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeOfDay(getTimeOfDay());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     setField(initField(seedName));
@@ -316,7 +464,7 @@ const AuraliaMetaPet: React.FC = () => {
 
   const sigilPoints = useMemo(() => generateSigil(seedName), [seedName, generateSigil]);
 
-  const aiState = useGuardianAI(field, sigilPoints, handleWhisper, handleFocusChange);
+  const aiState = useGuardianAI(field, sigilPoints, handleWhisper, handleFocusChange, handleDreamComplete);
 
   useEffect(() => {
     let animationFrameId: number;
@@ -385,6 +533,8 @@ const AuraliaMetaPet: React.FC = () => {
 
   const getActiveForm = (): FormKey => {
     if (energy < 30 && health < 50) return 'meditation';
+    if (bond > 80 && dreamCount > 3) return 'celestial';
+    if (energy > 80 && curiosity > 70 && activatedPoints.size >= 5) return 'wild';
     if (energy > 70 && curiosity > 60) return 'vigilant';
     if (bond > 60 && curiosity > 50) return 'sage';
     return 'radiant';
@@ -441,11 +591,16 @@ const AuraliaMetaPet: React.FC = () => {
     setSelectedSigilPoint(index);
     if (audioEnabled) playNote(index);
     setSigilPulses(prev => [...prev, { id: Date.now(), x: point.x, y: point.y, life: 1, color: currentForm.tealAccent }]);
-    
+
+    setTotalInteractions(prev => prev + 1);
+
     if (!activatedPoints.has(index)) {
       setBond(b => Math.min(100, b + 5));
       setActivatedPoints(prev => new Set(prev).add(index));
+      addToBondHistory(`Activated sigil point ${index + 1}`);
       handleWhisper("A new connection forms.");
+    } else {
+      addToBondHistory(`Resonated with sigil point ${index + 1}`);
     }
   };
 
@@ -453,15 +608,18 @@ const AuraliaMetaPet: React.FC = () => {
     radiant: { name: "Radiant Guardian", baseColor: "#2C3E77", primaryGold: "#F4B942", secondaryGold: "#FFD700", tealAccent: "#4ECDC4", eyeColor: "#F4B942", glowColor: "rgba(244, 185, 66, 0.3)", description: "Calm strength - balanced blue and gold" },
     meditation: { name: "Meditation Cocoon", baseColor: "#0d1321", primaryGold: "#2DD4BF", secondaryGold: "#4ECDC4", tealAccent: "#1a4d4d", eyeColor: "#2DD4BF", glowColor: "rgba(45, 212, 191, 0.2)", description: "Quiet endurance - dusk-teal respite" },
     sage: { name: "Sage Luminary", baseColor: "#1a1f3a", primaryGold: "#FFD700", secondaryGold: "#F4B942", tealAccent: "#4ECDC4", eyeColor: "#FFD700", glowColor: "rgba(255, 215, 0, 0.4)", description: "Luminous focus - hepta-crown activated" },
-    vigilant: { name: "Vigilant Sentinel", baseColor: "#1a1f3a", primaryGold: "#FF6B35", secondaryGold: "#FF8C42", tealAccent: "#4ECDC4", eyeColor: "#FF6B35", glowColor: "rgba(255, 107, 53, 0.4)", description: "Focused will - indigo with neon fire" }
+    vigilant: { name: "Vigilant Sentinel", baseColor: "#1a1f3a", primaryGold: "#FF6B35", secondaryGold: "#FF8C42", tealAccent: "#4ECDC4", eyeColor: "#FF6B35", glowColor: "rgba(255, 107, 53, 0.4)", description: "Focused will - indigo with neon fire" },
+    celestial: { name: "Celestial Voyager", baseColor: "#0A1128", primaryGold: "#E0E7FF", secondaryGold: "#C4B5FD", tealAccent: "#8B5CF6", eyeColor: "#E0E7FF", glowColor: "rgba(139, 92, 246, 0.5)", description: "Cosmic transcendence - stardust and void" },
+    wild: { name: "Wild Verdant", baseColor: "#1A4D2E", primaryGold: "#7FFF00", secondaryGold: "#32CD32", tealAccent: "#90EE90", eyeColor: "#7FFF00", glowColor: "rgba(127, 255, 0, 0.4)", description: "Primal vitality - fractal growth unleashed" }
   };
 
   const currentForm = forms[activeForm];
   const lucasNum = field.lucas(7 + (energy % 10));
   const fibNum = field.fib(5 + (curiosity % 10));
+  const timeTheme = getTimeTheme(timeOfDay);
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900 text-white p-6 font-sans">
+    <div className={`w-full min-h-screen bg-gradient-to-br ${timeTheme.bg} text-white p-6 font-sans transition-colors duration-[3000ms]`}>
       <style>{`
         @keyframes breathe { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.05); } }
         @keyframes breathePulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
@@ -582,6 +740,52 @@ const AuraliaMetaPet: React.FC = () => {
                       <circle r="60" fill="none" stroke={currentForm.tealAccent} strokeWidth="0.5" strokeDasharray="5,5" opacity="0.4" />
                     </g>
                   )}
+                  {activeForm === 'celestial' && (
+                    <g transform="translate(200, 145)">
+                      <circle r="80" fill="none" stroke={currentForm.primaryGold} strokeWidth="0.5" opacity="0.4">
+                        <animate attributeName="r" values="80;85;80" dur="4s" repeatCount="indefinite" />
+                      </circle>
+                      <circle r="65" fill="none" stroke={currentForm.tealAccent} strokeWidth="0.5" opacity="0.3">
+                        <animate attributeName="r" values="65;70;65" dur="5s" repeatCount="indefinite" />
+                      </circle>
+                      {[0, 60, 120, 180, 240, 300].map((angle) => (
+                        <g key={angle} transform={`rotate(${angle} 0 0)`}>
+                          <circle cx="0" cy="-75" r="2" fill={currentForm.primaryGold} opacity="0.8" filter="url(#strongGlow)">
+                            <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite" begin={`${angle/60}s`} />
+                          </circle>
+                          <path d="M 0 -75 L 2 -80 L -2 -80 Z" fill={currentForm.tealAccent} opacity="0.6">
+                            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite" begin={`${angle/60}s`} />
+                          </path>
+                        </g>
+                      ))}
+                    </g>
+                  )}
+                  {activeForm === 'wild' && (
+                    <g transform="translate(200, 145)">
+                      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                        <g key={angle} transform={`rotate(${angle} 0 0)`}>
+                          <path
+                            d={`M 0 -55 Q ${5 + i * 2} -${65 + i * 3} ${8 + i * 3} -${75 + i * 5}`}
+                            stroke={i % 2 === 0 ? currentForm.primaryGold : currentForm.secondaryGold}
+                            strokeWidth="2"
+                            fill="none"
+                            opacity="0.7"
+                            filter="url(#glow)"
+                          >
+                            <animate
+                              attributeName="d"
+                              values={`M 0 -55 Q ${5 + i * 2} -${65 + i * 3} ${8 + i * 3} -${75 + i * 5};M 0 -55 Q ${7 + i * 2} -${68 + i * 3} ${10 + i * 3} -${78 + i * 5};M 0 -55 Q ${5 + i * 2} -${65 + i * 3} ${8 + i * 3} -${75 + i * 5}`}
+                              dur={`${2 + i * 0.3}s`}
+                              repeatCount="indefinite"
+                            />
+                          </path>
+                          <circle cx="0" cy={`-${75 + i * 5}`} r="3" fill={currentForm.tealAccent} opacity="0.6">
+                            <animate attributeName="r" values="3;5;3" dur={`${2 + i * 0.3}s`} repeatCount="indefinite" />
+                          </circle>
+                        </g>
+                      ))}
+                    </g>
+                  )}
                   {black60 > 70 && (
                     <circle cx="200" cy="120" r="5" fill={currentForm.primaryGold} filter="url(#strongGlow)" opacity={(black60 - 70) / 30} />
                   )}
@@ -633,8 +837,29 @@ const AuraliaMetaPet: React.FC = () => {
             <div className="mt-6 p-4 bg-gray-950/50 rounded-lg border border-yellow-600/20">
               <h3 className="text-lg font-semibold text-yellow-400 mb-2">Guardian Status: {currentForm.name}</h3>
               <p className="text-sm text-gray-400">{currentForm.description}</p>
-              <p className="text-sm text-gray-400 mt-2">AI Mode: <span className="font-mono text-yellow-500">{aiState.mode}</span></p>
+              <div className="mt-3 space-y-1">
+                <p className="text-sm text-gray-400">AI Mode: <span className={`font-mono ${aiState.mode === 'dreaming' ? 'text-purple-400 animate-pulse' : 'text-yellow-500'}`}>{aiState.mode}</span></p>
+                <p className="text-sm text-gray-400">Time: <span className="font-mono text-teal-400">{timeOfDay}</span></p>
+                <p className="text-sm text-gray-400">Dreams: <span className="font-mono text-purple-400">{dreamCount}</span> | Interactions: <span className="font-mono text-cyan-400">{totalInteractions}</span></p>
+                <p className="text-sm text-gray-400">Sigils Activated: <span className="font-mono text-green-400">{activatedPoints.size}/7</span></p>
+              </div>
             </div>
+
+            {bondHistory.length > 0 && (
+              <div className="mt-6 p-4 bg-gray-950/50 rounded-lg border border-yellow-600/20 max-h-48 overflow-y-auto">
+                <h3 className="text-lg font-semibold text-yellow-400 mb-3">Bond Chronicle</h3>
+                <div className="space-y-2">
+                  {bondHistory.slice(-10).reverse().map((entry, i) => (
+                    <div key={entry.timestamp} className="text-xs text-gray-400 border-l-2 border-teal-600/30 pl-2">
+                      <span className="text-teal-400 font-mono">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                      <span className="mx-2 text-gray-500">•</span>
+                      <span>{entry.event}</span>
+                      <span className="ml-2 text-yellow-500">({entry.bond})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
