@@ -26,6 +26,9 @@ import {
   type PetSaveData,
 } from '@/lib/persistence/indexeddb';
 import { EvolutionPanel } from '@/components/EvolutionPanel';
+import { MiniGamesPanel } from '@/components/MiniGamesPanel';
+import { BattleArena } from '@/components/BattleArena';
+import { VimanaMap } from '@/components/VimanaMap';
 import { initializeEvolution } from '@/lib/evolution';
 import {
   createDefaultBattleStats,
@@ -937,6 +940,21 @@ export default function Home() {
               Evolution Progress
               </h2>
               <EvolutionPanel />
+            </div>
+
+            {/* Mini Games */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <MiniGamesPanel petName={petName} />
+            </div>
+
+            {/* Battle Arena */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <BattleArena />
+            </div>
+
+            {/* Vimana Map */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <VimanaMap />
             </div>
           </div>
         </div>
