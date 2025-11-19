@@ -30,6 +30,8 @@ import {
   tick as runTick,
 } from '../vitals/index';
 
+export type PetType = 'geometric' | 'auralia';
+
 export interface MetaPetState {
   vitals: Vitals;
   genome: Genome | null;
@@ -39,8 +41,10 @@ export interface MetaPetState {
   battle: BattleStats;
   miniGames: MiniGameProgress;
   vimana: VimanaState;
+  petType: PetType;
   tickId?: ReturnType<typeof setInterval>;
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
+  setPetType: (petType: PetType) => void;
   hydrate: (data: {
     vitals: Vitals;
     genome: Genome;
@@ -50,6 +54,7 @@ export interface MetaPetState {
     battle?: BattleStats;
     miniGames?: MiniGameProgress;
     vimana?: VimanaState;
+    petType?: PetType;
   }) => void;
   startTick: () => void;
   stopTick: () => void;
@@ -131,12 +136,17 @@ export function createMetaPetWebStore(
     battle: createDefaultBattleStats(),
     miniGames: createDefaultMiniGameProgress(),
     vimana: createDefaultVimanaState(),
+    petType: 'geometric',
 
     setGenome(genome, traits) {
       set({ genome, traits });
     },
 
-    hydrate({ vitals, genome, traits, evolution, achievements, battle, miniGames, vimana }) {
+    setPetType(petType) {
+      set({ petType });
+    },
+
+    hydrate({ vitals, genome, traits, evolution, achievements, battle, miniGames, vimana, petType }) {
       set(state => ({
         vitals: { ...vitals },
         genome,
@@ -146,6 +156,7 @@ export function createMetaPetWebStore(
         battle: battle ? { ...battle } : state.battle,
         miniGames: miniGames ? { ...miniGames } : state.miniGames,
         vimana: vimana ? cloneVimanaState(vimana) : state.vimana,
+        petType: petType ?? state.petType,
         tickId: state.tickId,
       }));
     },

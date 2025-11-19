@@ -4,9 +4,11 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { useStore } from '@/lib/store';
+import type { PetType } from '@metapet/core/store';
 import { HUD } from '@/components/HUD';
 import { TraitPanel } from '@/components/TraitPanel';
 import { PetSprite } from '@/components/PetSprite';
+import { AuraliaGuardian } from '@/components/AuraliaGuardian';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
 import { AchievementShelf } from '@/components/AchievementShelf';
@@ -140,6 +142,8 @@ export default function Home() {
   const stopTick = useStore(s => s.stopTick);
   const setGenome = useStore(s => s.setGenome);
   const hydrate = useStore(s => s.hydrate);
+  const petType = useStore(s => s.petType);
+  const setPetType = useStore(s => s.setPetType);
   const [crest, setCrest] = useState<PrimeTailId | null>(null);
   const [heptaCode, setHeptaCode] = useState<HeptaDigits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -706,14 +710,36 @@ export default function Home() {
           {/* Pet Card */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-cyan-400" />
-                Your Companion
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-cyan-400" />
+                  Your Companion
+                </h2>
+
+                {/* Pet Type Switcher */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={petType === 'geometric' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPetType('geometric')}
+                    className="text-xs"
+                  >
+                    Geometric
+                  </Button>
+                  <Button
+                    variant={petType === 'auralia' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPetType('auralia')}
+                    className="text-xs"
+                  >
+                    Auralia
+                  </Button>
+                </div>
+              </div>
 
               {/* Pet sprite */}
               <div className="relative h-48 mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden">
-                <PetSprite />
+                {petType === 'geometric' ? <PetSprite /> : <AuraliaGuardian />}
               </div>
 
               <HUD />

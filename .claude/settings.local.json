@@ -15,7 +15,8 @@
       "Bash(powershell -Command \"Get-Content playHepta.native.ts -Encoding byte | Select-Object -First 500 | Format-Hex\")",
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
-      "Bash(npm test)"
+      "Bash(npm test)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
