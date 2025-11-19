@@ -18,7 +18,7 @@ export function VimanaMap() {
   const exploreCell = useStore(s => s.exploreCell);
   const resolveAnomaly = useStore(s => s.resolveAnomaly);
 
-  const [selectedId, setSelectedId] = useState<string>(vimana.activeCellId);
+  const [selectedId, setSelectedId] = useState<string>(vimana.activeCellId ?? vimana.cells[0]?.id ?? '');
 
   const selectedCell = useMemo(
     () => vimana.cells.find(cell => cell.id === selectedId) ?? vimana.cells[0],
@@ -58,7 +58,7 @@ export function VimanaMap() {
           <button
             key={cell.id}
             onClick={() => handleSelect(cell.id)}
-            className={`relative rounded-xl border transition-all p-3 text-left bg-gradient-to-br ${FIELD_THEME[cell.field] ?? 'from-slate-700/30 to-slate-800/30 border-slate-700/60'} ${
+            className={`relative rounded-xl border transition-all p-3 text-left bg-gradient-to-br ${cell.field ? FIELD_THEME[cell.field] : ''} ${!cell.field ? 'from-slate-700/30 to-slate-800/30 border-slate-700/60' : ''} ${
               selectedCell?.id === cell.id ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/20' : 'hover:ring-1 hover:ring-cyan-200/60'
             }`}
             type="button"

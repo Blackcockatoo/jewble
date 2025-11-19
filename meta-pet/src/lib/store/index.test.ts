@@ -415,7 +415,7 @@ describe('Store State Management', () => {
     });
 
     it('should preserve tickId during hydration', () => {
-      useStore.setState({ tickId: 12345 });
+      useStore.setState({ tickId: 12345 as unknown as ReturnType<typeof setInterval> });
 
       useStore.getState().hydrate({
         vitals: { hunger: 50, hygiene: 50, mood: 50, energy: 50 },

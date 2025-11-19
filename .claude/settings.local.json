@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx expo start --clear)",
+      "Bash(timeout /t 3)",
+      "Bash(dir appApp.tsx 2)",
+      "Bash(nul)",
+      "Bash(dir /b /s .expo*.ts .expo*.tsx 2)",
+      "Bash(rd /s /q .expo 2)",
+      "Bash(npx expo prebuild:*)",
+      "Bash(powershell -Command \"Get-Content playHepta.native.ts -Encoding byte | Select-Object -First 500 | Format-Hex\")",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm test)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

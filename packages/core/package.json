@@ -16,5 +16,8 @@
   "dependencies": {
     "zustand": "^5.0.8"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
 }

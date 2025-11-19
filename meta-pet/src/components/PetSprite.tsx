@@ -147,14 +147,14 @@ export const PetSprite = memo(function PetSprite() {
         className="absolute inset-0 rounded-3xl"
         style={{
           background: `radial-gradient(circle at center, ${visuals.colors[0]}33, transparent 70%)`,
-          filter: `blur(${visuals.glowIntensity * 20}px)`
+          filter: `blur(${(visuals.glowIntensity ?? 0.5) * 20}px)`
         }}
         animate={{
           opacity: [0.4, 0.8, 0.4],
           scale: [0.95, 1.05, 0.95],
         }}
         transition={{
-          duration: 6 - visuals.glowIntensity * 2,
+          duration: 6 - (visuals.glowIntensity ?? 0.5) * 2,
           repeat: Number.POSITIVE_INFINITY,
           ease: 'easeInOut',
         }}
