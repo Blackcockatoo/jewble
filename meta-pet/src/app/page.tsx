@@ -15,8 +15,8 @@ import { AchievementShelf } from '@/components/AchievementShelf';
 import { Button } from '@/components/ui/button';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
 import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
-import { encodeGenome, decodeGenome, hashGenome, type GenomeHash } from '@/lib/genome';
-import type { PrimeTailId, HeptaDigits } from '@/lib/identity/types';
+import { encodeGenome, decodeGenome, hashGenome, type Genome, type GenomeHash } from '@/lib/genome';
+import type { PrimeTailId, HeptaDigits, Rotation, Vault } from '@/lib/identity/types';
 import {
   savePet,
   loadPet,
@@ -27,6 +27,13 @@ import {
   importPetFromJSON,
   type PetSaveData,
 } from '@/lib/persistence/indexeddb';
+import {
+  breedPets,
+  predictOffspring,
+  calculateSimilarity,
+  canBreed,
+  type BreedingResult,
+} from '@/lib/breeding';
 import { EvolutionPanel } from '@/components/EvolutionPanel';
 import { MiniGamesPanel } from '@/components/MiniGamesPanel';
 import { BattleArena } from '@/components/BattleArena';
@@ -49,6 +56,9 @@ import {
   Plus,
   Trash2,
   Zap,
+  Baby,
+  FlaskConical,
+  HeartHandshake,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -144,6 +154,9 @@ export default function Home() {
   const hydrate = useStore(s => s.hydrate);
   const petType = useStore(s => s.petType);
   const setPetType = useStore(s => s.setPetType);
+  const genome = useStore(s => s.genome);
+  const traits = useStore(s => s.traits);
+  const evolution = useStore(s => s.evolution);
   const [crest, setCrest] = useState<PrimeTailId | null>(null);
   const [heptaCode, setHeptaCode] = useState<HeptaDigits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,6 +169,20 @@ export default function Home() {
   const [currentPetId, setCurrentPetId] = useState<string | null>(null);
   const [petName, setPetName] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+  const [breedingMode, setBreedingMode] = useState<'BALANCED' | 'DOMINANT' | 'MUTATION'>('BALANCED');
+  const [breedingPartnerId, setBreedingPartnerId] = useState('');
+  const [breedingPreview, setBreedingPreview] = useState<{
+    possibleTraits: string[];
+    confidence: number;
+    similarity: number;
+    partnerName?: string;
+    partnerStage?: string;
+  } | null>(null);
+  const [breedingResult, setBreedingResult] = useState<BreedingResult | null>(null);
+  const [breedingPartner, setBreedingPartner] = useState<PetSaveData | null>(null);
+  const [offspringSummary, setOffspringSummary] = useState<PetSummary | null>(null);
+  const [breedingError, setBreedingError] = useState<string | null>(null);
+  const [breedingBusy, setBreedingBusy] = useState(false);
 
   const debouncedSave = useMemo(() => createDebouncedSave(1_000), []);
 
@@ -169,6 +196,46 @@ export default function Home() {
   const persistenceSupportedRef = useRef(false);
   const autoSaveCleanupRef = useRef<(() => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const genomeToDna = useCallback((value: Genome): string => {
+    const alphabet = ['A', 'C', 'G', 'T'];
+    const flatten = [...value.red60, ...value.blue60, ...value.black60];
+    return flatten
+      .map(gene => {
+        const safe = Number.isFinite(gene) ? Math.abs(Math.round(gene)) : 0;
+        return alphabet[safe % alphabet.length];
+      })
+      .join('');
+  }, []);
+
+  const deriveTailFromLineage = useCallback((seed: string): [number, number, number, number] => {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = (hash ^ seed.charCodeAt(i)) * 16777619;
+      hash >>>= 0;
+    }
+
+    const next = () => {
+      hash ^= hash << 13;
+      hash ^= hash >>> 17;
+      hash ^= hash << 5;
+      hash >>>= 0;
+      return hash % 60;
+    };
+
+    return [next(), next(), next(), next()];
+  }, []);
+
+  const buildOffspringName = useCallback(
+    (lineageKey: string, partnerName?: string | null) => {
+      const left = (petNameRef.current || 'ORIGIN').slice(0, 4).toUpperCase();
+      const right = (partnerName && partnerName.trim() !== '' ? partnerName : 'ALLY')
+        .slice(0, 4)
+        .toUpperCase();
+      return `${left}-${right}-${lineageKey.slice(0, 4).toUpperCase()}`;
+    },
+    []
+  );
 
   useEffect(() => {
     crestRef.current = crest;
@@ -199,6 +266,52 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const previewPartner = async () => {
+      if (!breedingPartnerId || !persistenceSupportedRef.current) {
+        setBreedingPartner(null);
+        setBreedingPreview(null);
+        return;
+      }
+
+      try {
+        const partner = await loadPet(breedingPartnerId);
+        if (cancelled) return;
+        setBreedingPartner(partner);
+
+        if (!partner || !genome) {
+          setBreedingPreview(null);
+          return;
+        }
+
+        const similarity = calculateSimilarity(genome, partner.genome);
+        const prediction = predictOffspring(genome, partner.genome);
+        setBreedingPreview({
+          possibleTraits: prediction.possibleTraits,
+          confidence: prediction.confidence,
+          similarity,
+          partnerName: partner.name,
+          partnerStage: partner.evolution.state,
+        });
+        setBreedingError(null);
+      } catch (error) {
+        console.warn('Failed to load partner pet for breeding preview:', error);
+        if (!cancelled) {
+          setBreedingPartner(null);
+          setBreedingPreview(null);
+          setBreedingError('Unable to load partner data for breeding.');
+        }
+      }
+    };
+
+    void previewPartner();
+    return () => {
+      cancelled = true;
+    };
+  }, [breedingPartnerId, genome]);
+
   const buildSnapshot = useCallback((): PetSaveData => {
     const state = useStore.getState();
 
@@ -216,6 +329,7 @@ export default function Home() {
       id: petIdRef.current,
       name: petNameRef.current || undefined,
       vitals: state.vitals,
+      petType: state.petType,
       genome: state.genome,
       genomeHash: genomeHashRef.current,
       traits: state.traits,
@@ -247,6 +361,7 @@ export default function Home() {
         const snapshot: PetSaveData = {
           id: PET_ID,
           vitals: state.vitals,
+          petType: state.petType,
           genome: state.genome,
           genomeHash: genomeHashRef.current,
           traits: state.traits,
@@ -316,6 +431,7 @@ export default function Home() {
             cells: pet.vimana.cells.map(cell => ({ ...cell })),
           }
         : createDefaultVimanaState(),
+      petType: pet.petType ?? 'geometric',
     });
 
     const digits = Object.freeze([...pet.heptaDigits]) as HeptaDigits;
@@ -407,6 +523,7 @@ export default function Home() {
         mood: 60,
         energy: 80,
       },
+      petType: useStore.getState().petType ?? 'geometric',
       genome,
       genomeHash: genomeHashValue,
       traits,
@@ -421,6 +538,126 @@ export default function Home() {
       lastSaved: created,
     };
   }, []);
+
+  const createOffspringFromResult = useCallback(
+    async (result: BreedingResult, partnerName?: string | null): Promise<PetSaveData> => {
+      if (!result.offspring) {
+        throw new Error('Missing offspring genome');
+      }
+
+      const hmacKey = await getDeviceHmacKey();
+      const tail = deriveTailFromLineage(result.lineageKey);
+      const rotation: Rotation = result.lineageKey.charCodeAt(0) % 2 === 0 ? 'CW' : 'CCW';
+      const vault: Vault = crestRef.current?.vault ?? 'blue';
+      const dna = genomeToDna(result.offspring);
+      const crestValue = await mintPrimeTailId({
+        dna,
+        vault,
+        rotation,
+        tail,
+        hmacKey,
+      });
+
+      const minutes = Math.floor(Date.now() / 60000) % 8192;
+      const heptaDigits = await heptaEncode42(
+        {
+          version: 1,
+          preset: 'standard',
+          vault: crestValue.vault,
+          rotation: crestValue.rotation,
+          tail,
+          epoch13: minutes,
+          nonce14: Math.floor(Math.random() * 16384),
+        },
+        hmacKey
+      );
+
+      const now = Date.now();
+      const genomeHashValue = await hashGenome(result.offspring);
+
+      return {
+        id: `pet-${crestValue.signature.slice(0, 12)}`,
+        name: buildOffspringName(result.lineageKey, partnerName),
+        vitals: {
+          hunger: 40,
+          hygiene: 70,
+          mood: 70,
+          energy: 75,
+        },
+        petType: useStore.getState().petType ?? 'geometric',
+        genome: result.offspring,
+        genomeHash: genomeHashValue,
+        traits: result.traits,
+        evolution: initializeEvolution(),
+        achievements: [],
+        battle: createDefaultBattleStats(),
+        miniGames: createDefaultMiniGameProgress(),
+        vimana: createDefaultVimanaState(),
+        crest: crestValue,
+        heptaDigits: Object.freeze([...heptaDigits]) as HeptaDigits,
+        createdAt: now,
+        lastSaved: now,
+      };
+    },
+    [buildOffspringName, deriveTailFromLineage, genomeToDna]
+  );
+
+  const handleBreedWithPartner = useCallback(async () => {
+    setBreedingError(null);
+    setBreedingResult(null);
+    setOffspringSummary(null);
+
+    if (!persistenceSupportedRef.current) {
+      setBreedingError('Breeding requires offline archives so offspring can be saved.');
+      return;
+    }
+
+    if (!genome || !traits || !evolution) {
+      setBreedingError('Active companion is not initialized. Try loading or creating a pet first.');
+      return;
+    }
+
+    if (!breedingPartner || !breedingPartnerId) {
+      setBreedingError('Select a partner from your saved companions to begin breeding.');
+      return;
+    }
+
+    if (!canBreed(evolution.state, breedingPartner.evolution.state)) {
+      setBreedingError('Both companions must reach SPECIATION before they can breed.');
+      return;
+    }
+
+    setBreedingBusy(true);
+
+    try {
+      const result = breedPets(genome, breedingPartner.genome, breedingMode);
+      const offspring = await createOffspringFromResult(result, breedingPartner.name);
+      await savePet(offspring);
+      await refreshPetSummaries();
+
+      setBreedingResult(result);
+      setOffspringSummary({
+        id: offspring.id,
+        name: offspring.name,
+        createdAt: offspring.createdAt,
+        lastSaved: offspring.lastSaved,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Breeding attempt failed. Please try again.';
+      setBreedingError(message);
+    } finally {
+      setBreedingBusy(false);
+    }
+  }, [
+    breedingMode,
+    breedingPartner,
+    breedingPartnerId,
+    createOffspringFromResult,
+    evolution,
+    genome,
+    refreshPetSummaries,
+    traits,
+  ]);
 
   const initializeIdentity = useCallback(async () => {
     try {
@@ -666,6 +903,10 @@ export default function Home() {
       void handleImportFile(file);
     }
   };
+
+  const canBreedNow = Boolean(
+    genome && breedingPartner && evolution && canBreed(evolution.state, breedingPartner.evolution.state)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6">
@@ -952,6 +1193,130 @@ export default function Home() {
                     })
                   )}
                 </div>
+              </div>
+            </div>
+
+          {/* Breeding Lab */}
+          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <HeartHandshake className="w-5 h-5 text-rose-300" />
+                Breeding Lab
+              </h2>
+              <div className="text-xs text-zinc-500 flex items-center gap-2">
+                <Baby className="w-4 h-4" /> SPECIATION required for both parents
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3">
+                <label className="text-xs uppercase tracking-wide text-zinc-500">Partner from Archives</label>
+                <select
+                  value={breedingPartnerId}
+                  onChange={event => {
+                    setBreedingPartnerId(event.target.value);
+                    setBreedingResult(null);
+                    setOffspringSummary(null);
+                  }}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-400 disabled:opacity-50"
+                  disabled={!persistenceSupported || petSummaries.length === 0}
+                >
+                  <option value="">Select a saved companion</option>
+                  {petSummaries
+                    .filter(summary => summary.id !== currentPetId)
+                    .map(summary => (
+                      <option key={summary.id} value={summary.id}>
+                        {summary.name && summary.name.trim() !== '' ? summary.name : 'Unnamed Companion'}
+                      </option>
+                    ))}
+                </select>
+
+                <div className="flex flex-wrap gap-2">
+                  {(['BALANCED', 'DOMINANT', 'MUTATION'] as const).map(mode => (
+                    <Button
+                      key={mode}
+                      type="button"
+                      variant={breedingMode === mode ? 'default' : 'outline'}
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setBreedingMode(mode)}
+                      disabled={!breedingPartner}
+                    >
+                      {mode}
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400">Genetic Resonance</span>
+                    <span className="text-emerald-300 font-semibold">
+                      {breedingPreview ? `${breedingPreview.similarity.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400">Prediction Confidence</span>
+                    <span className="text-cyan-300 font-semibold">
+                      {breedingPreview ? `${breedingPreview.confidence.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {breedingPreview
+                      ? `Possible traits: ${breedingPreview.possibleTraits.join(', ')}`
+                      : 'Pick a partner to preview the offspring profile.'}
+                  </div>
+                  <div className="text-xs text-amber-400">
+                    {breedingPartner
+                      ? `Partner stage: ${breedingPartner.evolution.state}`
+                      : 'Both guardians must reach SPECIATION.'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-zinc-300">
+                    <FlaskConical className="w-4 h-4 text-rose-300" />
+                    Choose a partner and mode, then forge a new lineage saved into your archives.
+                  </div>
+
+                  {breedingError && (
+                    <div className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-lg p-3">
+                      {breedingError}
+                    </div>
+                  )}
+
+                  {breedingResult && offspringSummary && (
+                    <div className="text-sm text-emerald-200 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 space-y-2">
+                      <div className="font-semibold">Offspring saved: {offspringSummary.name}</div>
+                      <div className="text-xs text-emerald-300 break-all">Lineage: {breedingResult.lineageKey}</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => void handleSelectPet(offspringSummary.id)}>
+                          Load Offspring
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => void handleExportPet(offspringSummary.id)}>
+                          Export Archive
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-xs text-zinc-500">
+                      {canBreedNow
+                        ? 'Ready to breed — offspring will inherit traits and save automatically.'
+                        : 'Reach SPECIATION with both companions to unlock breeding.'}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => void handleBreedWithPartner()}
+                      disabled={!canBreedNow || breedingBusy || !breedingPartnerId}
+                    >
+                      {breedingBusy ? 'Synthesizing...' : 'Breed & Save Offspring'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
