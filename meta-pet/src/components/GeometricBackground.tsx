@@ -41,14 +41,14 @@ export function GeometricBackground({ size = 400, petPosition }: GeometricBackgr
       -1, // Repeat indefinitely
       true // Reverse the animation on each cycle
     );
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (petPosition) {
       petPositionX.value = petPosition.x;
       petPositionY.value = petPosition.y;
     }
-  }, [petPosition]);
+  }, [petPosition, petPositionX, petPositionY]);
 
   // Number of concentric circles
   const NUM_CIRCLES = 15;
@@ -75,65 +75,103 @@ export function GeometricBackground({ size = 400, petPosition }: GeometricBackgr
         <Circle cx="50" cy="50" r="50" fill="url(#bgGradient)" />
 
         {/* Animated Concentric Circles */}
-        {circleIndices.map((n) => {
-          const animatedProps = useAnimatedStyle(() => {
-            // Calculate the base radius for the nth circle
-            const baseR = BASE_RADIUS + n * BASE_SPACING;
-            const phaseShift = (n / NUM_CIRCLES) * Math.PI * 2;
-            const modulation = Math.sin(t.value * Math.PI * 2 + phaseShift);
-
-            // --- UPGRADE 5: Proximity-Based Warp ---
-            // The background warps in the vicinity of the pet
-            let proximityWarp = 0;
-            if (petPosition) {
-              // Normalize pet position to SVG viewBox coordinates (0-100)
-              const petX = (petPositionX.value / size) * 100;
-              const petY = (petPositionY.value / size) * 100;
-              const centerX = 50;
-              const centerY = 50;
-
-              // Calculate distance from circle center to pet
-              const dx = centerX - petX;
-              const dy = centerY - petY;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              // Apply a radial distortion effect: circles near the pet are warped more
-              const warpRadius = 30; // Radius of the warp effect
-              const warpStrength = Math.max(0, 1 - distance / warpRadius);
-              proximityWarp = warpStrength * 3 * Math.sin(t.value * Math.PI * 2);
-            }
-
-            const r = baseR + AMPLITUDE * modulation + proximityWarp;
-
-            // Interpolate 't' to control the stroke opacity for a subtle pulse
-            const opacity = interpolate(
-              t.value,
-              [0, 0.5, 1],
-              [0.3, 0.6, 0.3],
-              Extrapolate.CLAMP
-            );
-
-            return {
-              r: r,
-              strokeOpacity: opacity,
-            };
-          });
-
-          return (
-            <AnimatedCircle
-              key={n}
-              cx="50"
-              cy="50"
-              fill="none"
-              stroke="#8C9EFF" // Light Indigo/Violet for the lines
-              strokeWidth="0.5"
-              // The 'r' and 'strokeOpacity' are animated
-              {...animatedProps}
-            />
-          );
-        })}
+        {circleIndices.map((n) => (
+          <AnimatedGeometricCircle
+            key={n}
+            index={n}
+            totalCircles={NUM_CIRCLES}
+            baseRadius={BASE_RADIUS}
+            baseSpacing={BASE_SPACING}
+            amplitude={AMPLITUDE}
+            t={t}
+            petPosition={petPosition}
+            petPositionX={petPositionX}
+            petPositionY={petPositionY}
+            size={size}
+          />
+        ))}
       </Svg>
     </View>
+  );
+}
+
+interface AnimatedGeometricCircleProps {
+  index: number;
+  totalCircles: number;
+  baseRadius: number;
+  baseSpacing: number;
+  amplitude: number;
+  t: Animated.SharedValue<number>;
+  petPosition?: { x: number; y: number };
+  petPositionX: Animated.SharedValue<number>;
+  petPositionY: Animated.SharedValue<number>;
+  size: number;
+}
+
+function AnimatedGeometricCircle({
+  index: n,
+  totalCircles: NUM_CIRCLES,
+  baseRadius: BASE_RADIUS,
+  baseSpacing: BASE_SPACING,
+  amplitude: AMPLITUDE,
+  t,
+  petPosition,
+  petPositionX,
+  petPositionY,
+  size,
+}: AnimatedGeometricCircleProps) {
+  const animatedProps = useAnimatedStyle(() => {
+    // Calculate the base radius for the nth circle
+    const baseR = BASE_RADIUS + n * BASE_SPACING;
+    const phaseShift = (n / NUM_CIRCLES) * Math.PI * 2;
+    const modulation = Math.sin(t.value * Math.PI * 2 + phaseShift);
+
+    // --- UPGRADE 5: Proximity-Based Warp ---
+    // The background warps in the vicinity of the pet
+    let proximityWarp = 0;
+    if (petPosition) {
+      // Normalize pet position to SVG viewBox coordinates (0-100)
+      const petX = (petPositionX.value / size) * 100;
+      const petY = (petPositionY.value / size) * 100;
+      const centerX = 50;
+      const centerY = 50;
+
+      // Calculate distance from circle center to pet
+      const dx = centerX - petX;
+      const dy = centerY - petY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Apply a radial distortion effect: circles near the pet are warped more
+      const warpRadius = 30; // Radius of the warp effect
+      const warpStrength = Math.max(0, 1 - distance / warpRadius);
+      proximityWarp = warpStrength * 3 * Math.sin(t.value * Math.PI * 2);
+    }
+
+    const r = baseR + AMPLITUDE * modulation + proximityWarp;
+
+    // Interpolate 't' to control the stroke opacity for a subtle pulse
+    const opacity = interpolate(
+      t.value,
+      [0, 0.5, 1],
+      [0.3, 0.6, 0.3],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      r: r,
+      strokeOpacity: opacity,
+    };
+  });
+
+  return (
+    <AnimatedCircle
+      cx="50"
+      cy="50"
+      fill="none"
+      stroke="#8C9EFF"
+      strokeWidth="0.5"
+      {...animatedProps}
+    />
   );
 }
 

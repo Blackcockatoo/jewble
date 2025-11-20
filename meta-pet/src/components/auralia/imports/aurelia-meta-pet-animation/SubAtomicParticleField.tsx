@@ -70,65 +70,66 @@ export function SubAtomicParticleField({
       -1,
       true
     );
-  }, []);
+  }, [animationProgress]);
+
+  // Create separate component for each particle to properly handle hooks
+  const ParticleView = ({ particle }: { particle: Particle }) => {
+    const particleProgress = useSharedValue(0);
+
+    useEffect(() => {
+      particleProgress.value = withRepeat(
+        withTiming(1, { duration: particle.duration }),
+        -1,
+        true
+      );
+    }, [particleProgress, particle.duration]);
+
+    const particleStyle = useAnimatedStyle(() => {
+      // Calculate the particle's position based on its velocity and animation progress
+      const offsetX = particle.vx * 50 * particleProgress.value;
+      const offsetY = particle.vy * 50 * particleProgress.value;
+
+      // Add some orbital motion (circular path)
+      const orbitAngle = particleProgress.value * Math.PI * 2;
+      const orbitRadius = 30;
+      const orbitX = Math.cos(orbitAngle) * orbitRadius;
+      const orbitY = Math.sin(orbitAngle) * orbitRadius;
+
+      return {
+        transform: [
+          { translateX: offsetX + orbitX },
+          { translateY: offsetY + orbitY },
+        ],
+        opacity: interpolate(
+          particleProgress.value,
+          [0, 0.5, 1],
+          [0.3, 1, 0.3],
+          Extrapolate.CLAMP
+        ),
+      };
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.particle,
+          {
+            width: particle.radius * 2,
+            height: particle.radius * 2,
+            backgroundColor: primaryColor,
+            left: particle.x - particle.radius,
+            top: particle.y - particle.radius,
+          },
+          particleStyle,
+        ]}
+      />
+    );
+  };
 
   // Render each particle with its own animation
-  const particleElements = particles.map((particle) => {
-    const ParticleView = () => {
-      const particleProgress = useSharedValue(0);
-
-      useEffect(() => {
-        particleProgress.value = withRepeat(
-          withTiming(1, { duration: particle.duration }),
-          -1,
-          true
-        );
-      }, []);
-
-      const particleStyle = useAnimatedStyle(() => {
-        // Calculate the particle's position based on its velocity and animation progress
-        const offsetX = particle.vx * 50 * particleProgress.value;
-        const offsetY = particle.vy * 50 * particleProgress.value;
-
-        // Add some orbital motion (circular path)
-        const orbitAngle = particleProgress.value * Math.PI * 2;
-        const orbitRadius = 30;
-        const orbitX = Math.cos(orbitAngle) * orbitRadius;
-        const orbitY = Math.sin(orbitAngle) * orbitRadius;
-
-        return {
-          transform: [
-            { translateX: offsetX + orbitX },
-            { translateY: offsetY + orbitY },
-          ],
-          opacity: interpolate(
-            particleProgress.value,
-            [0, 0.5, 1],
-            [0.3, 1, 0.3],
-            Extrapolate.CLAMP
-          ),
-        };
-      });
-
-      return (
-        <Animated.View
-          style={[
-            styles.particle,
-            {
-              width: particle.radius * 2,
-              height: particle.radius * 2,
-              backgroundColor: primaryColor,
-              left: particle.x - particle.radius,
-              top: particle.y - particle.radius,
-            },
-            particleStyle,
-          ]}
-        />
-      );
-    };
-
-    return <ParticleView key={particle.id} />;
-  });
+  const particleElements = particles.map((particle) => (
+    <ParticleView key={particle.id} particle={particle} />
+  ));
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>

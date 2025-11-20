@@ -35,21 +35,23 @@ export function AcousticVisualization({
       -1,
       true
     );
-  }, []);
+  }, [simulatedDecibel]);
 
   // Number of visualization bars
   const NUM_BARS = 10;
-  const barElements = Array.from({ length: NUM_BARS }, (_, i) => {
+
+  // Create separate component for each bar to avoid hooks in loops
+  const VisualizationBar = ({ index }: { index: number }) => {
     const animatedStyle = useAnimatedStyle(() => {
       // Each bar reacts slightly differently (phase shift)
-      const phaseShift = i / NUM_BARS;
+      const phaseShift = index / NUM_BARS;
       const pulse = interpolate(
         simulatedDecibel.value,
         [0, 1],
         [0.1, 1],
         Extrapolate.CLAMP
       );
-      
+
       // Height is based on the pulse and a slight phase shift
       const heightScale = 0.1 + pulse * 0.9 * (1 - Math.abs(simulatedDecibel.value - phaseShift));
 
@@ -61,7 +63,6 @@ export function AcousticVisualization({
 
     return (
       <Animated.View
-        key={i}
         style={[
           styles.bar,
           {
@@ -72,7 +73,11 @@ export function AcousticVisualization({
         ]}
       />
     );
-  });
+  };
+
+  const barElements = Array.from({ length: NUM_BARS }, (_, i) => (
+    <VisualizationBar key={i} index={i} />
+  ));
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>

@@ -62,8 +62,9 @@ function EffectElement({ effect }: EffectElementProps) {
             animate={{ scale: 1.5, opacity: 0 }}
             transition={{ duration: duration / 1000 }}
             className="text-4xl"
-            children="💥"
-          />
+          >
+            💥
+          </motion.div>
         );
 
       case 'sparkle':
@@ -99,8 +100,9 @@ function EffectElement({ effect }: EffectElementProps) {
             animate={{ scale: 1, y: -60, opacity: 0 }}
             transition={{ duration: duration / 1000 }}
             className="text-3xl"
-            children="❤️"
-          />
+          >
+            ❤️
+          </motion.div>
         );
 
       case 'star':
@@ -110,8 +112,9 @@ function EffectElement({ effect }: EffectElementProps) {
             animate={{ scale: 1.2, rotate: 360, opacity: 0 }}
             transition={{ duration: duration / 1000 }}
             className="text-3xl"
-            children="⭐"
-          />
+          >
+            ⭐
+          </motion.div>
         );
 
       case 'lightning':
@@ -121,8 +124,9 @@ function EffectElement({ effect }: EffectElementProps) {
             animate={{ scale: 1.3, opacity: 0 }}
             transition={{ duration: duration / 1000 }}
             className="text-4xl"
-            children="⚡"
-          />
+          >
+            ⚡
+          </motion.div>
         );
 
       case 'heal':
@@ -132,8 +136,9 @@ function EffectElement({ effect }: EffectElementProps) {
             animate={{ scale: 1, y: -50, opacity: 0 }}
             transition={{ duration: duration / 1000 }}
             className="text-3xl"
-            children="💚"
-          />
+          >
+            💚
+          </motion.div>
         );
 
       case 'victory':
@@ -143,8 +148,9 @@ function EffectElement({ effect }: EffectElementProps) {
             animate={{ scale: 1.5, opacity: 0 }}
             transition={{ duration: duration / 1000 }}
             className="text-4xl"
-            children="🏆"
-          />
+          >
+            🏆
+          </motion.div>
         );
 
       default:

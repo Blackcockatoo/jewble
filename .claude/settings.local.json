@@ -21,7 +21,8 @@
       "Bash(timeout /t 10)",
       "Bash(powershell:*)",
       "Bash(npx expo start:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

@@ -70,7 +70,7 @@ export function SubAtomicParticleField({
       -1,
       true
     );
-  }, []);
+  }, [animationProgress]);
 
   // Render each particle with its own animation
   const particleElements = particles.map((particle) => {
@@ -83,7 +83,7 @@ export function SubAtomicParticleField({
           -1,
           true
         );
-      }, []);
+      }, [particleProgress, particle.duration]);
 
       const particleStyle = useAnimatedStyle(() => {
         // Calculate the particle's position based on its velocity and animation progress

@@ -103,7 +103,8 @@ const initField = (seedName: string = "AURALIA") => {
   let s0 = mix64(seedBI);
   let s1 = mix64(seedBI ^ 0xA5A5A5A5A5A5A5A5n);
   const prng = (): number => {
-    let x = s0, y = s1;
+    let x = s0;
+    const y = s1;
     s0 = y;
     x ^= x << 23n; x ^= x >> 17n; x ^= y ^ (y >> 26n);
     s1 = x;
@@ -161,7 +162,7 @@ const useAuraliaAudio = (enabled: boolean, stats: Stats, scale: ScaleName = 'har
     if (isSetup.current) return;
 
     const setupAudio = async () => {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
       if (!AudioContext) return;
       const ctx = new AudioContext();
       if (ctx.state === 'suspended') await ctx.resume();
@@ -255,7 +256,7 @@ const useAuraliaAudio = (enabled: boolean, stats: Stats, scale: ScaleName = 'har
       }
       isSetup.current = false;
     };
-  }, [enabled]);
+  }, [enabled, scale]);
 
   useEffect(() => {
     const audio = audioContextRef.current;
@@ -263,9 +264,9 @@ const useAuraliaAudio = (enabled: boolean, stats: Stats, scale: ScaleName = 'har
     const { energy, curiosity, bond } = stats;
     const now = audio.ctx.currentTime;
     const maxVol = 0.02;
-    (audio.droneOscs[0]?.gain as any).linearRampToValueAtTime((energy / 100) * maxVol, now + 1);
-    (audio.droneOscs[1]?.gain as any).linearRampToValueAtTime((curiosity / 100) * maxVol, now + 1);
-    (audio.droneOscs[2]?.gain as any).linearRampToValueAtTime((bond / 100) * maxVol, now + 1);
+    audio.droneOscs[0]?.gain.gain.linearRampToValueAtTime((energy / 100) * maxVol, now + 1);
+    audio.droneOscs[1]?.gain.gain.linearRampToValueAtTime((curiosity / 100) * maxVol, now + 1);
+    audio.droneOscs[2]?.gain.gain.linearRampToValueAtTime((bond / 100) * maxVol, now + 1);
   }, [enabled, stats]);
 
   const playNote = useCallback((index: number, duration: number = 0.3) => {
@@ -814,7 +815,7 @@ const AuraliaMetaPet: React.FC = () => {
     const gameLoop = setInterval(() => {
       setSnakeState(prev => {
         const head = prev.segments[0];
-        let newHead = { ...head };
+        const newHead = { ...head };
 
         if (prev.direction === 'up') newHead.y -= 1;
         if (prev.direction === 'down') newHead.y += 1;
@@ -885,7 +886,7 @@ const AuraliaMetaPet: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentGame, tetrisState]);
+  }, [currentGame, tetrisState, moveTetrisPiece, rotateTetrisPiece]);
 
   const canPlacePiece = (piece: TetrisPiece, board: number[][], offsetX: number = 0, offsetY: number = 0): boolean => {
     for (let y = 0; y < piece.shape.length; y++) {
@@ -990,7 +991,7 @@ const AuraliaMetaPet: React.FC = () => {
     }, 500);
 
     return () => clearInterval(gameLoop);
-  }, [currentGame, tetrisState.currentPiece, tetrisState.gameOver]);
+  }, [currentGame, tetrisState.currentPiece, tetrisState.gameOver, lockPiece, canPlacePiece]);
 
   // ===== BREEDING SYSTEM =====
   const breedGuardian = () => {

@@ -124,7 +124,7 @@ export function PetMorph({ vitals, size = 200, onPositionChange }: PetMorphProps
 
     // --- 9. Memory Corruption Effect ---
     corruptionOffsetRef.current = getMemoryCorruptionOffset(vitals.hygiene);
-  }, [vitals]);
+  }, [vitals, scale, rotation, glowOpacity, cognitiveFlicker, glitchScale]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -157,7 +157,7 @@ export function PetMorph({ vitals, size = 200, onPositionChange }: PetMorphProps
   const fractalPath = getFractalizedPath(vitals.hygiene);
 
   // --- 12. Dynamic Shadow Projection ---
-  const shadowPath = getDynamicShadowPath(vitals.hunger, rotation.value as any);
+  const shadowPath = getDynamicShadowPath(vitals.hunger, rotation.value as number);
 
   // --- 9. Memory Corruption Effect (Offsets) ---
   const corruptionX = corruptionOffsetRef.current.x;

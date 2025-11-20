@@ -35,49 +35,72 @@ export function AcousticVisualization({
       -1,
       true
     );
-  }, []);
+  }, [simulatedDecibel]);
 
   // Number of visualization bars
   const NUM_BARS = 10;
-  const barElements = Array.from({ length: NUM_BARS }, (_, i) => {
-    const animatedStyle = useAnimatedStyle(() => {
-      // Each bar reacts slightly differently (phase shift)
-      const phaseShift = i / NUM_BARS;
-      const pulse = interpolate(
-        simulatedDecibel.value,
-        [0, 1],
-        [0.1, 1],
-        Extrapolate.CLAMP
-      );
-      
-      // Height is based on the pulse and a slight phase shift
-      const heightScale = 0.1 + pulse * 0.9 * (1 - Math.abs(simulatedDecibel.value - phaseShift));
-
-      return {
-        height: heightScale * (size / 2),
-        opacity: heightScale,
-      };
-    });
-
-    return (
-      <Animated.View
-        key={i}
-        style={[
-          styles.bar,
-          {
-            backgroundColor: primaryColor,
-            width: size / (NUM_BARS * 2),
-          },
-          animatedStyle,
-        ]}
-      />
-    );
-  });
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
-      {barElements}
+      {Array.from({ length: NUM_BARS }, (_, i) => (
+        <VisualizationBar
+          key={i}
+          index={i}
+          totalBars={NUM_BARS}
+          simulatedDecibel={simulatedDecibel}
+          size={size}
+          primaryColor={primaryColor}
+        />
+      ))}
     </View>
+  );
+}
+
+interface VisualizationBarProps {
+  index: number;
+  totalBars: number;
+  simulatedDecibel: Animated.SharedValue<number>;
+  size: number;
+  primaryColor: string;
+}
+
+function VisualizationBar({
+  index,
+  totalBars,
+  simulatedDecibel,
+  size,
+  primaryColor,
+}: VisualizationBarProps) {
+  const animatedStyle = useAnimatedStyle(() => {
+    // Each bar reacts slightly differently (phase shift)
+    const phaseShift = index / totalBars;
+    const pulse = interpolate(
+      simulatedDecibel.value,
+      [0, 1],
+      [0.1, 1],
+      Extrapolate.CLAMP
+    );
+
+    // Height is based on the pulse and a slight phase shift
+    const heightScale = 0.1 + pulse * 0.9 * (1 - Math.abs(simulatedDecibel.value - phaseShift));
+
+    return {
+      height: heightScale * (size / 2),
+      opacity: heightScale,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.bar,
+        {
+          backgroundColor: primaryColor,
+          width: size / (totalBars * 2),
+        },
+        animatedStyle,
+      ]}
+    />
   );
 }
 

@@ -261,7 +261,7 @@ export function SafeCrackMini({
 
         setGameState(prev => {
           if (!prev) return prev;
-          let nextAngle = (prev.currentAngle + delta + 360) % 360;
+          const nextAngle = (prev.currentAngle + delta + 360) % 360;
           const prevTick = prev.currentTick;
           const nextTick = Math.floor(nextAngle / DEGREES_PER_TICK);
 

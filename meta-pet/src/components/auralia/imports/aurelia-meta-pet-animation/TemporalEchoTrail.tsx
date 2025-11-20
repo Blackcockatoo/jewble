@@ -47,7 +47,7 @@ export function TemporalEchoTrail({
       -1,
       true
     );
-  }, []);
+  }, [animationProgress]);
 
   useEffect(() => {
     // Update the position history based on the animation progress

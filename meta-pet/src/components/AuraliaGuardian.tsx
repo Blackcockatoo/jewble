@@ -899,7 +899,7 @@ export function AuraliaGuardian() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentGame, tetrisState]);
+  }, [currentGame, tetrisState, moveTetrisPiece, rotateTetrisPiece]);
 
   const canPlacePiece = (piece: TetrisPiece, board: number[][], offsetX: number = 0, offsetY: number = 0): boolean => {
     for (let y = 0; y < piece.shape.length; y++) {
@@ -1004,7 +1004,7 @@ export function AuraliaGuardian() {
     }, 500);
 
     return () => clearInterval(gameLoop);
-  }, [currentGame, tetrisState.currentPiece, tetrisState.gameOver]);
+  }, [currentGame, tetrisState.currentPiece, tetrisState.gameOver, lockPiece, canPlacePiece]);
 
   // ===== BREEDING SYSTEM =====
   const breedGuardian = () => {
