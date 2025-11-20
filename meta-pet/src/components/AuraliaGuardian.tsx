@@ -901,7 +901,7 @@ export function AuraliaGuardian() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentGame, tetrisState, moveTetrisPiece, rotateTetrisPiece]);
 
-  const canPlacePiece = (piece: TetrisPiece, board: number[][], offsetX: number = 0, offsetY: number = 0): boolean => {
+  const canPlacePiece = useCallback((piece: TetrisPiece, board: number[][], offsetX: number = 0, offsetY: number = 0): boolean => {
     for (let y = 0; y < piece.shape.length; y++) {
       for (let x = 0; x < piece.shape[y].length; x++) {
         if (piece.shape[y][x]) {
@@ -914,9 +914,9 @@ export function AuraliaGuardian() {
       }
     }
     return true;
-  };
+  }, []);
 
-  const moveTetrisPiece = (dx: number, dy: number) => {
+  const moveTetrisPiece = useCallback((dx: number, dy: number) => {
     setTetrisState(prev => {
       if (!prev.currentPiece) return prev;
       if (canPlacePiece(prev.currentPiece, prev.board, dx, dy)) {
@@ -924,9 +924,9 @@ export function AuraliaGuardian() {
       }
       return prev;
     });
-  };
+  }, [canPlacePiece]);
 
-  const rotateTetrisPiece = () => {
+  const rotateTetrisPiece = useCallback(() => {
     setTetrisState(prev => {
       if (!prev.currentPiece) return prev;
       const rotated = { ...prev.currentPiece, shape: rotatePiece(prev.currentPiece.shape) };
@@ -935,9 +935,9 @@ export function AuraliaGuardian() {
       }
       return prev;
     });
-  };
+  }, [canPlacePiece]);
 
-  const lockPiece = () => {
+  const lockPiece = useCallback(() => {
     setTetrisState(prev => {
       if (!prev.currentPiece) return prev;
 
@@ -986,7 +986,7 @@ export function AuraliaGuardian() {
 
       return { ...prev, board: newBoard, currentPiece: newPiece, score: newScore };
     });
-  };
+  }, [canPlacePiece, field, handleWhisper, setBond, setCuriosity, setGamesWon, addToBondHistory, audioEnabled, playNote]);
 
   useEffect(() => {
     if (currentGame !== 'tetris' || !tetrisState.currentPiece || tetrisState.gameOver) return;
