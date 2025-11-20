@@ -943,6 +943,16 @@ export default function Home() {
                 Genome Explorer
               </Button>
             </Link>
+            <Link href="/test-responses">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-pink-500/30 text-pink-300 hover:bg-pink-500/10"
+              >
+                <Sparkles className="w-4 h-4" />
+                Test Responses
+              </Button>
+            </Link>
           </div>
         </div>
 

@@ -20,6 +20,9 @@ export function PetResponseOverlay({ enableAudio = true, enableAnticipation = tr
   const vitals = useStore(state => state.vitals);
   const evolution = useStore(state => state.evolution);
   const achievements = useStore(state => state.achievements);
+  const battle = useStore(state => state.battle);
+  const miniGames = useStore(state => state.miniGames);
+  const vimana = useStore(state => state.vimana);
 
   // Build context from Zustand store
   const context: ResponseContext = {
@@ -60,19 +63,22 @@ export function PetResponseOverlay({ enableAudio = true, enableAnticipation = tr
 
   // Listen for store actions and trigger appropriate responses
   useEffect(() => {
-    // Subscribe to store actions via state changes
-    const unsubscribe = useStore.subscribe((state, prevState) => {
-      // Detect feeding
+    // Track previous state manually
+    let prevState = useStore.getState();
+
+    // Subscribe to store state changes
+    const unsubscribe = useStore.subscribe((state) => {
+      // Detect feeding (hunger decreased significantly)
       if (state.vitals.hunger < prevState.vitals.hunger && prevState.vitals.hunger - state.vitals.hunger >= 10) {
         triggerResponse('feed');
       }
 
-      // Detect playing
-      if (state.vitals.mood > prevState.vitals.mood && prevState.vitals.mood - state.vitals.mood <= -10) {
+      // Detect playing (mood increased significantly)
+      if (state.vitals.mood > prevState.vitals.mood && state.vitals.mood - prevState.vitals.mood >= 10) {
         triggerResponse('play');
       }
 
-      // Detect cleaning
+      // Detect cleaning (hygiene increased significantly)
       if (state.vitals.hygiene > prevState.vitals.hygiene && state.vitals.hygiene - prevState.vitals.hygiene >= 10) {
         triggerResponse('clean');
       }
@@ -128,6 +134,9 @@ export function PetResponseOverlay({ enableAudio = true, enableAnticipation = tr
           triggerResponse('exploration_anomaly');
         }
       }
+
+      // Update previous state for next comparison
+      prevState = state;
     });
 
     return () => unsubscribe();
