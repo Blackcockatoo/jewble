@@ -4,7 +4,7 @@
  * Stores pet state, vitals, genome, and evolution data offline.
  */
 
-import type { Vitals } from '@/lib/store';
+import type { PetType, Vitals } from '@/lib/store';
 import type { Genome, DerivedTraits, GenomeHash } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
 import type { HeptaDigits, PrimeTailId, Rotation, Vault } from '@/lib/identity/types';
@@ -28,6 +28,7 @@ export interface PetSaveData {
   id: string; // pet ID from crest
   name?: string;
   vitals: Vitals;
+  petType: PetType;
   genome: Genome;
   genomeHash: GenomeHash;
   traits: DerivedTraits;
@@ -229,7 +230,7 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     throw new Error('Invalid pet file: vitals are malformed');
   }
 
-  if (!options?.skipGenomeValidation && !isValidGenome(parsed.genome)) {
+  if (!isValidGenome(parsed.genome)) {
     throw new Error('Invalid pet file: genome is malformed');
   }
 
@@ -238,9 +239,19 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     ? { red60: Array(60).fill(0), blue60: Array(60).fill(0), black60: Array(60).fill(0) }
     : parsed.genome!;
 
+  // PetType validation and default
+  const petType: PetType = (() => {
+    if (parsed.petType && ['organic', 'geometric', 'hybrid'].includes(parsed.petType)) {
+      return parsed.petType as PetType;
+    }
+    return 'geometric'; // Default to geometric if not specified
+  })();
+
   if (!parsed.genomeHash || !isValidGenomeHash(parsed.genomeHash)) {
     throw new Error('Invalid pet file: genome hashes are malformed');
   }
+
+  const petType = isValidPetType(parsed.petType) ? parsed.petType : 'geometric';
 
   if (!parsed.traits || typeof parsed.traits !== 'object') {
     throw new Error('Invalid pet file: traits missing');
@@ -343,6 +354,7 @@ function normalizePetData(raw: unknown): PetSaveData {
     battle,
     miniGames,
     vimana,
+    petType: isValidPetType(typed.petType) ? typed.petType : 'geometric',
   } as PetSaveData;
 }
 
@@ -373,6 +385,10 @@ function isValidGenomeHash(value: unknown): value is GenomeHash {
     typeof hash.blueHash === 'string' &&
     typeof hash.blackHash === 'string'
   );
+}
+
+function isValidPetType(value: unknown): value is PetType {
+  return value === 'geometric' || value === 'auralia';
 }
 
 function isBase7Array(value: unknown, expectedLength: number): value is number[] {

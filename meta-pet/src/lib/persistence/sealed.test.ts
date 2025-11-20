@@ -29,6 +29,7 @@ describe('Sealed Export/Import', () => {
         mood: 90,
         energy: 60,
       },
+      petType: 'geometric',
       genome: {
         red60: Array(60).fill(0).map((_, i) => i % 7),
         blue60: Array(60).fill(0).map((_, i) => (i * 2) % 7),

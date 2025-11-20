@@ -330,6 +330,7 @@ export default function Home() {
       id: petIdRef.current,
       name: petNameRef.current || undefined,
       vitals: state.vitals,
+      petType: state.petType,
       genome: state.genome,
       genomeHash: genomeHashRef.current,
       traits: state.traits,
@@ -361,6 +362,7 @@ export default function Home() {
         const snapshot: PetSaveData = {
           id: PET_ID,
           vitals: state.vitals,
+          petType: state.petType,
           genome: state.genome,
           genomeHash: genomeHashRef.current,
           traits: state.traits,
@@ -430,6 +432,7 @@ export default function Home() {
             cells: pet.vimana.cells.map(cell => ({ ...cell })),
           }
         : createDefaultVimanaState(),
+      petType: pet.petType ?? 'geometric',
     });
 
     const digits = Object.freeze([...pet.heptaDigits]) as HeptaDigits;
@@ -521,6 +524,7 @@ export default function Home() {
         mood: 60,
         energy: 80,
       },
+      petType: useStore.getState().petType ?? 'geometric',
       genome,
       genomeHash: genomeHashValue,
       traits,

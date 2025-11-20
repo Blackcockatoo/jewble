@@ -104,10 +104,12 @@ const initField = (seedName: string = "AURALIA") => {
   let s0 = mix64(seedBI);
   let s1 = mix64(seedBI ^ 0xA5A5A5A5A5A5A5A5n);
   const prng = (): number => {
-    let x = s0, y = s1;
+    const x = s0;
+    const y = s1;
     s0 = y;
-    x ^= x << 23n; x ^= x >> 17n; x ^= y ^ (y >> 26n);
-    s1 = x;
+    let xMut = x;
+    xMut ^= xMut << 23n; xMut ^= xMut >> 17n; xMut ^= y ^ (y >> 26n);
+    s1 = xMut;
     const sum = (s0 + s1) & ((1n << 64n) - 1n);
     return Number(sum) / 18446744073709551616;
   };
@@ -826,7 +828,7 @@ export function AuraliaGuardian() {
     const gameLoop = setInterval(() => {
       setSnakeState(prev => {
         const head = prev.segments[0];
-        let newHead = { ...head };
+        const newHead = { ...head };
 
         if (prev.direction === 'up') newHead.y -= 1;
         if (prev.direction === 'down') newHead.y += 1;
