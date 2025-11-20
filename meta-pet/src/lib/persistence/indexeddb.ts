@@ -4,7 +4,7 @@
  * Stores pet state, vitals, genome, and evolution data offline.
  */
 
-import type { PetType, Vitals } from '@/lib/store';
+import type { PetType, Vitals, MirrorModeState } from '@/lib/store';
 import type { Genome, DerivedTraits, GenomeHash } from '@/lib/genome';
 import type { EvolutionData } from '@/lib/evolution';
 import type { HeptaDigits, PrimeTailId, Rotation, Vault } from '@/lib/identity/types';
@@ -29,6 +29,7 @@ export interface PetSaveData {
   name?: string;
   vitals: Vitals;
   petType: PetType;
+  mirrorMode: MirrorModeState;
   genome: Genome;
   genomeHash: GenomeHash;
   traits: DerivedTraits;
@@ -87,6 +88,7 @@ export async function savePet(data: PetSaveData): Promise<void> {
       battle: { ...data.battle },
       miniGames: { ...data.miniGames },
       vimana: cloneVimana(data.vimana),
+      mirrorMode: { ...data.mirrorMode },
       heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
       lastSaved: Date.now(),
     };
@@ -208,6 +210,7 @@ export function exportPetToJSON(data: PetSaveData): string {
     battle: { ...data.battle },
     miniGames: { ...data.miniGames },
     vimana: cloneVimana(data.vimana),
+    mirrorMode: { ...data.mirrorMode },
     traits: JSON.parse(JSON.stringify(data.traits)),
     crest: { ...data.crest, tail: [...data.crest.tail] as [number, number, number, number] },
     heptaDigits: Array.from(data.heptaDigits) as HeptaDigits,
@@ -301,6 +304,14 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     throw new Error('Invalid pet file: vimana state malformed');
   })();
 
+  const mirrorMode = (() => {
+    if (parsed.mirrorMode === undefined) return createDefaultMirrorMode();
+    if (isValidMirrorMode(parsed.mirrorMode)) {
+      return { ...parsed.mirrorMode };
+    }
+    throw new Error('Invalid pet file: mirror mode malformed');
+  })();
+
   const createdAt = typeof parsed.createdAt === 'number' ? parsed.createdAt : Date.now();
   const lastSaved = typeof parsed.lastSaved === 'number' ? parsed.lastSaved : Date.now();
 
@@ -317,6 +328,7 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     battle,
     miniGames,
     vimana,
+    mirrorMode,
     crest: parsed.crest,
     heptaDigits: Object.freeze([...parsed.heptaDigits]) as HeptaDigits,
     createdAt,
@@ -348,6 +360,9 @@ function normalizePetData(raw: unknown): PetSaveData {
   const vimana = isValidVimanaState(typed.vimana)
     ? cloneVimana(typed.vimana)
     : createDefaultVimanaState();
+  const mirrorMode = isValidMirrorMode(typed.mirrorMode)
+    ? { ...typed.mirrorMode }
+    : createDefaultMirrorMode();
 
   return {
     ...(typed as PetSaveData),
@@ -355,6 +370,7 @@ function normalizePetData(raw: unknown): PetSaveData {
     battle,
     miniGames,
     vimana,
+    mirrorMode,
     petType: isValidPetType(typed.petType) ? typed.petType : 'geometric',
   } as PetSaveData;
 }
@@ -528,4 +544,53 @@ function isValidHeptaDigits(value: unknown): value is HeptaDigits {
     value.length === 42 &&
     value.every(v => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 7)
   );
+}
+
+function isValidMirrorMode(value: unknown): value is MirrorModeState {
+  if (!value || typeof value !== 'object') return false;
+  const mirror = value as MirrorModeState;
+  const phaseOk =
+    mirror.phase === 'idle' ||
+    mirror.phase === 'entering' ||
+    mirror.phase === 'crossed' ||
+    mirror.phase === 'returning';
+  const presetOk =
+    mirror.preset === null ||
+    mirror.preset === 'stealth' ||
+    mirror.preset === 'standard' ||
+    mirror.preset === 'radiant';
+
+  const reflectionOk =
+    mirror.lastReflection === null ||
+    (typeof mirror.lastReflection === 'object' &&
+      mirror.lastReflection !== null &&
+      typeof mirror.lastReflection.id === 'string' &&
+      (mirror.lastReflection.outcome === 'anchor' || mirror.lastReflection.outcome === 'drift') &&
+      typeof mirror.lastReflection.moodDelta === 'number' &&
+      typeof mirror.lastReflection.energyDelta === 'number' &&
+      typeof mirror.lastReflection.timestamp === 'number' &&
+      (mirror.lastReflection.note === undefined || typeof mirror.lastReflection.note === 'string') &&
+      (mirror.lastReflection.preset === 'stealth' ||
+        mirror.lastReflection.preset === 'standard' ||
+        mirror.lastReflection.preset === 'radiant'));
+
+  return (
+    phaseOk &&
+    presetOk &&
+    (mirror.startedAt === null || typeof mirror.startedAt === 'number') &&
+    (mirror.consentExpiresAt === null || typeof mirror.consentExpiresAt === 'number') &&
+    (mirror.presenceToken === null || typeof mirror.presenceToken === 'string') &&
+    reflectionOk
+  );
+}
+
+function createDefaultMirrorMode(): MirrorModeState {
+  return {
+    phase: 'idle',
+    startedAt: null,
+    consentExpiresAt: null,
+    preset: null,
+    presenceToken: null,
+    lastReflection: null,
+  };
 }

@@ -97,3 +97,6 @@ function randomTail(): [number, number, number, number] {
 function slugify(value: string | undefined, fallback: string): string {
   const base = value && value.trim() !== '' ? value.trim().toLowerCase() : fallback;
   return base
+    .replace(/[^a-z0-9\-\s]/g, '')
+    .replace(/\s+/g, '-');
+}
