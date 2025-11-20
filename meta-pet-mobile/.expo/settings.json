@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   "urlRandomness": "gf_X-HY",
   "dev": true,
   "minify": false,
@@ -7,4 +8,7 @@
   "hostType": "lan",
   "lanType": "ip",
   "devClient": false
+=======
+  "urlRandomness": "gf_X-HY"
+>>>>>>> Stashed changes
 }
