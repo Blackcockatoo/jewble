@@ -585,6 +585,7 @@ export default function Home() {
           mood: 70,
           energy: 75,
         },
+        petType: useStore.getState().petType ?? 'geometric',
         genome: result.offspring,
         genomeHash: genomeHashValue,
         traits: result.traits,

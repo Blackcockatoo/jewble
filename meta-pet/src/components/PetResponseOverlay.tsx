@@ -29,7 +29,6 @@ export function PetResponseOverlay({ enableAudio = true, enableAnticipation = tr
     hygiene: vitals.hygiene,
     recentActions: [], // Could be tracked separately if needed
     evolutionStage: evolution.state,
-    level: evolution.level,
   };
 
   // Audio callback for playing HeptaCode tones
@@ -104,10 +103,10 @@ export function PetResponseOverlay({ enableAudio = true, enableAnticipation = tr
 
       // Detect mini-game score improvements
       if (state.miniGames && prevState.miniGames) {
-        if (state.miniGames.memory.highScore > prevState.miniGames.memory.highScore) {
+        if (state.miniGames.memoryHighScore > prevState.miniGames.memoryHighScore) {
           triggerResponse('minigame_victory');
         }
-        if (state.miniGames.rhythm.highScore > prevState.miniGames.rhythm.highScore) {
+        if (state.miniGames.rhythmHighScore > prevState.miniGames.rhythmHighScore) {
           triggerResponse('minigame_victory');
         }
       }
@@ -121,8 +120,8 @@ export function PetResponseOverlay({ enableAudio = true, enableAnticipation = tr
           triggerResponse('exploration_discovery');
         }
 
-        const resolvedCount = state.vimana.cells.filter(c => c.anomaly && c.anomalyResolved).length;
-        const prevResolvedCount = prevState.vimana.cells.filter(c => c.anomaly && c.anomalyResolved).length;
+        const resolvedCount = state.vimana.anomaliesResolved ?? 0;
+        const prevResolvedCount = prevState.vimana.anomaliesResolved ?? 0;
 
         if (resolvedCount > prevResolvedCount) {
           triggerResponse('exploration_anomaly');
