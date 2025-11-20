@@ -1,6 +1,7 @@
-export * from './vitals/index';
-export * from './evolution/index';
-export * from './progression/index';
-export * from './genome/index';
-export * from './store/index';
-export * from './rng/index';
+import { createMetaPetWebStore, type MetaPetState } from '@metapet/core/store';
+
+export type { MetaPetState };
+export { createMetaPetWebStore } from '@metapet/core/store';
+export type { Vitals } from '@metapet/core/vitals';
+
+export const useStore = createMetaPetWebStore();
