@@ -1,1 +1,1 @@
-export { SeededRNG, createGenomeRNG } from '@metapet/core/rng';
+export { setSeed, nextRandom, nextInt } from '@metapet/core/rng';
