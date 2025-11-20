@@ -251,8 +251,6 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     throw new Error('Invalid pet file: genome hashes are malformed');
   }
 
-  const petType = isValidPetType(parsed.petType) ? parsed.petType : 'geometric';
-
   if (!parsed.traits || typeof parsed.traits !== 'object') {
     throw new Error('Invalid pet file: traits missing');
   }
@@ -308,6 +306,7 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     id: parsed.id,
     name: typeof parsed.name === 'string' && parsed.name.trim() !== '' ? parsed.name.trim() : undefined,
     vitals: parsed.vitals,
+    petType,
     genome,
     genomeHash: parsed.genomeHash,
     traits: parsed.traits as DerivedTraits,
