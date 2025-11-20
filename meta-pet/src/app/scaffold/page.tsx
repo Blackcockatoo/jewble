@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '@/lib/store';
 import { HUD } from '@/components/HUD';
 import { HeptaTag } from '@/components/HeptaTag';
@@ -74,71 +74,23 @@ export default function ScaffoldPage() {
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize system
-  useEffect(() => {
-    async function initialize() {
-      try {
-        // Start vitals tick if mock decay enabled
-        if (mockConfig.mockVitalsDecay) {
-          startTick();
-        }
-
-        // Generate HMAC key
-        const key = await getDeviceHmacKey();
-        setHmacKey(key);
-
-        // Mint initial identity
-        await mintNewIdentity(key);
-
-        setIsInitialized(true);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Initialization failed');
-      }
-    }
-
-    initialize();
-
-    return () => {
-      stopTick();
-      stopHepta();
-    };
-  }, []);
-
-  // Auto-play chime if enabled
-  useEffect(() => {
-    if (mockConfig.autoPlay && heptaCode && !isAudioPlaying) {
-      handlePlayChime();
-    }
-  }, [heptaCode, mockConfig.autoPlay]);
-
-  /**
-   * Generate mock DNA for testing
-   */
-  function generateMockDNA(): string {
+  const generateMockDNA = useCallback((): string => {
     const chars = 'ACTG0123456789abcdef';
     let dna = '';
     for (let i = 0; i < SAFETY_RAILS.MOCK_DNA_LENGTH; i++) {
       dna += chars[Math.floor(Math.random() * chars.length)];
     }
     return dna;
-  }
+  }, []);
 
-  /**
-   * Generate random tail (4 base-60 digits)
-   */
-  function generateTail(): [number, number, number, number] {
-    return [
-      Math.floor(Math.random() * 60),
-      Math.floor(Math.random() * 60),
-      Math.floor(Math.random() * 60),
-      Math.floor(Math.random() * 60),
-    ];
-  }
+  const generateTail = useCallback((): [number, number, number, number] => [
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+  ], []);
 
-  /**
-   * Mint new PrimeTailId and generate HeptaCode
-   */
-  async function mintNewIdentity(key: CryptoKey) {
+  const mintNewIdentity = useCallback(async (key: CryptoKey) => {
     try {
       setError(null);
 
@@ -193,12 +145,9 @@ export default function ScaffoldPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Minting failed');
     }
-  }
+  }, [generateMockDNA, generateTail]);
 
-  /**
-   * Play HeptaCode audio chime (with safety timeout)
-   */
-  async function handlePlayChime() {
+  const handlePlayChime = useCallback(async () => {
     if (!heptaCode || isAudioPlaying) return;
 
     try {
@@ -223,7 +172,44 @@ export default function ScaffoldPage() {
       setError(err instanceof Error ? err.message : 'Audio playback failed');
       setIsAudioPlaying(false);
     }
-  }
+  }, [heptaCode, isAudioPlaying]);
+
+  // Initialize system
+  useEffect(() => {
+    async function initialize() {
+      try {
+        // Start vitals tick if mock decay enabled
+        if (mockConfig.mockVitalsDecay) {
+          startTick();
+        }
+
+        // Generate HMAC key
+        const key = await getDeviceHmacKey();
+        setHmacKey(key);
+
+        // Mint initial identity
+        await mintNewIdentity(key);
+
+        setIsInitialized(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Initialization failed');
+      }
+    }
+
+    initialize();
+
+    return () => {
+      stopTick();
+      stopHepta();
+    };
+  }, [mockConfig.mockVitalsDecay, startTick, stopTick, mintNewIdentity]);
+
+  // Auto-play chime if enabled
+  useEffect(() => {
+    if (mockConfig.autoPlay && heptaCode && !isAudioPlaying) {
+      handlePlayChime();
+    }
+  }, [handlePlayChime, heptaCode, isAudioPlaying, mockConfig.autoPlay]);
 
   /**
    * Stop audio playback
