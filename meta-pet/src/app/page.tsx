@@ -61,6 +61,7 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import Link from 'next/link';
+import { PetResponseOverlay } from '@/components/PetResponseOverlay';
 
 interface PetSummary {
   id: string;
@@ -584,7 +585,6 @@ export default function Home() {
           mood: 70,
           energy: 75,
         },
-        petType: useStore.getState().petType ?? 'geometric',
         genome: result.offspring,
         genomeHash: genomeHashValue,
         traits: result.traits,
@@ -910,6 +910,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6">
+      {/* Real-time Response Overlay */}
+      <PetResponseOverlay enableAudio={true} enableAnticipation={true} />
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
