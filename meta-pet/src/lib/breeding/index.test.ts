@@ -112,6 +112,8 @@ describe('Breeding System', () => {
 
       const uniqueResults = new Set(runs);
       expect(uniqueResults.size).toBeGreaterThan(1);
+    });
+
     it('should produce deterministic offspring for identical inputs', () => {
       const parent1 = createTestGenome(1);
       const parent2 = createTestGenome(5);
@@ -273,7 +275,6 @@ describe('Breeding System', () => {
       expect(uniqueTraits.size).toBe(prediction.possibleTraits.length);
     });
 
-    it('should provide consistent confidence for repeated previews', () => {
     it('should provide stable previews for repeated calls', () => {
       const parent1 = createTestGenome(1);
       const parent2 = createTestGenome(3);
