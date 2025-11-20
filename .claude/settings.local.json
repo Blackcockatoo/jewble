@@ -16,7 +16,10 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(npm test)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npx expo start --web)",
+      "Bash(timeout /t 10)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

@@ -18,6 +18,9 @@ import type { ConsentState } from '../identity/types';
 import { createDefaultConsent, grantConsent, revokeConsent as revokeConsentState, isConsentValid } from '../identity/consent';
 import { persistence } from './persistence';
 
+// Re-export types that are used by components
+export type { Vitals };
+
 export interface ExportPayload {
   version: string;
   exportedAt: number;

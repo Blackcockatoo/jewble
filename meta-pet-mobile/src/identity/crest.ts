@@ -44,8 +44,8 @@ async function hmacSha256(key: Uint8Array, message: Uint8Array): Promise<Uint8Ar
 
   let keyPrime = new Uint8Array(blockSize);
   if (key.length > blockSize) {
-    const hashed = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, key);
-    keyPrime.set(new Uint8Array(hashed));
+    const hashed = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, key as BufferSource);
+    keyPrime.set(new Uint8Array(hashed as ArrayBuffer));
   } else {
     keyPrime.set(key);
   }
@@ -87,7 +87,7 @@ export async function getDeviceHmacKey(): Promise<Uint8Array> {
   const key = await Crypto.getRandomBytesAsync(32);
 
   try {
-    await SecureStore.setItemAsync(HMAC_KEY_STORAGE, arrayBufferToBase64(key.buffer));
+    await SecureStore.setItemAsync(HMAC_KEY_STORAGE, arrayBufferToBase64(key.buffer as ArrayBuffer));
   } catch (error) {
     console.warn('Failed to persist HMAC key:', error);
   }
