@@ -988,7 +988,7 @@ export default function Home() {
               </div>
 
               {/* Pet sprite */}
-              <div className="relative h-48 mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden">
+              <div className={`relative mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden ${petType === 'geometric' ? 'h-48' : 'h-96'}`}>
                 {petType === 'geometric' ? <PetSprite /> : <AuraliaGuardian />}
               </div>
 

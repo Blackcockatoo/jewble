@@ -153,9 +153,9 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
       </div>
 
       {vimanaOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="relative w-full max-w-3xl">
-            <div className="absolute -top-10 right-0 flex gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-auto">
+          <div className="relative w-full max-w-3xl h-[90vh] max-h-[800px]">
+            <div className="absolute -top-10 right-0 flex gap-2 z-10">
               <Button size="sm" variant="outline" onClick={handleCloseVimana}>
                 Close
               </Button>

@@ -32,6 +32,8 @@ export function useRealtimeResponse(context: ResponseContext, options: UseRealti
   const [consecutiveActionCount, setConsecutiveActionCount] = useState(0);
   const lastActionRef = useRef<string | null>(null);
   const lastActionTimeRef = useRef<number>(0);
+  const lastWarningTimeRef = useRef<number>(0);
+  const lastWarningTypeRef = useRef<string | null>(null);
 
   // Play audio for response if enabled
   const playResponseAudio = useCallback(async (response: PetResponse) => {
@@ -152,25 +154,42 @@ export function useRealtimeResponse(context: ResponseContext, options: UseRealti
     }
   }, [context, enableAnticipation, isVisible]);
 
-  // Check for warnings
+  // Check for warnings with throttling to prevent spam
   useEffect(() => {
     if (!enableWarnings) return;
 
     const warning = getWarningResponse(context);
-    if (warning && (!currentResponse || currentResponse.type !== 'warning')) {
-      setCurrentResponse(warning);
-      setIsVisible(true);
+    if (warning) {
+      const now = Date.now();
+      const timeSinceLastWarning = now - lastWarningTimeRef.current;
+      const isSameWarning = lastWarningTypeRef.current === warning.text;
 
-      // Play audio for warning
-      void playResponseAudio(warning);
+      // Only show warning if:
+      // 1. No current response visible, OR
+      // 2. 60+ seconds since last warning of this type, OR
+      // 3. Different warning type
+      const shouldShow =
+        !isVisible ||
+        timeSinceLastWarning > 60000 ||
+        !isSameWarning;
 
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-      }, warning.duration);
+      if (shouldShow) {
+        setCurrentResponse(warning);
+        setIsVisible(true);
+        lastWarningTimeRef.current = now;
+        lastWarningTypeRef.current = warning.text;
 
-      return () => clearTimeout(timer);
+        // Play audio for warning
+        void playResponseAudio(warning);
+
+        const timer = setTimeout(() => {
+          setIsVisible(false);
+        }, warning.duration);
+
+        return () => clearTimeout(timer);
+      }
     }
-  }, [context, enableWarnings, currentResponse, playResponseAudio]);
+  }, [context, enableWarnings, isVisible, playResponseAudio]);
 
   // Auto-trigger idle responses
   useEffect(() => {
