@@ -74,15 +74,16 @@ const initField = (seedName: string = "AURALIA") => {
   const seedStr = interleave3(red, black, blue);
   const seedBI = BigInt("0x" + base10ToHex(seedStr + seedName));
 
-  let s0 = mix64(seedBI);
-  let s1 = mix64(seedBI ^ 0xA5A5A5A5A5A5A5A5n);
-  const prng = (): number => {
-    let x = s0, y = s1;
-    s0 = y;
-    x ^= x << 23n; x ^= x >> 17n; x ^= y ^ (y >> 26n);
-    s1 = x;
-    const sum = (s0 + s1) & ((1n << 64n) - 1n);
-    return Number(sum) / 18446744073709551616;
+    let s0 = mix64(seedBI);
+    let s1 = mix64(seedBI ^ 0xA5A5A5A5A5A5A5A5n);
+    const prng = (): number => {
+      let x = s0;
+      const y = s1;
+      s0 = y;
+      x ^= x << 23n; x ^= x >> 17n; x ^= y ^ (y >> 26n);
+      s1 = x;
+      const sum = (s0 + s1) & ((1n << 64n) - 1n);
+      return Number(sum) / 18446744073709551616;
   };
 
   const hash = (msg: string): bigint => {
@@ -124,11 +125,12 @@ const useAuraliaAudio = (enabled: boolean, energy: number, mood: number) => {
 
     if (isSetup.current) return;
 
-    const setupAudio = async () => {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
-      if (ctx.state === 'suspended') await ctx.resume();
+      const setupAudio = async () => {
+        const AudioContextConstructor =
+          window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextConstructor) return;
+        const ctx = new AudioContextConstructor();
+        if (ctx.state === 'suspended') await ctx.resume();
 
       const convolver = ctx.createConvolver();
       const reverbTime = 2;
@@ -200,9 +202,9 @@ const useAuraliaAudio = (enabled: boolean, energy: number, mood: number) => {
     if (!enabled || !audio) return;
     const now = audio.ctx.currentTime;
     const maxVol = 0.02;
-    (audio.droneOscs[0]?.gain as any).linearRampToValueAtTime((energy / 100) * maxVol, now + 1);
-    (audio.droneOscs[1]?.gain as any).linearRampToValueAtTime((mood / 100) * maxVol, now + 1);
-    (audio.droneOscs[2]?.gain as any).linearRampToValueAtTime(((energy + mood) / 200) * maxVol, now + 1);
+    audio.droneOscs[0]?.gain.gain.linearRampToValueAtTime((energy / 100) * maxVol, now + 1);
+    audio.droneOscs[1]?.gain.gain.linearRampToValueAtTime((mood / 100) * maxVol, now + 1);
+    audio.droneOscs[2]?.gain.gain.linearRampToValueAtTime(((energy + mood) / 200) * maxVol, now + 1);
   }, [enabled, energy, mood]);
 
   const playNote = useCallback((index: number, duration: number = 0.3) => {
