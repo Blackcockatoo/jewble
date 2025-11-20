@@ -819,18 +819,34 @@ const AuraliaMetaPet: React.FC = () => {
         if (prev.direction === 'left') newHead.x -= 1;
         if (prev.direction === 'right') newHead.x += 1;
 
-        // Check collision with walls or self
-        if (newHead.x < 0 || newHead.x >= 15 || newHead.y < 0 || newHead.y >= 15 ||
-            prev.segments.some(seg => seg.x === newHead.x && seg.y === newHead.y)) {
+        const willGrow = newHead.x === prev.food.x && newHead.y === prev.food.y;
+        const bodyToCheck = willGrow ? prev.segments : prev.segments.slice(0, -1);
+
+        // Check collision with walls or self (excluding the tail when it moves)
+        if (
+          newHead.x < 0 ||
+          newHead.x >= 15 ||
+          newHead.y < 0 ||
+          newHead.y >= 15 ||
+          bodyToCheck.some(seg => seg.x === newHead.x && seg.y === newHead.y)
+        ) {
           handleWhisper(`Snake game over! Score: ${prev.score}`);
           return { ...prev, gameOver: true };
         }
 
         const newSegments = [newHead, ...prev.segments];
 
-        // Check if ate food
-        if (newHead.x === prev.food.x && newHead.y === prev.food.y) {
-          const newFood = { x: Math.floor(field.prng() * 15), y: Math.floor(field.prng() * 15) };
+        if (willGrow) {
+          let newFood = prev.food;
+          for (let attempts = 0; attempts < 50; attempts++) {
+            const candidate = { x: Math.floor(field.prng() * 15), y: Math.floor(field.prng() * 15) };
+            const overlapsSnake = newSegments.some(seg => seg.x === candidate.x && seg.y === candidate.y);
+            if (!overlapsSnake) {
+              newFood = candidate;
+              break;
+            }
+          }
+
           if (audioEnabled) playNote(prev.score % 7, 0.2);
 
           const newScore = prev.score + 10;
@@ -844,10 +860,10 @@ const AuraliaMetaPet: React.FC = () => {
           }
 
           return { ...prev, segments: newSegments, food: newFood, score: newScore };
-        } else {
-          newSegments.pop();
-          return { ...prev, segments: newSegments };
         }
+
+        newSegments.pop();
+        return { ...prev, segments: newSegments };
       });
     }, 200);
 
