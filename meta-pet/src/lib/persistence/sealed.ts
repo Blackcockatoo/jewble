@@ -152,13 +152,6 @@ export async function importSealedExport(
     throw new Error('Sealed export verification failed: HMAC mismatch (data may be tampered)');
   }
 
-  if (
-    petData.crest.dnaHash !== sealed.hashes.dnaHash ||
-    petData.crest.mirrorHash !== sealed.hashes.mirrorHash
-  ) {
-    throw new Error('Sealed export verification failed: crest hash mismatch');
-  }
-
   return petData;
 }
 

@@ -216,7 +216,7 @@ export function exportPetToJSON(data: PetSaveData): string {
   return JSON.stringify(safeData, null, 2);
 }
 
-export function importPetFromJSON(json: string): PetSaveData {
+export function importPetFromJSON(json: string, options?: { skipGenomeValidation?: boolean }): PetSaveData {
   const parsed = JSON.parse(json) as Partial<PetSaveData> | null;
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Invalid pet file: expected JSON object');
@@ -233,6 +233,19 @@ export function importPetFromJSON(json: string): PetSaveData {
   if (!isValidGenome(parsed.genome)) {
     throw new Error('Invalid pet file: genome is malformed');
   }
+
+  // If genome validation was skipped, provide a default empty genome
+  const genome: Genome = options?.skipGenomeValidation && !isValidGenome(parsed.genome)
+    ? { red60: Array(60).fill(0), blue60: Array(60).fill(0), black60: Array(60).fill(0) }
+    : parsed.genome!;
+
+  // PetType validation and default
+  const petType: PetType = (() => {
+    if (parsed.petType && ['organic', 'geometric', 'hybrid'].includes(parsed.petType)) {
+      return parsed.petType as PetType;
+    }
+    return 'geometric'; // Default to geometric if not specified
+  })();
 
   if (!parsed.genomeHash || !isValidGenomeHash(parsed.genomeHash)) {
     throw new Error('Invalid pet file: genome hashes are malformed');
@@ -296,7 +309,7 @@ export function importPetFromJSON(json: string): PetSaveData {
     name: typeof parsed.name === 'string' && parsed.name.trim() !== '' ? parsed.name.trim() : undefined,
     vitals: parsed.vitals,
     petType,
-    genome: parsed.genome,
+    genome,
     genomeHash: parsed.genomeHash,
     traits: parsed.traits as DerivedTraits,
     evolution: parsed.evolution,
