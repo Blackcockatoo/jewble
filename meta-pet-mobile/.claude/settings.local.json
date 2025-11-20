@@ -17,7 +17,11 @@
       "Bash(npx kill-port:*)",
       "Bash(node --version:*)",
       "Bash(npx @expo/cli@latest start)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(ipconfig:*)",
+      "Bash(npx qrcode-terminal:*)",
+      "Bash(npx qrcode:*)",
+      "Bash(start expo-qr.png)"
     ],
     "deny": [],
     "ask": []
