@@ -20,7 +20,8 @@
       "Bash(npx expo start --web)",
       "Bash(timeout /t 10)",
       "Bash(powershell:*)",
-      "Bash(npx expo start:*)"
+      "Bash(npx expo start:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
