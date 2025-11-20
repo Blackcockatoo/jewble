@@ -251,6 +251,8 @@ export function importPetFromJSON(json: string, options?: { skipGenomeValidation
     throw new Error('Invalid pet file: genome hashes are malformed');
   }
 
+  const petType = isValidPetType(parsed.petType) ? parsed.petType : 'geometric';
+
   if (!parsed.traits || typeof parsed.traits !== 'object') {
     throw new Error('Invalid pet file: traits missing');
   }

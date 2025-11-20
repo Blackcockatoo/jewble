@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { Buffer } from 'node:buffer';
 import {
   createSealedExport,
   importSealedExport,
@@ -189,6 +190,38 @@ describe('Sealed Export/Import', () => {
 
       await expect(importSealedExport(invalid, hmacKey)).rejects.toThrow(
         'Unsupported sealed export version'
+      );
+    });
+
+    it('should reject crest hash mismatches even when signed', async () => {
+      const sealed = await createSealedExport(mockPetData, hmacKey);
+      const parsed = JSON.parse(sealed);
+
+      const payload = JSON.parse(atob(parsed.payload));
+      payload.crest.dnaHash = 'tampered-dna-hash';
+
+      parsed.payload = btoa(JSON.stringify(payload));
+
+      const signaturePayload = JSON.stringify({
+        version: parsed.version,
+        signature: parsed.signature,
+        payload: parsed.payload,
+        exportedAt: parsed.exportedAt,
+        petId: parsed.petId,
+        hashes: parsed.hashes,
+      });
+
+      const mac = await crypto.subtle.sign(
+        'HMAC',
+        hmacKey,
+        new TextEncoder().encode(signaturePayload)
+      );
+      parsed.hmac = Buffer.from(mac).toString('hex');
+
+      const tampered = JSON.stringify(parsed);
+
+      await expect(importSealedExport(tampered, hmacKey)).rejects.toThrow(
+        'crest hash mismatch'
       );
     });
 
