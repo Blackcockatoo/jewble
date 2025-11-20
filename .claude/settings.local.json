@@ -19,7 +19,8 @@
       "Bash(dir:*)",
       "Bash(npx expo start --web)",
       "Bash(timeout /t 10)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(npx expo start:*)"
     ],
     "deny": [],
     "ask": []
