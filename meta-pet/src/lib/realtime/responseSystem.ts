@@ -1,6 +1,7 @@
 /**
  * Real-time Response System
  * Provides dynamic, contextual feedback for pet interactions and game events
+ * Enhanced with audio integration, chain reactions, and predictive responses
  */
 
 export type ResponseType = 'action' | 'mood' | 'achievement' | 'interaction' | 'warning' | 'celebration';
@@ -13,6 +14,8 @@ export interface PetResponse {
   intensity: 'subtle' | 'normal' | 'intense';
   duration: number; // milliseconds
   hapticFeedback?: 'light' | 'medium' | 'heavy';
+  audioTrigger?: 'success' | 'warning' | 'celebration' | 'idle'; // Audio feedback type
+  chainReaction?: PetResponse; // Follow-up response
 }
 
 export interface ResponseContext {
@@ -21,6 +24,9 @@ export interface ResponseContext {
   hunger: number;
   hygiene: number;
   recentActions: string[];
+  evolutionStage?: string; // Current evolution stage
+  level?: number; // Experience level
+  consecutiveActions?: number; // For streak detection
 }
 
 // Response library organized by context and mood
@@ -103,6 +109,68 @@ const responseLibrary = {
       { text: 'TRANSFORMATION! ⚡', emoji: '⚡', intensity: 'intense' },
     ],
   },
+  minigame: {
+    victory: [
+      { text: 'High score! 🎮', emoji: '🎮', intensity: 'intense' },
+      { text: 'Nailed it! 🎯', emoji: '🎯', intensity: 'intense' },
+      { text: 'Perfect! ⭐', emoji: '⭐', intensity: 'intense' },
+    ],
+    good: [
+      { text: 'Nice work! 👍', emoji: '👍', intensity: 'normal' },
+      { text: 'Getting better! 📈', emoji: '📈', intensity: 'normal' },
+    ],
+    failure: [
+      { text: 'Almost! 😅', emoji: '😅', intensity: 'subtle' },
+      { text: "I'll try again 💪", emoji: '💪', intensity: 'subtle' },
+    ],
+  },
+  exploration: {
+    discovery: [
+      { text: 'Found something! 🔍', emoji: '🔍', intensity: 'normal' },
+      { text: 'Interesting! 👀', emoji: '👀', intensity: 'normal' },
+      { text: 'New territory! 🗺️', emoji: '🗺️', intensity: 'intense' },
+    ],
+    anomaly: [
+      { text: 'What is this? 🤔', emoji: '🤔', intensity: 'normal' },
+      { text: 'Anomaly detected! ⚠️', emoji: '⚠️', intensity: 'intense' },
+    ],
+  },
+  vitals: {
+    excellent: [
+      { text: "I'm thriving! 🌟", emoji: '🌟', intensity: 'normal' },
+      { text: 'Feeling amazing! ✨', emoji: '✨', intensity: 'normal' },
+      { text: 'Peak condition! 💫', emoji: '💫', intensity: 'intense' },
+    ],
+    good: [
+      { text: 'Doing well! 😊', emoji: '😊', intensity: 'subtle' },
+      { text: 'All good here! ✓', emoji: '✓', intensity: 'subtle' },
+    ],
+    declining: [
+      { text: 'Need some care... 😟', emoji: '😟', intensity: 'normal' },
+      { text: 'Not feeling great 😔', emoji: '😔', intensity: 'normal' },
+    ],
+    critical: [
+      { text: 'HELP! 😱', emoji: '😱', intensity: 'intense' },
+      { text: 'URGENT! ⚠️', emoji: '⚠️', intensity: 'intense' },
+    ],
+  },
+  streak: {
+    milestone: [
+      { text: '3 in a row! 🔥', emoji: '🔥', intensity: 'intense' },
+      { text: "I'm on fire! 🔥", emoji: '🔥', intensity: 'intense' },
+      { text: 'Unstoppable! ⚡', emoji: '⚡', intensity: 'intense' },
+    ],
+  },
+  anticipation: {
+    excited: [
+      { text: "What's next? 😃", emoji: '😃', intensity: 'subtle' },
+      { text: 'Ready for more! 💪', emoji: '💪', intensity: 'subtle' },
+    ],
+    curious: [
+      { text: 'Hmm... 🤔', emoji: '🤔', intensity: 'subtle' },
+      { text: 'Waiting... ⏳', emoji: '⏳', intensity: 'subtle' },
+    ],
+  },
 };
 
 /**
@@ -114,46 +182,69 @@ export function getResponse(
 ): PetResponse {
   const moodLevel = context.mood > 70 ? 'happy' : context.mood > 40 ? 'neutral' : 'unhappy';
   const isVeryTired = context.energy < 30;
+  const isConsecutive = (context.consecutiveActions ?? 0) >= 3;
 
   let responses: Array<{ text: string; emoji: string; intensity: string }> = [];
   let responseType: ResponseType = 'action';
   let duration = 3000;
+  let audioTrigger: 'success' | 'warning' | 'celebration' | 'idle' | undefined;
+  let chainReaction: PetResponse | undefined;
 
   switch (action) {
     case 'feed':
       responses = responseLibrary.feeding[isVeryTired ? 'neutral' : moodLevel] || responseLibrary.feeding.neutral;
       responseType = 'action';
       duration = 2500;
+      audioTrigger = 'success';
       break;
     case 'play':
       responses = responseLibrary.playing[isVeryTired ? 'tired' : moodLevel] || responseLibrary.playing.neutral;
       responseType = 'interaction';
       duration = 3500;
+      audioTrigger = 'success';
+      // Add streak reaction if consecutive
+      if (isConsecutive) {
+        const streakResponse = responseLibrary.streak.milestone[0];
+        chainReaction = {
+          id: `chain-${Date.now()}`,
+          type: 'celebration',
+          text: streakResponse.text,
+          emoji: streakResponse.emoji,
+          intensity: 'intense',
+          duration: 2000,
+          audioTrigger: 'celebration',
+        };
+      }
       break;
     case 'clean':
       responses = responseLibrary.cleaning[moodLevel] || responseLibrary.cleaning.neutral;
       responseType = 'action';
       duration = 2500;
+      audioTrigger = 'success';
       break;
     case 'sleep':
       responses = responseLibrary.sleeping.happy;
       responseType = 'action';
       duration = 2000;
+      audioTrigger = 'idle';
       break;
     case 'achievement':
       responses = responseLibrary.achievement.intense;
       responseType = 'achievement';
       duration = 4000;
+      audioTrigger = 'celebration';
       break;
     case 'breeding':
       responses = responseLibrary.breeding.intense;
       responseType = 'celebration';
       duration = 4000;
+      audioTrigger = 'celebration';
       break;
     case 'battle_victory':
       responses = responseLibrary.battle.victory;
       responseType = 'celebration';
       duration = 3500;
+      audioTrigger = 'celebration';
       break;
     case 'battle_defeat':
       responses = responseLibrary.battle.defeat;
@@ -164,15 +255,63 @@ export function getResponse(
       responses = responseLibrary.evolution.intense;
       responseType = 'celebration';
       duration = 5000;
+      audioTrigger = 'celebration';
+      break;
+    case 'minigame_victory':
+      responses = responseLibrary.minigame.victory;
+      responseType = 'achievement';
+      duration = 3500;
+      audioTrigger = 'celebration';
+      break;
+    case 'minigame_good':
+      responses = responseLibrary.minigame.good;
+      responseType = 'interaction';
+      duration = 2500;
+      audioTrigger = 'success';
+      break;
+    case 'minigame_failure':
+      responses = responseLibrary.minigame.failure;
+      responseType = 'mood';
+      duration = 2000;
+      break;
+    case 'exploration_discovery':
+      responses = responseLibrary.exploration.discovery;
+      responseType = 'interaction';
+      duration = 2500;
+      audioTrigger = 'success';
+      break;
+    case 'exploration_anomaly':
+      responses = responseLibrary.exploration.anomaly;
+      responseType = 'warning';
+      duration = 3000;
+      audioTrigger = 'warning';
+      break;
+    case 'vitals_check':
+      const avgVitals = (context.mood + context.energy + (100 - context.hunger) + context.hygiene) / 4;
+      if (avgVitals >= 80) {
+        responses = responseLibrary.vitals.excellent;
+        audioTrigger = 'success';
+      } else if (avgVitals >= 60) {
+        responses = responseLibrary.vitals.good;
+      } else if (avgVitals >= 40) {
+        responses = responseLibrary.vitals.declining;
+        audioTrigger = 'warning';
+      } else {
+        responses = responseLibrary.vitals.critical;
+        audioTrigger = 'warning';
+      }
+      responseType = 'mood';
+      duration = 2500;
       break;
     default:
       responses = [{ text: 'Hi there! 👋', emoji: '👋', intensity: 'subtle' }];
+      audioTrigger = 'idle';
   }
 
   // Select a random response
   const selected = responses[Math.floor(Math.random() * responses.length)];
 
-  return {
+  const response: PetResponse = {
     id: `${Date.now()}-${Math.random()}`,
     type: responseType,
     text: selected.text,
@@ -180,7 +319,11 @@ export function getResponse(
     intensity: (selected.intensity as 'subtle' | 'normal' | 'intense') || 'normal',
     duration,
     hapticFeedback: selected.intensity === 'intense' ? 'heavy' : selected.intensity === 'normal' ? 'medium' : 'light',
+    audioTrigger,
+    chainReaction,
   };
+
+  return response;
 }
 
 /**
@@ -231,6 +374,7 @@ export function getWarningResponse(context: ResponseContext): PetResponse | null
       intensity: 'intense',
       duration: 3000,
       hapticFeedback: 'heavy',
+      audioTrigger: 'warning',
     };
   }
 
@@ -243,6 +387,7 @@ export function getWarningResponse(context: ResponseContext): PetResponse | null
       intensity: 'normal',
       duration: 2500,
       hapticFeedback: 'medium',
+      audioTrigger: 'warning',
     };
   }
 
@@ -255,8 +400,75 @@ export function getWarningResponse(context: ResponseContext): PetResponse | null
       intensity: 'normal',
       duration: 2500,
       hapticFeedback: 'light',
+      audioTrigger: 'warning',
     };
   }
 
   return null;
+}
+
+/**
+ * Get a predictive/anticipatory response based on context
+ * Detects patterns and suggests next actions
+ */
+export function getAnticipatoryResponse(context: ResponseContext): PetResponse | null {
+  const avgVitals = (context.mood + context.energy + (100 - context.hunger) + context.hygiene) / 4;
+
+  // Predict what the pet might need soon
+  if (context.hunger > 60 && context.hunger < 80) {
+    return {
+      id: `anticipate-${Date.now()}`,
+      type: 'mood',
+      text: 'Getting a bit hungry... 🍽️',
+      emoji: '🍽️',
+      intensity: 'subtle',
+      duration: 2500,
+    };
+  }
+
+  if (context.energy < 30 && context.energy > 10) {
+    return {
+      id: `anticipate-${Date.now()}`,
+      type: 'mood',
+      text: 'Feeling sleepy... 😴',
+      emoji: '😴',
+      intensity: 'subtle',
+      duration: 2500,
+    };
+  }
+
+  if (avgVitals > 80 && context.mood > 70) {
+    const responses = responseLibrary.anticipation.excited;
+    const selected = responses[Math.floor(Math.random() * responses.length)];
+    return {
+      id: `anticipate-${Date.now()}`,
+      type: 'mood',
+      text: selected.text,
+      emoji: selected.emoji,
+      intensity: 'subtle',
+      duration: 2000,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Generate audio tone based on response type
+ * Returns frequency array for HeptaCode playback
+ */
+export function getAudioToneForResponse(audioTrigger?: string): number[] {
+  // Map audio triggers to HeptaCode digit patterns
+  switch (audioTrigger) {
+    case 'success':
+      return [0, 2, 4, 6]; // Ascending pleasant tone
+    case 'celebration':
+      return [0, 3, 6, 0, 3, 6]; // Triumphant pattern
+    case 'warning':
+      return [6, 4, 2, 0]; // Descending warning
+    case 'idle':
+      return [3, 3, 3]; // Neutral hum
+    default:
+      return [];
+  }
 }
