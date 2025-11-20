@@ -38,6 +38,7 @@ import { EvolutionPanel } from '@/components/EvolutionPanel';
 import { MiniGamesPanel } from '@/components/MiniGamesPanel';
 import { BattleArena } from '@/components/BattleArena';
 import { VimanaMap } from '@/components/VimanaMap';
+import { FeaturesDashboard } from '@/components/FeaturesDashboard';
 import { initializeEvolution } from '@/lib/evolution';
 import {
   createDefaultBattleStats,
@@ -1366,20 +1367,8 @@ export default function Home() {
               <EvolutionPanel />
             </div>
 
-            {/* Mini Games */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <MiniGamesPanel petName={petName} />
-            </div>
-
-            {/* Battle Arena */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <BattleArena />
-            </div>
-
-            {/* Vimana Map */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <VimanaMap />
-            </div>
+            {/* Features Dashboard - All new Phase 3 & 4 features */}
+            <FeaturesDashboard />
           </div>
         </div>
 
