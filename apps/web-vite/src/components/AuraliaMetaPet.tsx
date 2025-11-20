@@ -14,9 +14,14 @@ type AudioOscillator = { gain: GainNode };
 type AudioContextRef = { ctx: AudioContext; noteOscs: AudioOscillator[]; droneOscs: AudioOscillator[]; };
 type AIState = { mode: 'idle' | 'observing' | 'focusing' | 'playing' | 'dreaming'; target: number | null; since: number; };
 type BondHistoryEntry = { timestamp: number; bond: number; event: string; };
-type MiniGameType = 'sigilPattern' | 'fibonacciTrivia' | null;
+type MiniGameType = 'sigilPattern' | 'fibonacciTrivia' | 'snake' | 'tetris' | null;
 type PatternChallenge = { sequence: number[]; userSequence: number[]; active: boolean; };
 type TriviaQuestion = { question: string; answer: number; options: number[]; };
+type SnakeSegment = { x: number; y: number; };
+type SnakeState = { segments: SnakeSegment[]; food: { x: number; y: number }; direction: 'up' | 'down' | 'left' | 'right'; score: number; gameOver: boolean; };
+type TetrisPiece = { shape: number[][]; x: number; y: number; color: string; };
+type TetrisState = { board: number[][]; currentPiece: TetrisPiece | null; score: number; gameOver: boolean; };
+type Offspring = { name: string; genome: { red60: number; blue60: number; black60: number }; parents: string[]; birthDate: number; };
 type GuardianSaveData = {
   seedName: string;
   energy: number;
@@ -31,6 +36,8 @@ type GuardianSaveData = {
   dreamCount: number;
   gamesWon: number;
   highContrast: boolean;
+  offspring: Offspring[];
+  breedingPartner?: string;
 };
 
 // ===== MOSSPRIMESEED CORE =====
@@ -402,6 +409,30 @@ const generateFibonacciTrivia = (field: Field): TriviaQuestion => {
   return { question: q.question, answer: q.answer, options };
 };
 
+// ===== TETRIS PIECES =====
+const TETRIS_PIECES = [
+  { shape: [[1,1,1,1]], color: '#00FFFF' }, // I
+  { shape: [[1,1],[1,1]], color: '#FFFF00' }, // O
+  { shape: [[0,1,0],[1,1,1]], color: '#FF00FF' }, // T
+  { shape: [[1,1,0],[0,1,1]], color: '#00FF00' }, // S
+  { shape: [[0,1,1],[1,1,0]], color: '#FF0000' }, // Z
+  { shape: [[1,0,0],[1,1,1]], color: '#0000FF' }, // J
+  { shape: [[0,0,1],[1,1,1]], color: '#FFA500' }  // L
+];
+
+const rotatePiece = (shape: number[][]): number[][] => {
+  const rows = shape.length;
+  const cols = shape[0].length;
+  const rotated: number[][] = [];
+  for (let i = 0; i < cols; i++) {
+    rotated[i] = [];
+    for (let j = 0; j < rows; j++) {
+      rotated[i][j] = shape[rows - 1 - j][i];
+    }
+  }
+  return rotated;
+};
+
 // ===== MAIN COMPONENT =====
 const AuraliaMetaPet: React.FC = () => {
   const [seedName, setSeedName] = useState<string>("AURALIA");
@@ -437,6 +468,10 @@ const AuraliaMetaPet: React.FC = () => {
   const [triviaQuestion, setTriviaQuestion] = useState<TriviaQuestion | null>(null);
   const [audioScale, setAudioScale] = useState<ScaleName>('harmonic');
   const [highContrast, setHighContrast] = useState<boolean>(false);
+  const [snakeState, setSnakeState] = useState<SnakeState>({ segments: [{x: 5, y: 5}], food: {x: 10, y: 10}, direction: 'right', score: 0, gameOver: false });
+  const [tetrisState, setTetrisState] = useState<TetrisState>({ board: Array(20).fill(null).map(() => Array(10).fill(0)), currentPiece: null, score: 0, gameOver: false });
+  const [offspring, setOffspring] = useState<Offspring[]>([]);
+  const [breedingPartner, setBreedingPartner] = useState<string>('');
 
   const stats = useMemo(() => ({ energy, curiosity, bond }), [energy, curiosity, bond]);
   const { playNote } = useAuraliaAudio(audioEnabled, stats, audioScale);
@@ -467,6 +502,8 @@ const AuraliaMetaPet: React.FC = () => {
       setDreamCount(saved.dreamCount || 0);
       setGamesWon(saved.gamesWon || 0);
       setHighContrast(saved.highContrast || false);
+      setOffspring(saved.offspring || []);
+      setBreedingPartner(saved.breedingPartner || '');
       handleWhisper('Welcome back. The patterns remember you.');
     }
   }, [handleWhisper]);
@@ -487,13 +524,15 @@ const AuraliaMetaPet: React.FC = () => {
         totalInteractions,
         dreamCount,
         gamesWon,
-        highContrast
+        highContrast,
+        offspring,
+        breedingPartner
       };
       saveGuardianState(saveData);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [seedName, energy, curiosity, bond, health, bondHistory, activatedPoints, createdAt, totalInteractions, dreamCount, gamesWon, highContrast]);
+  }, [seedName, energy, curiosity, bond, health, bondHistory, activatedPoints, createdAt, totalInteractions, dreamCount, gamesWon, highContrast, offspring, breedingPartner]);
 
   // Update time of day every minute
   useEffect(() => {
@@ -740,6 +779,258 @@ const AuraliaMetaPet: React.FC = () => {
     setCurrentGame(null);
   };
 
+  // ===== SNAKE GAME LOGIC =====
+  const startSnakeGame = () => {
+    const initialFood = { x: Math.floor(field.prng() * 15), y: Math.floor(field.prng() * 15) };
+    setSnakeState({ segments: [{x: 5, y: 5}, {x: 4, y: 5}, {x: 3, y: 5}], food: initialFood, direction: 'right', score: 0, gameOver: false });
+    setCurrentGame('snake');
+    handleWhisper('Navigate the serpent through the grid!');
+  };
+
+  const resetSnakeGame = () => {
+    startSnakeGame();
+  };
+
+  useEffect(() => {
+    if (currentGame !== 'snake' || snakeState.gameOver) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const { direction } = snakeState;
+      if (e.key === 'ArrowUp' && direction !== 'down') setSnakeState(s => ({ ...s, direction: 'up' }));
+      if (e.key === 'ArrowDown' && direction !== 'up') setSnakeState(s => ({ ...s, direction: 'down' }));
+      if (e.key === 'ArrowLeft' && direction !== 'right') setSnakeState(s => ({ ...s, direction: 'left' }));
+      if (e.key === 'ArrowRight' && direction !== 'left') setSnakeState(s => ({ ...s, direction: 'right' }));
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentGame, snakeState]);
+
+  useEffect(() => {
+    if (currentGame !== 'snake' || snakeState.gameOver) return;
+
+    const gameLoop = setInterval(() => {
+      setSnakeState(prev => {
+        const head = prev.segments[0];
+        let newHead = { ...head };
+
+        if (prev.direction === 'up') newHead.y -= 1;
+        if (prev.direction === 'down') newHead.y += 1;
+        if (prev.direction === 'left') newHead.x -= 1;
+        if (prev.direction === 'right') newHead.x += 1;
+
+        // Check collision with walls or self
+        if (newHead.x < 0 || newHead.x >= 15 || newHead.y < 0 || newHead.y >= 15 ||
+            prev.segments.some(seg => seg.x === newHead.x && seg.y === newHead.y)) {
+          handleWhisper(`Snake game over! Score: ${prev.score}`);
+          return { ...prev, gameOver: true };
+        }
+
+        const newSegments = [newHead, ...prev.segments];
+
+        // Check if ate food
+        if (newHead.x === prev.food.x && newHead.y === prev.food.y) {
+          const newFood = { x: Math.floor(field.prng() * 15), y: Math.floor(field.prng() * 15) };
+          if (audioEnabled) playNote(prev.score % 7, 0.2);
+
+          const newScore = prev.score + 10;
+          if (newScore >= 50 && !prev.gameOver) {
+            setBond(b => Math.min(100, b + 15));
+            setEnergy(e => Math.min(100, e + 10));
+            setGamesWon(g => g + 1);
+            addToBondHistory(`Won Snake game with score ${newScore}!`);
+            handleWhisper(`Serpent mastery achieved! ${newScore} points.`);
+            return { ...prev, gameOver: true };
+          }
+
+          return { ...prev, segments: newSegments, food: newFood, score: newScore };
+        } else {
+          newSegments.pop();
+          return { ...prev, segments: newSegments };
+        }
+      });
+    }, 200);
+
+    return () => clearInterval(gameLoop);
+  }, [currentGame, snakeState.gameOver, audioEnabled, playNote, field, addToBondHistory, handleWhisper]);
+
+  // ===== TETRIS GAME LOGIC =====
+  const startTetrisGame = () => {
+    const piece = TETRIS_PIECES[Math.floor(field.prng() * TETRIS_PIECES.length)];
+    setTetrisState({
+      board: Array(20).fill(null).map(() => Array(10).fill(0)),
+      currentPiece: { ...piece, x: 4, y: 0 },
+      score: 0,
+      gameOver: false
+    });
+    setCurrentGame('tetris');
+    handleWhisper('Stack the sacred geometries!');
+  };
+
+  const resetTetrisGame = () => {
+    startTetrisGame();
+  };
+
+  useEffect(() => {
+    if (currentGame !== 'tetris' || !tetrisState.currentPiece || tetrisState.gameOver) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') moveTetrisPiece(-1, 0);
+      if (e.key === 'ArrowRight') moveTetrisPiece(1, 0);
+      if (e.key === 'ArrowDown') moveTetrisPiece(0, 1);
+      if (e.key === 'ArrowUp') rotateTetrisPiece();
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentGame, tetrisState]);
+
+  const canPlacePiece = (piece: TetrisPiece, board: number[][], offsetX: number = 0, offsetY: number = 0): boolean => {
+    for (let y = 0; y < piece.shape.length; y++) {
+      for (let x = 0; x < piece.shape[y].length; x++) {
+        if (piece.shape[y][x]) {
+          const newX = piece.x + x + offsetX;
+          const newY = piece.y + y + offsetY;
+          if (newX < 0 || newX >= 10 || newY >= 20 || (newY >= 0 && board[newY][newX])) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  };
+
+  const moveTetrisPiece = (dx: number, dy: number) => {
+    setTetrisState(prev => {
+      if (!prev.currentPiece) return prev;
+      if (canPlacePiece(prev.currentPiece, prev.board, dx, dy)) {
+        return { ...prev, currentPiece: { ...prev.currentPiece, x: prev.currentPiece.x + dx, y: prev.currentPiece.y + dy } };
+      }
+      return prev;
+    });
+  };
+
+  const rotateTetrisPiece = () => {
+    setTetrisState(prev => {
+      if (!prev.currentPiece) return prev;
+      const rotated = { ...prev.currentPiece, shape: rotatePiece(prev.currentPiece.shape) };
+      if (canPlacePiece(rotated, prev.board)) {
+        return { ...prev, currentPiece: rotated };
+      }
+      return prev;
+    });
+  };
+
+  const lockPiece = () => {
+    setTetrisState(prev => {
+      if (!prev.currentPiece) return prev;
+
+      const newBoard = prev.board.map(row => [...row]);
+      const piece = prev.currentPiece;
+
+      for (let y = 0; y < piece.shape.length; y++) {
+        for (let x = 0; x < piece.shape[y].length; x++) {
+          if (piece.shape[y][x] && piece.y + y >= 0) {
+            newBoard[piece.y + y][piece.x + x] = 1;
+          }
+        }
+      }
+
+      // Clear full rows
+      let linesCleared = 0;
+      for (let y = newBoard.length - 1; y >= 0; y--) {
+        if (newBoard[y].every(cell => cell === 1)) {
+          newBoard.splice(y, 1);
+          newBoard.unshift(Array(10).fill(0));
+          linesCleared++;
+          y++;
+        }
+      }
+
+      const newScore = prev.score + linesCleared * 100;
+
+      // Create new piece
+      const nextPiece = TETRIS_PIECES[Math.floor(field.prng() * TETRIS_PIECES.length)];
+      const newPiece = { ...nextPiece, x: 4, y: 0 };
+
+      if (!canPlacePiece(newPiece, newBoard)) {
+        handleWhisper(`Tetris complete! Score: ${newScore}`);
+        if (newScore >= 300) {
+          setBond(b => Math.min(100, b + 20));
+          setCuriosity(c => Math.min(100, c + 15));
+          setGamesWon(g => g + 1);
+          addToBondHistory(`Won Tetris with score ${newScore}!`);
+        }
+        return { ...prev, board: newBoard, score: newScore, gameOver: true, currentPiece: null };
+      }
+
+      if (linesCleared > 0 && audioEnabled) {
+        playNote(linesCleared % 7, 0.3);
+      }
+
+      return { ...prev, board: newBoard, currentPiece: newPiece, score: newScore };
+    });
+  };
+
+  useEffect(() => {
+    if (currentGame !== 'tetris' || !tetrisState.currentPiece || tetrisState.gameOver) return;
+
+    const gameLoop = setInterval(() => {
+      setTetrisState(prev => {
+        if (!prev.currentPiece) return prev;
+        if (canPlacePiece(prev.currentPiece, prev.board, 0, 1)) {
+          return { ...prev, currentPiece: { ...prev.currentPiece, y: prev.currentPiece.y + 1 } };
+        } else {
+          lockPiece();
+          return prev;
+        }
+      });
+    }, 500);
+
+    return () => clearInterval(gameLoop);
+  }, [currentGame, tetrisState.currentPiece, tetrisState.gameOver]);
+
+  // ===== BREEDING SYSTEM =====
+  const breedGuardian = () => {
+    if (!breedingPartner || bond < 70) {
+      handleWhisper('Bond must be at least 70 to breed, and you need a partner name.');
+      return;
+    }
+
+    const partnerField = initField(breedingPartner);
+    const partnerGenome = {
+      red60: Math.min(100, (partnerField.pulse.slice(0, 20).reduce((a, b) => a + b, 0) * 1.5) % 100),
+      blue60: Math.min(100, (partnerField.ring.slice(0, 20).reduce((a, b) => a + b, 0) * 1.3) % 100),
+      black60: Math.min(100, ((partnerField.pulse.slice(0, 10).reduce((a, b) => a + b, 0) + partnerField.ring.slice(0, 10).reduce((a, b) => a + b, 0)) * 1.1) % 100)
+    };
+
+    const childGenome = {
+      red60: (red60 + partnerGenome.red60) / 2 + (field.prng() - 0.5) * 10,
+      blue60: (blue60 + partnerGenome.blue60) / 2 + (field.prng() - 0.5) * 10,
+      black60: (black60 + partnerGenome.black60) / 2 + (field.prng() - 0.5) * 10
+    };
+
+    const childName = `${seedName.slice(0, 3)}${breedingPartner.slice(0, 3)}${Math.floor(field.prng() * 999)}`.toUpperCase();
+
+    const child: Offspring = {
+      name: childName,
+      genome: childGenome,
+      parents: [seedName, breedingPartner],
+      birthDate: Date.now()
+    };
+
+    setOffspring(prev => [...prev, child]);
+    setBond(b => Math.min(100, b + 25));
+    setCuriosity(c => Math.min(100, c + 20));
+    setGamesWon(g => g + 1);
+    addToBondHistory(`Bred new Guardian: ${childName}`);
+    handleWhisper(`New Guardian born: ${childName}! The lineage continues.`);
+
+    if (audioEnabled) {
+      [0, 2, 4, 5, 7].forEach((note, i) => setTimeout(() => playNote(note, 0.5), i * 200));
+    }
+  };
+
   const forms: Record<FormKey, Form> = {
     radiant: { name: "Radiant Guardian", baseColor: "#2C3E77", primaryGold: "#F4B942", secondaryGold: "#FFD700", tealAccent: "#4ECDC4", eyeColor: "#F4B942", glowColor: "rgba(244, 185, 66, 0.3)", description: "Calm strength - balanced blue and gold" },
     meditation: { name: "Meditation Cocoon", baseColor: "#0d1321", primaryGold: "#2DD4BF", secondaryGold: "#4ECDC4", tealAccent: "#1a4d4d", eyeColor: "#2DD4BF", glowColor: "rgba(45, 212, 191, 0.2)", description: "Quiet endurance - dusk-teal respite" },
@@ -755,7 +1046,7 @@ const AuraliaMetaPet: React.FC = () => {
   const timeTheme = getTimeTheme(timeOfDay);
 
   return (
-    <div className={`w-full min-h-screen bg-gradient-to-br ${highContrast ? 'from-black via-gray-900 to-black' : timeTheme.bg} text-white p-4 md:p-6 font-sans transition-colors duration-[3000ms]`}>
+    <div className={`w-full min-h-screen bg-gradient-to-br ${highContrast ? 'from-black via-gray-900 to-black' : timeTheme.bg} text-white p-4 md:p-6 pb-12 font-sans transition-colors duration-[3000ms] overflow-y-auto`}>
       <style>{`
         @keyframes breathe { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.05); } }
         @keyframes breathePulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
@@ -791,8 +1082,8 @@ const AuraliaMetaPet: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-gray-900/80 rounded-2xl p-8 border border-yellow-600/20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div className="bg-gray-900/80 rounded-2xl p-8 border border-yellow-600/20 lg:sticky lg:top-4">
             <div 
               className="aspect-square bg-gradient-to-br from-blue-950/30 to-gray-900/30 rounded-xl flex items-center justify-center relative overflow-hidden"
               onMouseMove={handleMouseMove}
@@ -1065,29 +1356,45 @@ const AuraliaMetaPet: React.FC = () => {
 
             <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
               <h3 className="text-xl font-semibold text-yellow-400 mb-4">Sacred Games</h3>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={startPatternGame}
                   disabled={currentGame !== null}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all"
+                  className="px-3 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all text-sm"
                   aria-label="Start sigil pattern matching game"
                 >
-                  🔮 Sigil Pattern Game
+                  🔮 Sigil Pattern
                 </button>
                 <button
                   onClick={startTriviaGame}
                   disabled={currentGame !== null}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all"
+                  className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all text-sm"
                   aria-label="Start Fibonacci trivia quiz"
                 >
-                  🧮 Number Wisdom Quiz
+                  🧮 Number Quiz
                 </button>
-                {gamesWon > 0 && (
-                  <p className="text-xs text-center text-green-400 mt-2">
-                    Games Won: {gamesWon}
-                  </p>
-                )}
+                <button
+                  onClick={startSnakeGame}
+                  disabled={currentGame !== null}
+                  className="px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all text-sm"
+                  aria-label="Start Snake game"
+                >
+                  🐍 Snake
+                </button>
+                <button
+                  onClick={startTetrisGame}
+                  disabled={currentGame !== null}
+                  className="px-3 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all text-sm"
+                  aria-label="Start Tetris game"
+                >
+                  🟦 Tetris
+                </button>
               </div>
+              {gamesWon > 0 && (
+                <p className="text-xs text-center text-green-400 mt-3">
+                  Games Won: {gamesWon}
+                </p>
+              )}
 
               {patternChallenge.active && (
                 <div className="mt-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
@@ -1116,6 +1423,130 @@ const AuraliaMetaPet: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {currentGame === 'snake' && (
+                <div className="mt-4 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <p className="text-sm text-green-300 font-medium">Snake Game</p>
+                    <p className="text-sm text-green-400">Score: {snakeState.score}</p>
+                  </div>
+                  {snakeState.gameOver ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-red-400 mb-2">Game Over!</p>
+                      <button onClick={resetSnakeGame} className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm">
+                        Play Again
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-15 gap-0.5 bg-gray-950 p-2 rounded">
+                      {Array.from({ length: 15 }).map((_, y) => (
+                        <div key={y} className="flex gap-0.5">
+                          {Array.from({ length: 15 }).map((_, x) => {
+                            const isSnake = snakeState.segments.some(seg => seg.x === x && seg.y === y);
+                            const isHead = snakeState.segments[0].x === x && snakeState.segments[0].y === y;
+                            const isFood = snakeState.food.x === x && snakeState.food.y === y;
+                            return (
+                              <div
+                                key={x}
+                                className={`w-3 h-3 rounded-sm ${isHead ? 'bg-green-400' : isSnake ? 'bg-green-600' : isFood ? 'bg-red-500' : 'bg-gray-800'}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-2 text-center">Use arrow keys to control</p>
+                </div>
+              )}
+
+              {currentGame === 'tetris' && (
+                <div className="mt-4 p-3 bg-indigo-900/20 border border-indigo-500/30 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <p className="text-sm text-indigo-300 font-medium">Tetris Game</p>
+                    <p className="text-sm text-indigo-400">Score: {tetrisState.score}</p>
+                  </div>
+                  {tetrisState.gameOver ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-red-400 mb-2">Game Over!</p>
+                      <button onClick={resetTetrisGame} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded text-sm">
+                        Play Again
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-950 p-2 rounded inline-block">
+                      {tetrisState.board.map((row, y) => (
+                        <div key={y} className="flex gap-0.5">
+                          {row.map((cell, x) => {
+                            let cellColor = cell ? '#4B5563' : '#1F2937';
+                            if (tetrisState.currentPiece) {
+                              const piece = tetrisState.currentPiece;
+                              for (let py = 0; py < piece.shape.length; py++) {
+                                for (let px = 0; px < piece.shape[py].length; px++) {
+                                  if (piece.shape[py][px] && piece.x + px === x && piece.y + py === y) {
+                                    cellColor = piece.color;
+                                  }
+                                }
+                              }
+                            }
+                            return (
+                              <div
+                                key={x}
+                                className="w-4 h-4 rounded-sm"
+                                style={{ backgroundColor: cellColor }}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-2 text-center">Arrows: move/rotate (↑), Drop: ↓</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
+              <h3 className="text-xl font-semibold text-yellow-400 mb-4">Breeding & Lineage</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Partner Guardian Name</label>
+                  <input
+                    type="text"
+                    value={breedingPartner}
+                    onChange={(e) => setBreedingPartner(e.target.value.toUpperCase())}
+                    className="w-full bg-gray-950 border border-yellow-600/30 rounded-lg px-4 py-2 text-center font-mono text-cyan-400 focus:outline-none focus:border-yellow-600"
+                    placeholder="PARTNER"
+                  />
+                </div>
+                <button
+                  onClick={breedGuardian}
+                  disabled={bond < 70 || !breedingPartner}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-all"
+                  aria-label="Breed new Guardian"
+                >
+                  💞 Breed Guardian (Bond ≥ 70)
+                </button>
+                {offspring.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-purple-400">Offspring ({offspring.length})</h4>
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {offspring.map((child, i) => (
+                        <div key={i} className="p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                          <p className="text-sm text-purple-300 font-mono">{child.name}</p>
+                          <p className="text-xs text-gray-400">Parents: {child.parents.join(' × ')}</p>
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                            <div><span className="text-gray-400">R:</span> <span className="text-red-400">{child.genome.red60.toFixed(1)}</span></div>
+                            <div><span className="text-gray-400">B:</span> <span className="text-blue-400">{child.genome.blue60.toFixed(1)}</span></div>
+                            <div><span className="text-gray-400">K:</span> <span className="text-gray-400">{child.genome.black60.toFixed(1)}</span></div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">{new Date(child.birthDate).toLocaleDateString()}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">

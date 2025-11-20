@@ -14,6 +14,9 @@ A fully-featured virtual companion that blends sacred mathematics, generative ar
 ### 🎮 Interactive Features
 - **Sigil Pattern Matching**: Memory game with 3-5 point sequences
 - **Fibonacci Trivia**: Mathematical quiz system with dynamic questions
+- **Snake Game**: Classic 15x15 grid serpent with keyboard controls (win at 50+ points)
+- **Tetris Game**: Sacred geometry stacking on 20x10 board (win at 300+ points)
+- **Breeding System**: Create offspring by combining two Guardian genomes (requires bond ≥ 70)
 - **Bond Chronicle**: Persistent history of all interactions
 - **Attunement Sliders**: Real-time control over Energy, Curiosity, Bond, and Health
 

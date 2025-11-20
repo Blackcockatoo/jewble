@@ -16,7 +16,7 @@ export type TimeOfDay = 'dawn' | 'day' | 'dusk' | 'night';
 
 export type AIMode = 'idle' | 'observing' | 'focusing' | 'playing' | 'dreaming';
 
-export type MiniGameType = 'sigilPattern' | 'fibonacciTrivia' | null;
+export type MiniGameType = 'sigilPattern' | 'fibonacciTrivia' | 'snake' | 'tetris' | null;
 
 // ===== CORE STRUCTURES =====
 
@@ -96,6 +96,42 @@ export interface TriviaQuestion {
   options: number[];
 }
 
+export interface SnakeSegment {
+  x: number;
+  y: number;
+}
+
+export interface SnakeState {
+  segments: SnakeSegment[];
+  food: { x: number; y: number };
+  direction: 'up' | 'down' | 'left' | 'right';
+  score: number;
+  gameOver: boolean;
+}
+
+export interface TetrisPiece {
+  shape: number[][];
+  x: number;
+  y: number;
+  color: string;
+}
+
+export interface TetrisState {
+  board: number[][];
+  currentPiece: TetrisPiece | null;
+  score: number;
+  gameOver: boolean;
+}
+
+// ===== BREEDING & GENETICS =====
+
+export interface Offspring {
+  name: string;
+  genome: GenomeData;
+  parents: string[];
+  birthDate: number;
+}
+
 // ===== PERSISTENCE =====
 
 export interface GuardianSaveData {
@@ -112,6 +148,8 @@ export interface GuardianSaveData {
   dreamCount: number;
   gamesWon: number;
   highContrast: boolean;
+  offspring: Offspring[];
+  breedingPartner?: string;
 }
 
 // ===== MOSSPRIMESEED =====

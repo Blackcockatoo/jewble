@@ -2,6 +2,53 @@
 
 All notable changes to the Auralia Guardian virtual companion.
 
+## [3.0.0] - 2025-01-20
+
+### Added - Classic Games & Breeding System
+- **Snake Game**: Classic serpent navigation with keyboard controls
+  - 15x15 grid gameplay
+  - Score tracking (win at 50+ points)
+  - Rewards: +15 bond, +10 energy on victory
+  - Arrow key controls with collision detection
+- **Tetris Game**: Sacred geometry stacking
+  - 20x10 board with seven classic tetromino pieces
+  - Line clearing mechanics (100 points per line)
+  - Win threshold at 300+ points
+  - Rewards: +20 bond, +15 curiosity on victory
+  - Arrow keys for movement/rotation
+- **Breeding & Lineage System**: Create offspring from two Guardians
+  - Requires bond ≥ 70 and partner name
+  - Genome mixing: averages parent red60/blue60/black60 with mutation
+  - Generated child names from parent seeds
+  - Offspring display with genome visualization
+  - Persistent lineage tracking across sessions
+  - Rewards: +25 bond, +20 curiosity per breeding
+- **Layout Improvements**: Fixed bottom cutoff issues
+  - Sticky Guardian display on large screens
+  - Proper scrolling for long content
+  - Enhanced padding at bottom (pb-12)
+  - Grid layout with items-start alignment
+
+### Enhanced
+- Sacred Games panel now displays 2x2 grid of four games
+- Game state persistence (Snake/Tetris scores tracked)
+- Real-time game rendering with colored visualizations
+- Offspring count and genome details in breeding panel
+- Reset/replay functionality for all games
+
+### Technical
+- New types: `SnakeSegment`, `SnakeState`, `TetrisPiece`, `TetrisState`, `Offspring`
+- Extended `MiniGameType` to include 'snake' and 'tetris'
+- Extended `GuardianSaveData` with `offspring` and `breedingPartner`
+- `TETRIS_PIECES` constant array with 7 shapes and colors
+- `rotatePiece` utility for tetromino rotation
+- Game loop hooks for Snake and Tetris with collision detection
+- `breedGuardian` function with genome computation
+- Keyboard event listeners for game controls
+- `canPlacePiece`, `moveTetrisPiece`, `lockPiece` helpers for Tetris
+
+---
+
 ## [2.0.0] - 2025-01-20
 
 ### Added - Mini-Games & Polish
