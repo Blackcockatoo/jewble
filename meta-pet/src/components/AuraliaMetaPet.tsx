@@ -1034,7 +1034,7 @@ const AuraliaMetaPet: React.FC = () => {
                 <h3 className="text-lg font-semibold text-yellow-400 mb-3">Bond Chronicle</h3>
                 <div className="space-y-2">
                   {bondHistory.slice(-10).reverse().map((entry, i) => (
-                    <div key={entry.timestamp} className="text-xs text-gray-400 border-l-2 border-teal-600/30 pl-2">
+                    <div key={`${entry.timestamp}-${i}`} className="text-xs text-gray-400 border-l-2 border-teal-600/30 pl-2">
                       <span className="text-teal-400 font-mono">{new Date(entry.timestamp).toLocaleTimeString()}</span>
                       <span className="mx-2 text-gray-500">•</span>
                       <span>{entry.event}</span>
