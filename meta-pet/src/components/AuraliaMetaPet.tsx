@@ -87,7 +87,10 @@ const fibFast = (n: Bigish): [bigint, bigint] => {
     if ((k & 1n) === 0n) return [c, d];
     return [d, c + d];
   };
-  return fn(BigInt(Math.max(0, Number(n))));
+  const index = typeof n === "bigint"
+    ? (n < 0n ? 0n : n)
+    : BigInt(Math.max(0, Math.floor(n)));
+  return fn(index);
 };
 
 const initField = (seedName: string = "AURALIA") => {
@@ -115,7 +118,7 @@ const initField = (seedName: string = "AURALIA") => {
   const hash = (msg: string): bigint => {
     let h = seedBI;
     for (let i = 0; i < msg.length; i++) {
-      h = mix64(h ^ BigInt(msg.charCodeAt(i) + i * 1315423911));
+      h = mix64(h ^ (BigInt(msg.charCodeAt(i)) + BigInt(i) * 1315423911n));
     }
     return h;
   };
@@ -1105,7 +1108,7 @@ const AuraliaMetaPet: React.FC = () => {
             >
               <div className="absolute inset-0 opacity-30 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
               
-              <svg ref={svgRef} viewBox="0 0 400 400" className="w-full h-full max-w-lg relative z-10" role="img" aria-label="Auralia guardian avatar">
+              <svg ref={svgRef} viewBox="0 0 400 400" className="w-full h-full max-w-3xl relative z-10" role="img" aria-label="Auralia guardian avatar">
                 <defs>
                   <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                   <filter id="strongGlow"><feGaussianBlur stdDeviation="6" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
