@@ -11,7 +11,9 @@
     "./progression": "./src/progression/index.ts",
     "./genome": "./src/genome/index.ts",
     "./store": "./src/store/index.ts",
-    "./rng": "./src/rng/index.ts"
+    "./rng": "./src/rng/index.ts",
+    "./auralia": "./src/auralia/index.ts",
+    "./auralia/persistence": "./src/auralia/persistence.ts"
   },
   "dependencies": {
     "zustand": "^5.0.8"
