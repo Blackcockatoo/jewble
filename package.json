@@ -1,0 +1,14 @@
+{
+  "name": "jewble",
+  "private": true,
+  "workspaces": [
+    "meta-pet",
+    "meta-pet-mobile",
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}

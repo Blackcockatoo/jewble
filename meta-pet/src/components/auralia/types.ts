@@ -4,6 +4,11 @@
  * Core types for the virtual companion system
  */
 
+import type {
+  GuardianSaveData as SharedGuardianSaveData,
+  Offspring as SharedOffspring,
+} from '@metapet/core/auralia/persistence';
+
 // ===== PRIMITIVE TYPES =====
 
 export type Bigish = bigint | number;
@@ -125,32 +130,11 @@ export interface TetrisState {
 
 // ===== BREEDING & GENETICS =====
 
-export interface Offspring {
-  name: string;
-  genome: GenomeData;
-  parents: string[];
-  birthDate: number;
-}
+export type Offspring = SharedOffspring;
 
 // ===== PERSISTENCE =====
 
-export interface GuardianSaveData {
-  seedName: string;
-  energy: number;
-  curiosity: number;
-  bond: number;
-  health: number;
-  bondHistory: BondHistoryEntry[];
-  activatedPoints: number[];
-  createdAt: number;
-  lastSaved: number;
-  totalInteractions: number;
-  dreamCount: number;
-  gamesWon: number;
-  highContrast: boolean;
-  offspring: Offspring[];
-  breedingPartner?: string;
-}
+export type GuardianSaveData = SharedGuardianSaveData;
 
 // ===== MOSSPRIMESEED =====
 

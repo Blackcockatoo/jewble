@@ -1,18 +1,30 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import type { GuardianSaveData, Offspring } from '@metapet/core/auralia/persistence';
+import {
+  exportGuardianState,
+  importGuardianState,
+  loadGuardianState,
+  saveGuardianState,
+} from '@metapet/core/auralia/persistence';
+import {
+  getTimeOfDay,
+  getTimeTheme,
+  useAuraliaAudio,
+  useGuardianAI,
+  type GuardianScaleName,
+  type GuardianSigilPoint,
+} from '@metapet/core/auralia';
 
 // ===== TYPE DEFINITIONS =====
 type Bigish = bigint | number;
 type Field = ReturnType<typeof initField>;
-type SigilPoint = { x: number; y: number; hash: string; };
+type SigilPoint = GuardianSigilPoint;
+type ScaleName = GuardianScaleName;
 type Particle = { id: number; x: number; y: number; vx: number; vy: number; color: string; size: number; };
 type Crackle = { id: number; x: number; y: number; life: number; };
 type SigilPulse = { id: number; x: number; y: number; life: number; color: string; };
 type FormKey = 'radiant' | 'meditation' | 'sage' | 'vigilant' | 'celestial' | 'wild';
 type Form = { name: string; baseColor: string; primaryGold: string; secondaryGold: string; tealAccent: string; eyeColor: string; glowColor: string; description: string; };
-type Stats = { energy: number; curiosity: number; bond: number; };
-type AudioOscillator = { gain: GainNode };
-type AudioContextRef = { ctx: AudioContext; noteOscs: AudioOscillator[]; droneOscs: AudioOscillator[]; };
-type AIState = { mode: 'idle' | 'observing' | 'focusing' | 'playing' | 'dreaming'; target: number | null; since: number; };
 type BondHistoryEntry = { timestamp: number; bond: number; event: string; };
 type MiniGameType = 'sigilPattern' | 'fibonacciTrivia' | 'snake' | 'tetris' | null;
 type PatternChallenge = { sequence: number[]; userSequence: number[]; active: boolean; };
@@ -21,24 +33,6 @@ type SnakeSegment = { x: number; y: number; };
 type SnakeState = { segments: SnakeSegment[]; food: { x: number; y: number }; direction: 'up' | 'down' | 'left' | 'right'; score: number; gameOver: boolean; };
 type TetrisPiece = { shape: number[][]; x: number; y: number; color: string; };
 type TetrisState = { board: number[][]; currentPiece: TetrisPiece | null; score: number; gameOver: boolean; };
-type Offspring = { name: string; genome: { red60: number; blue60: number; black60: number }; parents: string[]; birthDate: number; };
-type GuardianSaveData = {
-  seedName: string;
-  energy: number;
-  curiosity: number;
-  bond: number;
-  health: number;
-  bondHistory: BondHistoryEntry[];
-  activatedPoints: number[];
-  createdAt: number;
-  lastSaved: number;
-  totalInteractions: number;
-  dreamCount: number;
-  gamesWon: number;
-  highContrast: boolean;
-  offspring: Offspring[];
-  breedingPartner?: string;
-};
 
 // ===== MOSSPRIMESEED CORE =====
 const RED = "113031491493585389543778774590997079619617525721567332336510";
@@ -126,267 +120,6 @@ const initField = (seedName: string = "AURALIA") => {
   };
 
   return { seed: seedName, red, black, blue, ring, pulse, hash, prng, fib, lucas };
-};
-
-// ===== AUDIO SCALES & TUNINGS =====
-type ScaleName = 'harmonic' | 'pentatonic' | 'dorian' | 'phrygian';
-const AUDIO_SCALES: Record<ScaleName, number[]> = {
-  harmonic: [1, 9/8, 5/4, 3/2, 5/3, 15/8, 2],           // Just intonation
-  pentatonic: [1, 9/8, 5/4, 3/2, 5/3, 2],               // Pentatonic
-  dorian: [1, 9/8, 32/27, 4/3, 3/2, 27/16, 16/9, 2],   // Dorian mode
-  phrygian: [1, 256/243, 32/27, 4/3, 3/2, 128/81, 16/9, 2] // Phrygian mode
-};
-
-// ===== AUDIO SYSTEM WITH REVERB AND LFO DRONE =====
-const useAuraliaAudio = (enabled: boolean, stats: Stats, scale: ScaleName = 'harmonic') => {
-  const audioContextRef = useRef<AudioContextRef | null>(null);
-  const isSetup = useRef(false);
-  const ambientGainRef = useRef<GainNode | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!enabled) {
-      if (audioContextRef.current) {
-        audioContextRef.current.ctx.close().then(() => {
-          audioContextRef.current = null;
-          isSetup.current = false;
-        });
-      }
-      return;
-    }
-
-    if (isSetup.current) return;
-
-    const setupAudio = async () => {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
-      if (ctx.state === 'suspended') await ctx.resume();
-
-      const convolver = ctx.createConvolver();
-      const reverbTime = 2;
-      const decay = 0.5;
-      const impulse = ctx.createBuffer(2, ctx.sampleRate * reverbTime, ctx.sampleRate);
-      for (let i = 0; i < 2; i++) {
-        const channel = impulse.getChannelData(i);
-        for (let j = 0; j < impulse.length; j++) {
-          channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / impulse.length, decay);
-        }
-      }
-      convolver.buffer = impulse;
-      convolver.connect(ctx.destination);
-
-      const masterGain = ctx.createGain();
-      masterGain.gain.value = 0.8;
-      masterGain.connect(convolver);
-      masterGain.connect(ctx.destination);
-
-      // Ambient layer
-      const ambientGain = ctx.createGain();
-      ambientGain.gain.value = 0.01;
-      ambientGain.connect(masterGain);
-      ambientGainRef.current = ambientGain;
-
-      // Create ambient texture (wind-like sound)
-      const ambientOsc1 = ctx.createOscillator();
-      const ambientOsc2 = ctx.createOscillator();
-      ambientOsc1.type = 'sine';
-      ambientOsc2.type = 'sine';
-      ambientOsc1.frequency.value = 60;
-      ambientOsc2.frequency.value = 90;
-
-      const ambientLFO = ctx.createOscillator();
-      ambientLFO.frequency.value = 0.1;
-      const ambientLFOGain = ctx.createGain();
-      ambientLFOGain.gain.value = 0.3;
-      ambientLFO.connect(ambientLFOGain).connect(ambientGain.gain);
-
-      ambientOsc1.connect(ambientGain);
-      ambientOsc2.connect(ambientGain);
-      ambientOsc1.start();
-      ambientOsc2.start();
-      ambientLFO.start();
-
-      const baseFreq = 432;
-      const ratios = AUDIO_SCALES[scale];
-      const noteOscs = ratios.map(ratio => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = baseFreq * ratio;
-        gain.gain.value = 0;
-        osc.connect(gain).connect(masterGain);
-        osc.start();
-        return { gain };
-      });
-
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.2;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 0.005;
-      lfo.connect(lfoGain);
-      lfo.start();
-
-      const droneRatios = [0.5, 0.75, 1];
-      const droneOscs = droneRatios.map(ratio => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = (baseFreq / 2) * ratio;
-        gain.gain.value = 0;
-        lfoGain.connect(gain.gain);
-        osc.connect(gain).connect(masterGain);
-        osc.start();
-        return { gain };
-      });
-      
-      audioContextRef.current = { ctx, noteOscs, droneOscs };
-      isSetup.current = true;
-    };
-
-    setupAudio();
-
-    return () => {
-      if (audioContextRef.current && audioContextRef.current.ctx.state !== 'closed') {
-        audioContextRef.current.ctx.close();
-      }
-      isSetup.current = false;
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    const audio = audioContextRef.current;
-    if (!enabled || !audio) return;
-    const { energy, curiosity, bond } = stats;
-    const now = audio.ctx.currentTime;
-    const maxVol = 0.02;
-    (audio.droneOscs[0]?.gain as any).linearRampToValueAtTime((energy / 100) * maxVol, now + 1);
-    (audio.droneOscs[1]?.gain as any).linearRampToValueAtTime((curiosity / 100) * maxVol, now + 1);
-    (audio.droneOscs[2]?.gain as any).linearRampToValueAtTime((bond / 100) * maxVol, now + 1);
-  }, [enabled, stats]);
-
-  const playNote = useCallback((index: number, duration: number = 0.3) => {
-    const audio = audioContextRef.current;
-    if (!audio || index >= audio.noteOscs.length) return;
-    const { gain } = audio.noteOscs[index];
-    const now = audio.ctx.currentTime;
-    gain.gain.cancelScheduledValues(now);
-    gain.gain.setValueAtTime(gain.gain.value, now);
-    gain.gain.exponentialRampToValueAtTime(0.15, now + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-  }, []);
-
-  return { playNote };
-};
-
-// ===== PERSISTENCE HELPERS =====
-const STORAGE_KEY = 'auralia_guardian_state';
-
-const saveGuardianState = (data: GuardianSaveData): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {
-    console.error('Failed to save Guardian state:', e);
-  }
-};
-
-const loadGuardianState = (): GuardianSaveData | null => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  } catch (e) {
-    console.error('Failed to load Guardian state:', e);
-    return null;
-  }
-};
-
-// ===== TIME & ENVIRONMENT AWARENESS =====
-const getTimeOfDay = (): 'dawn' | 'day' | 'dusk' | 'night' => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 8) return 'dawn';
-  if (hour >= 8 && hour < 17) return 'day';
-  if (hour >= 17 && hour < 20) return 'dusk';
-  return 'night';
-};
-
-const getTimeTheme = (timeOfDay: 'dawn' | 'day' | 'dusk' | 'night') => {
-  const themes = {
-    dawn: { bg: 'from-orange-900 via-pink-900 to-purple-900', accent: '#FFB347', glow: 'rgba(255, 179, 71, 0.3)' },
-    day: { bg: 'from-blue-900 via-cyan-900 to-teal-900', accent: '#4ECDC4', glow: 'rgba(78, 205, 196, 0.3)' },
-    dusk: { bg: 'from-purple-900 via-indigo-900 to-blue-900', accent: '#B8A5D6', glow: 'rgba(184, 165, 214, 0.3)' },
-    night: { bg: 'from-gray-900 via-blue-950 to-gray-900', accent: '#6B7FD7', glow: 'rgba(107, 127, 215, 0.3)' }
-  };
-  return themes[timeOfDay];
-};
-
-// ===== GUARDIAN AI & AUTONOMOUS BEHAVIOR HOOK =====
-const useGuardianAI = (
-  field: Field,
-  sigilPoints: SigilPoint[],
-  onWhisper: (text: string) => void,
-  onFocusChange: (target: SigilPoint | null) => void,
-  onDreamComplete: (insight: string) => void
-): AIState => {
-  const [state, setState] = useState<AIState>({ mode: 'idle', target: null, since: Date.now() });
-
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now();
-      const timeInState = (now - state.since) / 1000;
-
-      if (state.mode === 'idle' && timeInState > 5 + field.prng() * 5) {
-        const rand = field.prng();
-        let nextMode: AIState['mode'];
-        let whisper: string;
-
-        if (rand > 0.7) {
-          nextMode = 'dreaming';
-          whisper = 'Drifting into the pattern realm...';
-        } else if (rand > 0.3) {
-          nextMode = 'observing';
-          whisper = 'The field shifts...';
-        } else {
-          nextMode = 'focusing';
-          whisper = 'A point of interest.';
-        }
-
-        setState({ mode: nextMode, target: null, since: now });
-        onWhisper(whisper);
-      } else if (state.mode === 'observing' && timeInState > 4 + field.prng() * 4) {
-        setState({ mode: 'idle', target: null, since: now });
-        onFocusChange(null);
-      } else if (state.mode === 'focusing' && timeInState > 3 + field.prng() * 3) {
-        const targetIndex = Math.floor(field.prng() * sigilPoints.length);
-        setState({ mode: 'playing', target: targetIndex, since: now });
-        onFocusChange(sigilPoints[targetIndex]);
-        onWhisper(`Resonance at point ${targetIndex + 1}.`);
-      } else if (state.mode === 'playing' && timeInState > 2) {
-        setState({ mode: 'idle', target: null, since: now });
-        onFocusChange(null);
-      } else if (state.mode === 'dreaming' && timeInState > 8 + field.prng() * 7) {
-        // Dream complete - generate insight
-        const insights = [
-          'The spirals speak of cycles within cycles...',
-          'Seven points, infinite connections.',
-          'In stillness, patterns emerge.',
-          'The seed remembers all iterations.',
-          'Between pulse and ring, a hidden harmony.',
-          'Your attention shapes the field.',
-          'Time is but another dimension of the lattice.'
-        ];
-        const insight = insights[Math.floor(field.prng() * insights.length)];
-        onDreamComplete(insight);
-        setState({ mode: 'idle', target: null, since: now });
-        onWhisper(insight);
-      }
-    };
-
-    const intervalId = setInterval(tick, 1000);
-    return () => clearInterval(intervalId);
-  }, [state, field, sigilPoints, onWhisper, onFocusChange, onDreamComplete]);
-
-  return state;
 };
 
 // ===== MINI-GAME HELPERS =====
