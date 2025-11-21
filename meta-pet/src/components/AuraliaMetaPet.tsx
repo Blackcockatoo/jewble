@@ -888,20 +888,7 @@ const AuraliaMetaPet: React.FC = () => {
     startTetrisGame();
   };
 
-  useEffect(() => {
-    if (currentGame !== 'tetris' || !tetrisState.currentPiece || tetrisState.gameOver) return;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') moveTetrisPiece(-1, 0);
-      if (e.key === 'ArrowRight') moveTetrisPiece(1, 0);
-      if (e.key === 'ArrowDown') moveTetrisPiece(0, 1);
-      if (e.key === 'ArrowUp') rotateTetrisPiece();
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentGame, tetrisState, moveTetrisPiece, rotateTetrisPiece]);
-
+  // Helper function must be defined before callbacks that use it
   const canPlacePiece = useCallback((piece: TetrisPiece, board: number[][], offsetX: number = 0, offsetY: number = 0): boolean => {
     for (let y = 0; y < piece.shape.length; y++) {
       for (let x = 0; x < piece.shape[y].length; x++) {
@@ -917,6 +904,7 @@ const AuraliaMetaPet: React.FC = () => {
     return true;
   }, []);
 
+  // Movement callbacks must be defined before the effect that uses them
   const moveTetrisPiece = useCallback((dx: number, dy: number) => {
     setTetrisState(prev => {
       if (!prev.currentPiece) return prev;
@@ -937,6 +925,21 @@ const AuraliaMetaPet: React.FC = () => {
       return prev;
     });
   }, [canPlacePiece]);
+
+  // Effect that uses the movement callbacks
+  useEffect(() => {
+    if (currentGame !== 'tetris' || !tetrisState.currentPiece || tetrisState.gameOver) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') moveTetrisPiece(-1, 0);
+      if (e.key === 'ArrowRight') moveTetrisPiece(1, 0);
+      if (e.key === 'ArrowDown') moveTetrisPiece(0, 1);
+      if (e.key === 'ArrowUp') rotateTetrisPiece();
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentGame, tetrisState, moveTetrisPiece, rotateTetrisPiece]);
 
   const lockPiece = useCallback(() => {
     setTetrisState(prev => {
