@@ -13,8 +13,7 @@
     "./store": "./src/store/index.ts",
     "./rng": "./src/rng/index.ts",
     "./auralia": "./src/auralia/index.ts",
-    "./auralia/persistence": "./src/auralia/persistence.ts",
-    "./auralia/guardianBehavior": "./src/auralia/guardianBehavior.ts"
+    "./auralia/persistence": "./src/auralia/persistence.ts"
   },
   "dependencies": {
     "zustand": "^5.0.8"

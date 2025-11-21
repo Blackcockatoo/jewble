@@ -15,7 +15,7 @@ import {
   useGuardianAI,
   type GuardianScaleName,
   type GuardianSigilPoint,
-} from '@metapet/core/auralia';
+} from '../../../shared/auralia/guardianBehavior';
 
 // ===== TYPE DEFINITIONS =====
 type Bigish = bigint | number;
