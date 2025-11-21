@@ -9,7 +9,11 @@
       "Bash(timeout /t 5)",
       "Bash(\"C:\\Users\\Tom\\OneDrive\\Desktop\\test\\jewble\\meta-pet\\src\\components\\PetSprite.tsx\")",
       "Bash(\"C:\\Users\\Tom\\OneDrive\\Desktop\\test\\jewble\\meta-pet\\src\\app\\page.tsx\")",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node node_modules/typescript/bin/tsc:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

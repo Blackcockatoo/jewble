@@ -57,9 +57,11 @@ import {
   FlaskConical,
   HeartHandshake,
   Maximize2,
+  Key,
 } from 'lucide-react';
 import Link from 'next/link';
 import { PetResponseOverlay } from '@/components/PetResponseOverlay';
+import { DigitalKeyPanel } from '@/components/DigitalKeyPanel';
 
 interface PetSummary {
   id: string;
@@ -1346,6 +1348,11 @@ export default function Home() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Digital Keys */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <DigitalKeyPanel />
             </div>
 
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
