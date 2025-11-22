@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { PetMorph } from '../animations/PetMorph';
+import { PetMorph } from './PetMorph';
 import { TemporalEchoTrail } from './TemporalEchoTrail';
 import { SubAtomicParticleField } from './SubAtomicParticleField';
-import { getHeptaChromaticColor } from '../utils/petUpgrades';
+import { getHeptaChromaticColor } from '@/utils/petUpgrades';
 import type { Vitals } from '@/store';
 
 interface EnhancedPetContainerProps {

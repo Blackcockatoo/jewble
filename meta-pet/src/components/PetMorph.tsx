@@ -12,8 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop } from 'react-native-svg';
 import type { Vitals } from '@/store';
-import { 
-  getHeptaChromaticColor, 
+import {
+  getHeptaChromaticColor,
   getFractalizedPath,
   getMemoryCorruptionOffset,
   getDynamicShadowPath,
@@ -21,11 +21,9 @@ import {
   getPetBehaviorState,
   getAnimationParametersForState,
   type PetBehaviorState,
-} from '../utils/petUpgrades';
+} from '@/utils/petUpgrades';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 interface PetMorphProps {
   vitals: Vitals;
   size?: number;
@@ -48,6 +46,7 @@ interface PetMorphProps {
  * 12. Neural Network Feedback Loop (Placeholder for learning)
  */
 export function PetMorph({ vitals, size = 200, onPositionChange }: PetMorphProps) {
+  const petContainerRef = useRef<View>(null);
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
   const glowOpacity = useSharedValue(0.5);
@@ -124,7 +123,7 @@ export function PetMorph({ vitals, size = 200, onPositionChange }: PetMorphProps
 
     // --- 9. Memory Corruption Effect ---
     corruptionOffsetRef.current = getMemoryCorruptionOffset(vitals.hygiene);
-  }, [vitals, cognitiveFlicker, glitchScale, glowOpacity, rotation, scale]);
+  }, [vitals]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -163,9 +162,21 @@ export function PetMorph({ vitals, size = 200, onPositionChange }: PetMorphProps
   const corruptionX = corruptionOffsetRef.current.x;
   const corruptionY = corruptionOffsetRef.current.y;
 
+  const handleLayout = () => {
+    if (petContainerRef.current && onPositionChange) {
+      petContainerRef.current.measure((x, y, width, height, pageX, pageY) => {
+        onPositionChange({ x: pageX + width / 2, y: pageY + height / 2 });
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.petContainer, animatedStyle]}>
+      <Animated.View
+        ref={petContainerRef}
+        onLayout={handleLayout}
+        style={[styles.petContainer, animatedStyle]}
+      >
         <Svg width={size} height={size} viewBox="0 0 100 100">
           <Defs>
             <RadialGradient id="petGradient" cx="50%" cy="50%" r="50%">
