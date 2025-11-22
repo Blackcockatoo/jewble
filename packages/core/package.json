@@ -13,7 +13,8 @@
     "./store": "./src/store/index.ts",
     "./rng": "./src/rng/index.ts",
     "./auralia": "./src/auralia/index.ts",
-    "./auralia/persistence": "./src/auralia/persistence.ts"
+    "./auralia/persistence": "./src/auralia/persistence.ts",
+    "./astrogenetics": "./src/astrogenetics/index.ts"
   },
   "dependencies": {
     "zustand": "^5.0.8"
