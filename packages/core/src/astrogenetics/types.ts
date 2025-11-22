@@ -30,6 +30,32 @@ export const PLANETS: Planet[] = [
   { name: 'Saturn', symbol: '\u2644', period: 10759.22, trait: 'Growth' },
 ];
 
+// Lunar nodes period (18.6 years in days)
+export const LUNAR_NODES_PERIOD = 6798.383;
+
+// Earth's orbital period for geocentric calculations
+export const EARTH_PERIOD = 365.2422;
+
+// Aspect types for planetary alignments
+export type AspectType = 'conjunction' | 'opposition' | 'trine' | 'square' | 'sextile';
+
+export interface PlanetaryAspect {
+  type: AspectType;
+  planet1: string;
+  planet2: string;
+  angleDiff: number;
+  description: string;
+}
+
+// Aspect definitions with orb tolerance
+export const ASPECT_DEFINITIONS: Record<AspectType, { angle: number; orb: number; description: string }> = {
+  conjunction: { angle: 0, orb: 10, description: 'Unity and amplification of energies' },
+  opposition: { angle: 180, orb: 10, description: 'Tension creates challenge and growth' },
+  trine: { angle: 120, orb: 8, description: 'Harmonious flow of energy' },
+  square: { angle: 90, orb: 8, description: 'Dynamic tension requiring action' },
+  sextile: { angle: 60, orb: 6, description: 'Opportunity and potential' },
+};
+
 // Cosmic Gates - cyclic states that affect breeding and events
 export const GATES = [
   'New Moon (Seed Gate)',
@@ -103,6 +129,12 @@ export interface AstroLatentTraits {
   secretAbility: string;
 }
 
+// Lunar nodes position
+export interface LunarNodes {
+  northNode: number; // angle in degrees
+  southNode: number; // angle in degrees (always 180° from north)
+}
+
 // Complete birth chart
 export interface BirthChart {
   birthTime: Date;
@@ -121,6 +153,8 @@ export interface BirthChart {
     latent: AstroLatentTraits;
   };
   planets: PlanetaryPosition[];
+  lunarNodes: LunarNodes;
+  aspects: PlanetaryAspect[];
 }
 
 // Fortune levels for horoscopes
@@ -141,8 +175,8 @@ export interface GRSState {
   happiness: number; // -3 to +3
   activity: number; // 0-9
   neglected: boolean;
-  socialScore: number; // 0-1
-  predictability: number; // 0-1
+  socialTrend: number; // -1 to +1 (negative = declining, positive = improving)
+  entropy: number; // 0-1 (behavior randomness, lower = more predictable)
   challenge: number; // 0-1
 }
 
