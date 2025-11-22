@@ -73,8 +73,8 @@ export default function CosmosScreen() {
       happiness: parseFloat(happiness) || 0,
       activity: parseFloat(activity) || 5,
       neglected: false,
-      socialScore: 0.5,
-      predictability: 0.7,
+      socialTrend: 0.5, // positive trend
+      entropy: 0.3, // mostly predictable
       challenge: 0.6,
     };
     updateGRS(state);

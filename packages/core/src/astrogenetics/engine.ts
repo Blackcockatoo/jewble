@@ -12,8 +12,14 @@ import {
   PLANETS,
   GATES,
   RUNES,
+  LUNAR_NODES_PERIOD,
+  EARTH_PERIOD,
+  ASPECT_DEFINITIONS,
   type Gate,
   type PlanetaryPosition,
+  type PlanetaryAspect,
+  type AspectType,
+  type LunarNodes,
   type AstroPhysicalTraits,
   type AstroPersonalityTraits,
   type AstroLatentTraits,
@@ -61,10 +67,61 @@ export function daysSince(date: Date, epoch: Date = BIRTH_EPOCH): number {
 }
 
 /**
- * Calculate planetary angle in degrees (0-360)
+ * Calculate heliocentric planetary angle in degrees (0-360)
+ */
+export function heliocentricAngle(days: number, period: number): number {
+  return ((360 * (days % period)) / period) % 360;
+}
+
+/**
+ * Calculate geocentric planetary angle in degrees (0-360)
+ * Adjusts for Earth's position to get apparent angle from Earth
  */
 export function planetAngle(days: number, period: number): number {
-  return ((360 * (days % period)) / period) % 360;
+  const earthAngle = heliocentricAngle(days, EARTH_PERIOD);
+  const helioAngle = heliocentricAngle(days, period);
+  return ((helioAngle - earthAngle + 360) % 360);
+}
+
+/**
+ * Calculate lunar nodes position
+ * The nodes have an 18.6 year retrograde cycle
+ */
+export function calculateLunarNodes(days: number): LunarNodes {
+  // Nodes move retrograde, so we subtract
+  const northNode = (360 - heliocentricAngle(days, LUNAR_NODES_PERIOD) + 360) % 360;
+  const southNode = (northNode + 180) % 360;
+  return { northNode, southNode };
+}
+
+/**
+ * Detect planetary aspects between all planet pairs
+ */
+export function detectAspects(planets: PlanetaryPosition[]): PlanetaryAspect[] {
+  const aspects: PlanetaryAspect[] = [];
+
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      const diff = Math.abs(planets[i].angle - planets[j].angle);
+      const normalizedDiff = Math.min(diff, 360 - diff);
+
+      // Check each aspect type
+      for (const [type, def] of Object.entries(ASPECT_DEFINITIONS)) {
+        if (Math.abs(normalizedDiff - def.angle) <= def.orb) {
+          aspects.push({
+            type: type as AspectType,
+            planet1: planets[i].name,
+            planet2: planets[j].name,
+            angleDiff: normalizedDiff,
+            description: def.description,
+          });
+          break; // Only one aspect per pair
+        }
+      }
+    }
+  }
+
+  return aspects;
 }
 
 /**
@@ -234,6 +291,8 @@ export function generateBirthChart(birthTime: Date): BirthChart {
   const black = getSlice(ASTROLABE_BLACK, lucasIndex);
 
   const planets = calculatePlanetaryPositions(days);
+  const lunarNodes = calculateLunarNodes(days);
+  const aspects = detectAspects(planets);
 
   return {
     birthTime,
@@ -248,6 +307,8 @@ export function generateBirthChart(birthTime: Date): BirthChart {
       latent: decodeBlackTraits(black),
     },
     planets,
+    lunarNodes,
+    aspects,
   };
 }
 
@@ -291,23 +352,34 @@ export function generateHoroscope(birthChart: BirthChart, currentDate: Date = ne
 /**
  * Calculate Growth Readiness Score (GRS)
  * Determines optimal timing for evolution and training
+ *
+ * Formula weights:
+ * - 25% happiness stability (smoothed average)
+ * - 15% player activity (frequency of interactions)
+ * - 10% care level (not neglected)
+ * - 20% social trend (improving vs declining interactions)
+ * - 10% predictability (1 - entropy, consistent behavior patterns)
+ * - 20% challenge level (appropriate difficulty exposure)
  */
 export function calculateGRS(state: GRSState): GRSResult {
   const {
     happiness,
     activity,
     neglected,
-    socialScore,
-    predictability,
+    socialTrend,
+    entropy,
     challenge,
   } = state;
+
+  // Calculate predictability from entropy (lower entropy = more predictable)
+  const predictability = 1 - entropy;
 
   // Weighted sum calculation
   const x =
     0.25 * happiness +
     0.15 * (activity < 3 ? -1 : 1) +
     0.1 * (neglected ? -1 : 1) +
-    0.2 * socialScore +
+    0.2 * Math.max(0, socialTrend) + // Only positive social trends help
     0.1 * predictability +
     0.2 * challenge;
 
