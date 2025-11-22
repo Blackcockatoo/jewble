@@ -16,6 +16,8 @@ import type { Achievement, BattleStats, MiniGameProgress, VimanaState } from '..
 import { createDefaultBattleStats, createDefaultMiniGameProgress, createDefaultVimanaState } from '../engine/progression/types';
 import type { ConsentState } from '../identity/types';
 import { createDefaultConsent, grantConsent, revokeConsent as revokeConsentState, isConsentValid } from '../identity/consent';
+import type { BirthChart, DailyHoroscope, GRSState, GRSResult, BreedingPreview } from '../engine/astrogenetics';
+import { generateBirthChart, generateHoroscope, calculateGRS, simulateBreeding } from '../engine/astrogenetics';
 import { persistence } from './persistence';
 
 // Re-export types that are used by components
@@ -33,6 +35,9 @@ export interface ExportPayload {
   miniGames: MiniGameProgress;
   vimana: VimanaState;
   consent: ConsentState;
+  birthChart: BirthChart | null;
+  horoscope: DailyHoroscope | null;
+  grs: GRSResult | null;
 }
 
 export interface State {
@@ -48,6 +53,12 @@ export interface State {
   battle: BattleStats;
   miniGames: MiniGameProgress;
   vimana: VimanaState;
+
+  // Astrogenetics
+  birthChart: BirthChart | null;
+  horoscope: DailyHoroscope | null;
+  grs: GRSResult | null;
+  lastBreedingPreview: BreedingPreview | null;
 
   // Tick Management
   tickId?: ReturnType<typeof setInterval>;
@@ -87,6 +98,12 @@ export interface State {
   acceptConsent: () => void;
   revokeConsent: () => void;
 
+  // Astrogenetics Actions
+  createBirthChart: (birthTime: Date) => void;
+  refreshHoroscope: () => void;
+  updateGRS: (state: GRSState) => void;
+  previewBreeding: (breedTime: Date) => void;
+
   // Data Management
   exportData: () => ExportPayload;
 }
@@ -123,6 +140,10 @@ export const useStore = create<State>((set, get) => ({
   battle: createDefaultBattleStats({ energyShield: 50 }),
   miniGames: createDefaultMiniGameProgress(),
   vimana: createDefaultVimanaState({ layout: 'grid' }),
+  birthChart: null,
+  horoscope: null,
+  grs: null,
+  lastBreedingPreview: null,
   darkMode: true,
   audioEnabled: true,
   hapticsEnabled: true,
@@ -172,6 +193,10 @@ export const useStore = create<State>((set, get) => ({
     const audioEnabled = persistence.loadAudioEnabled();
     const hapticsEnabled = persistence.loadHapticsEnabled();
     const savedConsent = persistence.loadConsent();
+    const savedBirthChart = persistence.loadBirthChart();
+    const savedHoroscope = persistence.loadHoroscope();
+    const savedGRS = persistence.loadGRS();
+    const savedBreedingPreview = persistence.loadBreedingPreview();
 
     // Calculate elapsed ticks if we have a last update time
     let vitals = savedVitals || DEFAULT_VITALS;
@@ -194,6 +219,12 @@ export const useStore = create<State>((set, get) => ({
       ? savedConsent
       : createDefaultConsent();
 
+    // Refresh horoscope if we have a birth chart
+    let horoscope = savedHoroscope;
+    if (savedBirthChart) {
+      horoscope = generateHoroscope(savedBirthChart);
+    }
+
     set({
       vitals,
       genome: savedGenome,
@@ -213,6 +244,10 @@ export const useStore = create<State>((set, get) => ({
             cells: savedVimana.cells.map(cell => ({ ...cell })),
           }
         : createDefaultVimanaState({ layout: 'grid' }),
+      birthChart: savedBirthChart,
+      horoscope,
+      grs: savedGRS,
+      lastBreedingPreview: savedBreedingPreview,
       lastUpdateTime: Date.now(),
       darkMode,
       audioEnabled,
@@ -491,6 +526,37 @@ export const useStore = create<State>((set, get) => ({
     persistence.saveConsent(consent);
   },
 
+  // Astrogenetics Actions
+  createBirthChart(birthTime: Date) {
+    const chart = generateBirthChart(birthTime);
+    const horoscope = generateHoroscope(chart);
+    set({ birthChart: chart, horoscope });
+    persistence.saveBirthChart(chart);
+    persistence.saveHoroscope(horoscope);
+  },
+
+  refreshHoroscope() {
+    const { birthChart } = get();
+    if (!birthChart) return;
+    const horoscope = generateHoroscope(birthChart);
+    set({ horoscope });
+    persistence.saveHoroscope(horoscope);
+  },
+
+  updateGRS(state: GRSState) {
+    const grs = calculateGRS(state);
+    set({ grs });
+    persistence.saveGRS(grs);
+  },
+
+  previewBreeding(breedTime: Date) {
+    const { birthChart } = get();
+    if (!birthChart) return;
+    const preview = simulateBreeding(birthChart, breedTime);
+    set({ lastBreedingPreview: preview });
+    persistence.saveBreedingPreview(preview);
+  },
+
   exportData() {
     const state = get();
     return {
@@ -505,6 +571,9 @@ export const useStore = create<State>((set, get) => ({
       miniGames: state.miniGames,
       vimana: state.vimana,
       consent: state.consent,
+      birthChart: state.birthChart,
+      horoscope: state.horoscope,
+      grs: state.grs,
     };
   },
 }));

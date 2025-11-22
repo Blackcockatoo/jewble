@@ -37,6 +37,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="cosmos"
+        options={{
+          title: 'Cosmos',
+          tabBarIcon: ({ color }) => <TabIcon name="cosmos" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
@@ -53,6 +60,7 @@ function TabIcon({ name, color }: { name: string; color: string }) {
   const icons = {
     home: '🏠',
     code: '🔮',
+    cosmos: '🌌',
     settings: '⚙️',
   };
 
