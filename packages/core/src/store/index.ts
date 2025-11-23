@@ -43,6 +43,8 @@ export interface MetaPetState {
   vimana: VimanaState;
   petType: PetType;
   mirrorMode: MirrorModeState;
+  lastAction: null | 'feed' | 'clean' | 'play' | 'sleep';
+  lastActionAt: number;
   tickId?: ReturnType<typeof setInterval>;
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
   setPetType: (petType: PetType) => void;
@@ -64,6 +66,7 @@ export interface MetaPetState {
   clean: () => void;
   play: () => void;
   sleep: () => void;
+  setLastAction: (action: 'feed' | 'clean' | 'play' | 'sleep') => void;
   tryEvolve: () => boolean;
   recordBattle: (result: 'win' | 'loss', opponent: string) => void;
   updateMiniGameScore: (game: 'memory' | 'rhythm', score: number) => void;
@@ -176,6 +179,8 @@ export function createMetaPetWebStore(
     vimana: createDefaultVimanaState(),
     petType: 'geometric',
     mirrorMode: { ...DEFAULT_MIRROR_MODE },
+    lastAction: null,
+    lastActionAt: 0,
 
     setGenome(genome, traits) {
       set({ genome, traits });
@@ -221,11 +226,16 @@ export function createMetaPetWebStore(
       }
     },
 
+    setLastAction(action) {
+      set({ lastAction: action, lastActionAt: Date.now() });
+    },
+
     feed() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'feed'),
         evolution: gainExperience(state.evolution, 2),
       }));
+      get().setLastAction('feed');
     },
 
     clean() {
@@ -233,6 +243,7 @@ export function createMetaPetWebStore(
         vitals: applyInteraction(state.vitals, 'clean'),
         evolution: gainExperience(state.evolution, 2),
       }));
+      get().setLastAction('clean');
     },
 
     play() {
@@ -240,6 +251,7 @@ export function createMetaPetWebStore(
         vitals: applyInteraction(state.vitals, 'play'),
         evolution: gainExperience(state.evolution, 3),
       }));
+      get().setLastAction('play');
     },
 
     sleep() {
@@ -247,6 +259,7 @@ export function createMetaPetWebStore(
         vitals: applyInteraction(state.vitals, 'sleep'),
         evolution: gainExperience(state.evolution, 1),
       }));
+      get().setLastAction('sleep');
     },
 
     tryEvolve() {

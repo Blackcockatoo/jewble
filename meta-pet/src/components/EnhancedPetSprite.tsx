@@ -1,14 +1,18 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useStore } from '@/lib/store';
 import { EVOLUTION_VISUALS } from '@/lib/evolution';
+import { getCockatooDataUri } from '@/lib/cockatooSprites';
 import { motion } from 'framer-motion';
 
 export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
   const traits = useStore(s => s.traits);
   const vitals = useStore(s => s.vitals);
   const evolution = useStore(s => s.evolution);
+  const lastAction = useStore(s => s.lastAction);
+  const lastActionAt = useStore(s => s.lastActionAt);
 
   if (!traits) {
     return (
@@ -36,6 +40,25 @@ export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
   const isTired = vitals.energy < 30;
   const isHungry = vitals.hunger > 70;
   const isUnhappy = vitals.mood < 40;
+
+  const ACTION_WINDOW_MS = 1400;
+  const [actionActive, setActionActive] = useState(false);
+
+  useEffect(() => {
+    if (!lastAction) {
+      setActionActive(false);
+      return;
+    }
+
+    const age = Date.now() - lastActionAt;
+    if (age < ACTION_WINDOW_MS) {
+      setActionActive(true);
+      const t = setTimeout(() => setActionActive(false), ACTION_WINDOW_MS - age);
+      return () => clearTimeout(t);
+    } else {
+      setActionActive(false);
+    }
+  }, [lastAction, lastActionAt]);
 
   // Animation variants based on mood
   const petAnimationVariants = {
@@ -138,6 +161,36 @@ export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
   const glowIntensity = Math.max(0.2, vitals.mood / 100);
   const glowColor = isHappy ? '#3b82f6' : isUnhappy ? '#ef4444' : '#8b5cf6';
 
+  const cockatooImages = useMemo(
+    () => ({
+      feeding: getCockatooDataUri('feeding'),
+      sleeping: getCockatooDataUri('sleeping'),
+      perched: getCockatooDataUri('perched'),
+      angry: getCockatooDataUri('angry'),
+    }),
+    []
+  );
+
+  const cockatooSrc = useMemo(() => {
+    if (actionActive && lastAction) {
+      switch (lastAction) {
+        case 'feed':
+          return cockatooImages.feeding;
+        case 'sleep':
+          return cockatooImages.sleeping;
+        case 'play':
+          return cockatooImages.perched;
+        case 'clean':
+          return cockatooImages.perched;
+      }
+    }
+
+    if (isTired) return cockatooImages.sleeping;
+    if (isHungry && !isUnhappy) return cockatooImages.feeding;
+    if (isUnhappy) return cockatooImages.angry;
+    return cockatooImages.perched;
+  }, [actionActive, cockatooImages, isHungry, isTired, isUnhappy, lastAction]);
+
   return (
     <motion.div
       className="w-full h-full flex items-center justify-center relative"
@@ -162,6 +215,39 @@ export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
           ease: 'easeInOut',
         }}
       />
+
+      {/* Cockatoo state overlay */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
+        animate={{
+          y:
+            actionActive && lastAction === 'play'
+              ? [-6, 6, -6]
+              : isHappy
+              ? [-2, 2, -2]
+              : [0, 1.5, 0],
+          rotate:
+            actionActive && lastAction === 'clean'
+              ? [0, -6, 6, 0]
+              : isUnhappy
+              ? [-2, 2, -2]
+              : 0,
+        }}
+        transition={{
+          duration: actionActive ? 0.6 : isUnhappy ? 0.8 : 3.2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        <Image
+          src={cockatooSrc}
+          alt="Jewble Cockatoo State"
+          width={140}
+          height={140}
+          priority={false}
+          className="drop-shadow-[0_0_18px_rgba(34,211,238,0.8)] select-none"
+        />
+      </motion.div>
 
       {/* Pet sprite with animations */}
       <motion.svg
