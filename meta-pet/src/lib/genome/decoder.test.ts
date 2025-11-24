@@ -17,6 +17,7 @@ describe('Genome Decoder', () => {
       expect(traits.physical).toBeDefined();
       expect(traits.personality).toBeDefined();
       expect(traits.latent).toBeDefined();
+      expect(traits.elementWeb).toBeDefined();
     });
 
     it('should be deterministic - same genome produces same traits', () => {
@@ -123,8 +124,8 @@ describe('Genome Decoder', () => {
       const traits = decodeGenome(genome);
 
       const validTemperaments = [
-        'Playful', 'Calm', 'Energetic', 'Shy',
-        'Bold', 'Gentle', 'Mischievous'
+        'Gentle', 'Energetic', 'Curious', 'Calm',
+        'Mischievous', 'Protective', 'Adventurous'
       ];
 
       expect(validTemperaments).toContain(traits.personality.temperament);
@@ -220,6 +221,15 @@ describe('Genome Decoder', () => {
         expect(gene).toBeGreaterThanOrEqual(0);
         expect(gene).toBeLessThanOrEqual(6);
       }
+    });
+
+    it('should expose element web metrics in expected ranges', () => {
+      const genome = createTestGenome(0);
+      const { elementWeb } = decodeGenome(genome);
+
+      expect(elementWeb.coverage).toBeGreaterThanOrEqual(0);
+      expect(elementWeb.coverage).toBeLessThanOrEqual(1);
+      expect(Array.isArray(elementWeb.usedResidues)).toBe(true);
     });
   });
 

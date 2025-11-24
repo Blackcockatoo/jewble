@@ -1,14 +1,16 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, type ComponentType } from 'react';
 
 import { useStore } from '@/lib/store';
-import { Sparkles, Palette, Brain, Zap, Atom, Waveform } from 'lucide-react';
+import { Sparkles, Palette, Brain, Zap, Orbit, Link2, Ban } from 'lucide-react';
+import { GenomeJewbleRing } from './GenomeJewbleRing';
 
 export const TraitPanel = memo(function TraitPanel() {
   const traits = useStore(s => s.traits);
+  const genome = useStore(s => s.genome);
 
-  if (!traits) {
+  if (!traits || !genome) {
     return (
       <div className="text-zinc-500 text-center py-8">
         Loading genome...
@@ -16,7 +18,7 @@ export const TraitPanel = memo(function TraitPanel() {
     );
   }
 
-  const { physical, personality, latent, elements } = traits;
+  const { physical, personality, latent, elementWeb } = traits;
 
   return (
     <div className="space-y-6">
@@ -133,35 +135,34 @@ export const TraitPanel = memo(function TraitPanel() {
         )}
       </section>
 
-      {/* Element Math */}
+      {/* Element Web */}
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-          <Atom className="w-5 h-5 text-amber-300" />
-          Element Metrics
+          <Orbit className="w-5 h-5 text-amber-300" />
+          Element Web
         </h3>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <TraitCard label="Bridge Score" value={elements.bridgeScore.toString()} />
-          <TraitCard label="Frontier Weight" value={elements.frontierWeight.toString()} />
-          <TraitCard
-            label="Charge Vector"
-            value={`2:${elements.chargeVector.c2} | 3:${elements.chargeVector.c3} | 5:${elements.chargeVector.c5}`}
-          />
-          <TraitCard
-            label="Hepta Signature"
-            value={`Σ ${elements.heptaSignature.total.join('-')} (mod7 ${elements.heptaSignature.mod7.join('-')})`}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <TraitCard label="Wave Magnitude" value={elements.elementWave.magnitude.toFixed(2)} />
-          <TraitCard
-            label="Wave Angle"
-            value={`${elements.elementWave.angle.toFixed(3)} rad`}
-          />
-          <div className="col-span-2 flex items-center gap-2 text-xs text-zinc-300">
-            <Waveform className="w-4 h-4 text-amber-300" />
-            <span>
-              Element wave real/imag: {elements.elementWave.real.toFixed(3)} / {elements.elementWave.imag.toFixed(3)}
-            </span>
+        <div className="grid gap-3 lg:grid-cols-[1fr,0.9fr]">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3">
+            <GenomeJewbleRing
+              redDigits={genome.red60}
+              blackDigits={genome.black60}
+              blueDigits={genome.blue60}
+              variant="dial"
+            />
+          </div>
+          <div className="space-y-3 text-sm">
+            <MetricRow label="Residue Coverage" value={`${Math.round(elementWeb.coverage * 100)}%`} />
+            <div className="grid grid-cols-2 gap-2">
+              <MetricPill icon={Orbit} label="Frontier Affinity" value={elementWeb.frontierAffinity} color="amber" />
+              <MetricPill icon={Link2} label="Bridge Count" value={elementWeb.bridgeCount} color="cyan" />
+              <MetricPill icon={Ban} label="Void Drift" value={elementWeb.voidDrift} color="rose" />
+              <MetricPill icon={Sparkles} label="Active Residues" value={elementWeb.usedResidues.length} color="purple" />
+            </div>
+            <div className="space-y-2 text-xs text-zinc-300">
+              <DetailLine label="Frontier Slots" value={formatResidues(elementWeb.frontierSlots)} />
+              <DetailLine label="Bridge Slots" value={formatResidues(elementWeb.pairSlots)} />
+              <DetailLine label="Void Slots Hit" value={formatResidues(elementWeb.voidSlotsHit)} />
+            </div>
           </div>
         </div>
       </section>
@@ -194,7 +195,7 @@ function StatMini({ label, value, color = 'zinc' }: StatMiniProps) {
     red: 'bg-red-500',
     blue: 'bg-blue-500',
     green: 'bg-green-500',
-    zinc: 'bg-zinc-500'
+    zinc: 'bg-zinc-500',
   };
 
   return (
@@ -211,4 +212,66 @@ function StatMini({ label, value, color = 'zinc' }: StatMiniProps) {
       </div>
     </div>
   );
+}
+
+interface MetricPillProps {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: number | string;
+  color?: 'amber' | 'cyan' | 'rose' | 'purple';
+}
+
+function MetricPill({ icon: Icon, label, value, color = 'amber' }: MetricPillProps) {
+  const colorMap = {
+    amber: 'bg-amber-500/20 text-amber-200 border-amber-400/40',
+    cyan: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/40',
+    rose: 'bg-rose-500/20 text-rose-200 border-rose-400/40',
+    purple: 'bg-purple-500/20 text-purple-200 border-purple-400/40',
+  };
+
+  return (
+    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${colorMap[color]}`}>
+      <Icon className="w-4 h-4" />
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-zinc-200/80">{label}</div>
+        <div className="text-sm font-semibold">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+interface MetricRowProps {
+  label: string;
+  value: string;
+}
+
+function MetricRow({ label, value }: MetricRowProps) {
+  return (
+    <div className="flex items-center justify-between bg-zinc-900/60 border border-zinc-800 rounded-lg px-3 py-2">
+      <span className="text-zinc-400 text-xs uppercase tracking-wide">{label}</span>
+      <span className="text-white font-semibold">{value}</span>
+    </div>
+  );
+}
+
+interface DetailLineProps {
+  label: string;
+  value: string;
+}
+
+function DetailLine({ label, value }: DetailLineProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-zinc-400 w-32">{label}:</span>
+      <span className="text-white font-medium">{value}</span>
+    </div>
+  );
+}
+
+function formatResidues(residues: number[]): string {
+  if (!residues.length) {
+    return 'None';
+  }
+
+  return residues.join(', ');
 }

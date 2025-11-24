@@ -1,18 +1,5 @@
-import {
-  genomeBridgeScore,
-  genomeChargeVector,
-  genomeHeptaSignature,
-  frontierWeight,
-  elementWave,
-} from './elementMath';
-import type {
-  Genome,
-  DerivedTraits,
-  PhysicalTraits,
-  PersonalityTraits,
-  LatentTraits,
-  ElementTraits,
-} from './types';
+import type { Genome, DerivedTraits, PhysicalTraits, PersonalityTraits, LatentTraits } from './types';
+import { summarizeElementWeb } from './elementResidue';
 
 const bodyTypes = [
   'Spherical',
@@ -97,19 +84,7 @@ export function decodeGenome(genome: Genome): DerivedTraits {
     physical: decodePhysicalTraits(genome.red60),
     personality: decodePersonalityTraits(genome.blue60),
     latent: decodeLatentTraits(genome.black60),
-    elements: decodeElementTraits(genome),
-  };
-}
-
-function decodeElementTraits(genome: Genome): ElementTraits {
-  const digits = [...genome.red60, ...genome.blue60, ...genome.black60];
-
-  return {
-    bridgeScore: genomeBridgeScore(genome),
-    frontierWeight: frontierWeight(digits, { selectionMode: 'frontier-preferred' }),
-    chargeVector: genomeChargeVector(genome),
-    heptaSignature: genomeHeptaSignature(genome),
-    elementWave: elementWave(digits),
+    elementWeb: summarizeElementWeb(genome),
   };
 }
 
