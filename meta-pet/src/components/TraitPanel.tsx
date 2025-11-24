@@ -215,8 +215,7 @@ function StatMini({ label, value, color = 'zinc' }: StatMiniProps) {
 }
 
 interface MetricPillProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   label: string;
   value: number | string;
   color?: 'amber' | 'cyan' | 'rose' | 'purple';
