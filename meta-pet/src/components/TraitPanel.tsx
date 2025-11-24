@@ -3,7 +3,7 @@
 import { memo } from 'react';
 
 import { useStore } from '@/lib/store';
-import { Sparkles, Palette, Brain, Zap } from 'lucide-react';
+import { Sparkles, Palette, Brain, Zap, Atom, Waveform } from 'lucide-react';
 
 export const TraitPanel = memo(function TraitPanel() {
   const traits = useStore(s => s.traits);
@@ -16,7 +16,7 @@ export const TraitPanel = memo(function TraitPanel() {
     );
   }
 
-  const { physical, personality, latent } = traits;
+  const { physical, personality, latent, elements } = traits;
 
   return (
     <div className="space-y-6">
@@ -131,6 +131,39 @@ export const TraitPanel = memo(function TraitPanel() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Element Math */}
+      <section className="space-y-3">
+        <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+          <Atom className="w-5 h-5 text-amber-300" />
+          Element Metrics
+        </h3>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <TraitCard label="Bridge Score" value={elements.bridgeScore.toString()} />
+          <TraitCard label="Frontier Weight" value={elements.frontierWeight.toString()} />
+          <TraitCard
+            label="Charge Vector"
+            value={`2:${elements.chargeVector.c2} | 3:${elements.chargeVector.c3} | 5:${elements.chargeVector.c5}`}
+          />
+          <TraitCard
+            label="Hepta Signature"
+            value={`Σ ${elements.heptaSignature.total.join('-')} (mod7 ${elements.heptaSignature.mod7.join('-')})`}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <TraitCard label="Wave Magnitude" value={elements.elementWave.magnitude.toFixed(2)} />
+          <TraitCard
+            label="Wave Angle"
+            value={`${elements.elementWave.angle.toFixed(3)} rad`}
+          />
+          <div className="col-span-2 flex items-center gap-2 text-xs text-zinc-300">
+            <Waveform className="w-4 h-4 text-amber-300" />
+            <span>
+              Element wave real/imag: {elements.elementWave.real.toFixed(3)} / {elements.elementWave.imag.toFixed(3)}
+            </span>
+          </div>
+        </div>
       </section>
     </div>
   );
