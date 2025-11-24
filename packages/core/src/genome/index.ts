@@ -8,3 +8,9 @@ export {
   type GenomeHasher,
 } from './encoder';
 export { generateRandomGenome } from './random';
+export {
+  ELEMENT_RESIDUES,
+  getResidue,
+  getResidueMeta,
+  summarizeElementWeb,
+} from './elementResidue';

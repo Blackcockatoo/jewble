@@ -5,7 +5,13 @@ export {
   type PhysicalTraits,
   type PersonalityTraits,
   type LatentTraits,
+  type ElementResidue,
+  type ElementWebSummary,
   decodeGenome,
   getTraitSummary,
   generateRandomGenome,
+  ELEMENT_RESIDUES,
+  getResidue,
+  getResidueMeta,
+  summarizeElementWeb,
 } from '@metapet/core/genome';
