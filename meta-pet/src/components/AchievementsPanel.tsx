@@ -49,9 +49,9 @@ export function AchievementsPanel() {
     vitals,
     battle,
     vimana: {
-      ...vimana,
-      totalSamples: 0,
-      cells: vimana.cells || [],
+      totalSamples: vimana.scansPerformed || 0,
+      anomaliesResolved: vimana.anomaliesResolved ?? vimana.anomaliesFound ?? 0,
+      cells: (vimana.cells || []).map(c => ({ explored: Boolean('explored' in c ? c.explored : c.discovered) })),
     },
     evolution,
     breeding,

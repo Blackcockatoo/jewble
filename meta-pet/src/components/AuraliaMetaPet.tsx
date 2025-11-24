@@ -370,7 +370,7 @@ const AuraliaMetaPet: React.FC = () => {
   }, [field, energy]);
 
   useEffect(() => {
-    let blinkTimeout: NodeJS.Timeout;
+    let blinkTimeout: ReturnType<typeof setTimeout>;
     const blink = () => {
       setIsBlinking(true);
       setTimeout(() => setIsBlinking(false), 150);

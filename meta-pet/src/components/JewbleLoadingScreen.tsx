@@ -26,14 +26,14 @@ const ambientSparkleVariants = {
   pulse: {
     opacity: [0.15, 0.5, 0.15],
     scale: [1, 1.08, 1],
-    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const },
   },
 };
 
 export function JewbleLoadingScreen(props: JewbleLoadingScreenProps) {
   const [internalProgress, setInternalProgress] = useState(0);
   const [isDodging, setIsDodging] = useState(false);
-  const dodgeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const dodgeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const progress = props.progress ?? internalProgress;
 
@@ -105,15 +105,15 @@ export function JewbleLoadingScreen(props: JewbleLoadingScreenProps) {
       x: [-80, 0, 80, 0, -80],
       y: [0, 40, 0, -40, 0],
       rotate: [8, -4, 4, -8, 8],
-      transition: { duration: 7, repeat: Infinity, ease: "easeInOut" },
+      transition: { duration: 7, repeat: Infinity, ease: "easeInOut" as const },
     },
     dodge: {
       x: [0, 0, 0],
       y: [-20, -110, -20],
       rotate: [0, -20, 5],
-      transition: { duration: 0.45, ease: "easeOut" },
+      transition: { duration: 0.45, ease: "easeOut" as const },
     },
-  } as const;
+  };
 
   return (
     <div

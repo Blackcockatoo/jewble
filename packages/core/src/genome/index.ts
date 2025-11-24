@@ -28,3 +28,9 @@ export {
   type HeptaSignature,
   type ResidueEntry,
 } from './elementMath';
+export {
+  ELEMENT_RESIDUES,
+  getResidue,
+  getResidueMeta,
+  summarizeElementWeb,
+} from './elementResidue';

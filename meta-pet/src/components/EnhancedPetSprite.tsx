@@ -14,6 +14,61 @@ export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
   const lastAction = useStore(s => s.lastAction);
   const lastActionAt = useStore(s => s.lastActionAt);
 
+  const ACTION_WINDOW_MS = 1400;
+  const [actionActive, setActionActive] = useState(false);
+
+  useEffect(() => {
+    if (!lastAction) {
+      setActionActive(false);
+      return;
+    }
+
+    const age = Date.now() - lastActionAt;
+    if (age < ACTION_WINDOW_MS) {
+      setActionActive(true);
+      const t = setTimeout(() => setActionActive(false), ACTION_WINDOW_MS - age);
+      return () => clearTimeout(t);
+    } else {
+      setActionActive(false);
+    }
+  }, [lastAction, lastActionAt]);
+
+  const cockatooImages = useMemo(
+    () => ({
+      feeding: getCockatooDataUri('feeding'),
+      sleeping: getCockatooDataUri('sleeping'),
+      perched: getCockatooDataUri('perched'),
+      angry: getCockatooDataUri('angry'),
+    }),
+    []
+  );
+
+  // Determine animation state based on vitals
+  const isHappy = vitals.mood > 70;
+  const isTired = vitals.energy < 30;
+  const isHungry = vitals.hunger > 70;
+  const isUnhappy = vitals.mood < 40;
+
+  const cockatooSrc = useMemo(() => {
+    if (actionActive && lastAction) {
+      switch (lastAction) {
+        case 'feed':
+          return cockatooImages.feeding;
+        case 'sleep':
+          return cockatooImages.sleeping;
+        case 'play':
+          return cockatooImages.perched;
+        case 'clean':
+          return cockatooImages.perched;
+      }
+    }
+
+    if (isTired) return cockatooImages.sleeping;
+    if (isHungry && !isUnhappy) return cockatooImages.feeding;
+    if (isUnhappy) return cockatooImages.angry;
+    return cockatooImages.perched;
+  }, [actionActive, cockatooImages, isHungry, isTired, isUnhappy, lastAction]);
+
   if (!traits) {
     return (
       <motion.div
@@ -34,31 +89,6 @@ export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
   }
 
   const { physical } = traits;
-
-  // Determine animation state based on vitals
-  const isHappy = vitals.mood > 70;
-  const isTired = vitals.energy < 30;
-  const isHungry = vitals.hunger > 70;
-  const isUnhappy = vitals.mood < 40;
-
-  const ACTION_WINDOW_MS = 1400;
-  const [actionActive, setActionActive] = useState(false);
-
-  useEffect(() => {
-    if (!lastAction) {
-      setActionActive(false);
-      return;
-    }
-
-    const age = Date.now() - lastActionAt;
-    if (age < ACTION_WINDOW_MS) {
-      setActionActive(true);
-      const t = setTimeout(() => setActionActive(false), ACTION_WINDOW_MS - age);
-      return () => clearTimeout(t);
-    } else {
-      setActionActive(false);
-    }
-  }, [lastAction, lastActionAt]);
 
   // Animation variants based on mood
   const petAnimationVariants = {
@@ -160,36 +190,6 @@ export const EnhancedPetSprite = memo(function EnhancedPetSprite() {
   // Glow effect intensity based on mood
   const glowIntensity = Math.max(0.2, vitals.mood / 100);
   const glowColor = isHappy ? '#3b82f6' : isUnhappy ? '#ef4444' : '#8b5cf6';
-
-  const cockatooImages = useMemo(
-    () => ({
-      feeding: getCockatooDataUri('feeding'),
-      sleeping: getCockatooDataUri('sleeping'),
-      perched: getCockatooDataUri('perched'),
-      angry: getCockatooDataUri('angry'),
-    }),
-    []
-  );
-
-  const cockatooSrc = useMemo(() => {
-    if (actionActive && lastAction) {
-      switch (lastAction) {
-        case 'feed':
-          return cockatooImages.feeding;
-        case 'sleep':
-          return cockatooImages.sleeping;
-        case 'play':
-          return cockatooImages.perched;
-        case 'clean':
-          return cockatooImages.perched;
-      }
-    }
-
-    if (isTired) return cockatooImages.sleeping;
-    if (isHungry && !isUnhappy) return cockatooImages.feeding;
-    if (isUnhappy) return cockatooImages.angry;
-    return cockatooImages.perched;
-  }, [actionActive, cockatooImages, isHungry, isTired, isUnhappy, lastAction]);
 
   return (
     <motion.div
