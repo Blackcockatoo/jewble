@@ -30,6 +30,26 @@ export interface GenomeHash {
   blackHash: string;
 }
 
+export interface ElementTraits {
+  bridgeScore: number;
+  frontierWeight: number;
+  chargeVector: {
+    c2: number;
+    c3: number;
+    c5: number;
+  };
+  heptaSignature: {
+    total: readonly [number, number, number];
+    mod7: readonly [number, number, number];
+  };
+  elementWave: {
+    real: number;
+    imag: number;
+    magnitude: number;
+    angle: number;
+  };
+}
+
 export interface PhysicalTraits {
   bodyType: string;
   primaryColor: string;

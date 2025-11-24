@@ -9,6 +9,7 @@ export {
   type Genome,
   type GenomeHash,
   type DerivedTraits,
+  type ElementTraits,
   type PhysicalTraits,
   type PersonalityTraits,
   type LatentTraits,
