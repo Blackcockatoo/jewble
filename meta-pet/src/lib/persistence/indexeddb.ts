@@ -422,6 +422,9 @@ function isValidEvolution(value: unknown): value is EvolutionData {
     typeof evo.birthTime === 'number' &&
     typeof evo.lastEvolutionTime === 'number' &&
     typeof evo.experience === 'number' &&
+    typeof evo.level === 'number' &&
+    typeof evo.currentLevelXp === 'number' &&
+    typeof evo.totalXp === 'number' &&
     typeof evo.totalInteractions === 'number' &&
     typeof evo.canEvolve === 'boolean'
   );
