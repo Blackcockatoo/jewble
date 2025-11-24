@@ -8,7 +8,7 @@ import { FEATURES } from '../config';
 import type { Vitals } from '../engine/state';
 import { DEFAULT_VITALS, clamp, applyInteraction, getVitalsAverage } from '../engine/state';
 import type { Genome, DerivedTraits } from '../engine/genome';
-import { decodeGenome, generateRandomGenome } from '../engine/genome';
+import { decodeGenome, generateRandomGenome, summarizeElementWeb } from '../engine/genome';
 import type { EvolutionData } from '../engine/evolution';
 import { initializeEvolution, gainExperience, checkEvolutionEligibility, evolvePet } from '../engine/evolution';
 import { tick, calculateElapsedTicks } from '../engine/sim';
@@ -173,9 +173,10 @@ export const useStore = create<State>((set, get) => ({
 
   // Set genome from external source (e.g., hepta code)
   setGenome(genome: Genome, traits: DerivedTraits) {
-    set({ genome, traits });
+    const normalizedTraits = traits.elementWeb ? traits : { ...traits, elementWeb: summarizeElementWeb(genome) };
+    set({ genome, traits: normalizedTraits });
     persistence.saveGenome(genome);
-    persistence.saveTraits(traits);
+    persistence.saveTraits(normalizedTraits);
   },
 
   // Hydrate state from persistence
@@ -225,10 +226,16 @@ export const useStore = create<State>((set, get) => ({
       horoscope = generateHoroscope(savedBirthChart);
     }
 
+    const normalizedTraits = savedGenome && savedTraits
+      ? savedTraits.elementWeb
+        ? savedTraits
+        : { ...savedTraits, elementWeb: summarizeElementWeb(savedGenome) }
+      : savedTraits;
+
     set({
       vitals,
       genome: savedGenome,
-      traits: savedTraits,
+      traits: normalizedTraits,
       evolution,
       achievements: savedAchievements,
       battle: savedBattle

@@ -9,6 +9,7 @@ import {
   checkEvolutionEligibility,
   evolvePet,
 } from '../evolution/index';
+import { summarizeElementWeb } from '../genome/elementResidue';
 import type {
   Achievement,
   BattleStats,
@@ -183,7 +184,7 @@ export function createMetaPetWebStore(
     lastActionAt: 0,
 
     setGenome(genome, traits) {
-      set({ genome, traits });
+      set({ genome, traits: normalizeTraits(genome, traits) });
     },
 
     setPetType(petType) {
@@ -194,7 +195,7 @@ export function createMetaPetWebStore(
       set(state => ({
         vitals: { ...vitals },
         genome,
-        traits,
+        traits: normalizeTraits(genome, traits),
         evolution: { ...evolution },
         achievements: achievements ? achievements.map(entry => ({ ...entry })) : state.achievements,
         battle: battle ? { ...battle } : state.battle,
@@ -569,6 +570,17 @@ export function createMetaPetWebStore(
   }
 
   return useStore;
+}
+
+function normalizeTraits(genome: Genome, traits: DerivedTraits): DerivedTraits {
+  if (traits.elementWeb) {
+    return traits;
+  }
+
+  return {
+    ...traits,
+    elementWeb: summarizeElementWeb(genome),
+  };
 }
 
 function cloneVimanaState(source: VimanaState): VimanaState {

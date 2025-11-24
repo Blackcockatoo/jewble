@@ -4,6 +4,36 @@ export interface Genome {
   black60: number[];
 }
 
+export type SequenceColor = 'RED' | 'BLACK' | 'BLUE';
+
+export interface ElementInfo {
+  atomicNumber: number;
+  symbol: string;
+  name: string;
+  sequences?: SequenceColor[];
+}
+
+export interface ResidueMeta {
+  residue: number; // 0–59
+  elements: ElementInfo[];
+  hasBridge60: boolean;
+  hasFrontier: boolean;
+  isVoid: boolean;
+}
+
+export type ElementResidue = ResidueMeta;
+
+export interface ElementWebSummary {
+  usedResidues: number[];
+  pairSlots: number[];
+  frontierSlots: number[];
+  voidSlotsHit: number[];
+  coverage: number;
+  frontierAffinity: number;
+  bridgeCount: number;
+  voidDrift: number;
+}
+
 export interface GenomeHash {
   redHash: string;
   blueHash: string;
@@ -53,4 +83,5 @@ export interface DerivedTraits {
   physical: PhysicalTraits;
   personality: PersonalityTraits;
   latent: LatentTraits;
+  elementWeb: ElementWebSummary;
 }
