@@ -5,3 +5,6 @@ export { createMetaPetWebStore } from '@metapet/core/store';
 export type { Vitals } from '@metapet/core/vitals';
 
 export const useStore = createMetaPetWebStore();
+
+// Element number theory exports
+export * from './elements';
