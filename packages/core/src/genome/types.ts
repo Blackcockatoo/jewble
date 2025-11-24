@@ -4,24 +4,14 @@ export interface Genome {
   black60: number[];
 }
 
-export type SequenceColor = 'RED' | 'BLACK' | 'BLUE';
-
-export interface ElementInfo {
-  atomicNumber: number;
-  symbol: string;
-  name: string;
-  sequences?: SequenceColor[];
-}
-
-export interface ResidueMeta {
-  residue: number; // 0–59
-  elements: ElementInfo[];
-  hasBridge60: boolean;
-  hasFrontier: boolean;
+export interface ElementResidue {
+  residue: number;
+  elements2d: number[];
+  elements3d: number[];
+  hasPair60: boolean;
+  isFrontierResidue: boolean;
   isVoid: boolean;
 }
-
-export type ElementResidue = ResidueMeta;
 
 export interface ElementWebSummary {
   usedResidues: number[];

@@ -74,7 +74,7 @@ export function GenomeJewbleRing({ redDigits, blackDigits, blueDigits, size = 24
           residuesBySequence.black.has(meta.residue) ||
           residuesBySequence.blue.has(meta.residue);
 
-        if (!meta.hasBridge60 || !isUsed) {
+        if (!meta.hasPair60 || !isUsed) {
           return null;
         }
         const point = polar(meta.residue, radii.pair);
@@ -93,7 +93,7 @@ export function GenomeJewbleRing({ redDigits, blackDigits, blueDigits, size = 24
       })}
 
       {residueMeta.map(meta => {
-        if (!meta.hasFrontier) return null;
+        if (!meta.isFrontierResidue) return null;
         const point = polar(meta.residue, radii.frontier);
         const highlighted =
           residuesBySequence.red.has(meta.residue) ||

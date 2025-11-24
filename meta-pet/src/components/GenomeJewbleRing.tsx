@@ -107,7 +107,7 @@ export const GenomeJewbleRing = memo(function GenomeJewbleRing({
             residuesBySequence.black.has(meta.residue) ||
             residuesBySequence.blue.has(meta.residue);
 
-          if (!meta.hasBridge60 || !isUsed) {
+          if (!meta.hasPair60 || !isUsed) {
             return null;
           }
           const point = polar(meta.residue, radii.pair);
@@ -127,7 +127,7 @@ export const GenomeJewbleRing = memo(function GenomeJewbleRing({
 
         {/* Frontier markers */}
         {showFrontier && residueMeta.map(meta => {
-          if (!meta.hasFrontier) return null;
+          if (!meta.isFrontierResidue) return null;
           const point = polar(meta.residue, radii.frontier);
           return (
             <circle
@@ -157,11 +157,11 @@ export const GenomeJewbleRing = memo(function GenomeJewbleRing({
         {/* Element labels */}
         {showLabels && residueMeta.map(meta => {
           const labelPoint = polar(meta.residue, tickRadius + 12);
-          const labels = meta.elements.map(element => element.symbol);
-          if (labels.length === 0) {
+          const combined = [...meta.elements2d, ...meta.elements3d];
+          if (combined.length === 0) {
             return null;
           }
-          const label = labels.join('/');
+          const label = combined.join('/');
 
           return (
             <text
