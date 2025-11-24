@@ -1,4 +1,5 @@
 import type { Genome, DerivedTraits, PhysicalTraits, PersonalityTraits, LatentTraits } from './types';
+import { summarizeElementWeb } from './elementResidue';
 
 const bodyTypes = [
   'Spherical',
@@ -83,6 +84,7 @@ export function decodeGenome(genome: Genome): DerivedTraits {
     physical: decodePhysicalTraits(genome.red60),
     personality: decodePersonalityTraits(genome.blue60),
     latent: decodeLatentTraits(genome.black60),
+    elementWeb: summarizeElementWeb(genome),
   };
 }
 

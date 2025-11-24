@@ -33,7 +33,7 @@ const ambientSparkleVariants = {
 export function JewbleLoadingScreen(props: JewbleLoadingScreenProps) {
   const [internalProgress, setInternalProgress] = useState(0);
   const [isDodging, setIsDodging] = useState(false);
-  const dodgeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dodgeTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const progress = props.progress ?? internalProgress;
 
