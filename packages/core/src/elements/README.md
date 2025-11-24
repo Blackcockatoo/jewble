@@ -260,8 +260,203 @@ Elements are not "assigned" to Jewbles—they emerge from the genome's digits hi
 
 ---
 
-**Next steps**:
-- Integrate element waves into visual rendering
-- Use charge vectors for audio synthesis
-- Connect frontier weight to evolution mechanics
-- Build "element reaction algebra" for breeding operations
+## New Features: Complete Element Fusion Engine
+
+### Reaction Algebra
+
+Mathematical operations for combining elements:
+
+```typescript
+import {
+  addElementsMod60,
+  composeHeptaTriples,
+  combineCharges,
+  reactElements,
+  elementPathway,
+  tensorProduct,
+} from '@metapet/core/elements';
+
+// Element addition mod 60
+const residue = addElementsMod60(1, 14); // H + Si → 15
+
+// HeptaTriple composition
+const h1 = { d0: 1, d1: 0, d2: 0 };
+const h2 = { d0: 5, d1: 1, d2: 1 };
+const composed = composeHeptaTriples(h1, h2); // (6,1,1)
+
+// Full reaction in all 4 coordinate systems
+const reaction = reactElements(1, 61); // H ⊗ Pm
+
+// Element pathways around the circle
+const pathway = elementPathway(1, 7, 60); // Start at 1, step by 7
+
+// Tensor product (full 4D fusion)
+const tensor = tensorProduct(1, 61);
+```
+
+### Computational Invariants
+
+Calculate fundamental properties of Jewble genomes:
+
+```typescript
+import {
+  chargeMagnitude,
+  heptaMagnitude,
+  chargeToSeed,
+  heptaToSeed,
+  calculateInvariants,
+  formatInvariants,
+  compareGenomes,
+} from '@metapet/core/elements';
+
+// Charge magnitude: ‖C‖ = √(C₂² + C₃² + C₅²)
+const charge = { c2: 7, c3: 3, c5: 0 };
+const mag = chargeMagnitude(charge); // 7.616
+
+// Convert charge to seed for prime generation
+const seed = chargeToSeed(charge); // C₂ + 7·C₃ + 49·C₅
+
+// Complete invariant analysis
+const analysis = analyzeJewbleElements(red60, blue60, black60);
+const invariants = calculateInvariants(analysis);
+
+console.log(formatInvariants(invariants));
+
+// Compare two genomes
+const inv1 = calculateInvariants(analysis1);
+const inv2 = calculateInvariants(analysis2);
+const comparison = compareGenomes(inv1, inv2);
+console.log(`Similarity: ${comparison.similarity}`);
+```
+
+### Bridge Analysis
+
+Complete bridge positions where elements at Z and Z+60 both exist:
+
+```typescript
+import {
+  getBridgePositions,
+  getPureBridges,
+  getChargedBridges,
+  getMaximumChargeBridge,
+  generateBridgeTable,
+  analyzeBridgeConnectivity,
+} from '@metapet/core/elements';
+
+// Get all bridges
+const bridges = getBridgePositions();
+
+// Pure bridges: C=(0,0,0) - no 2-3-5 structure change
+// Expected: Residues 1, 17, 19, 31
+const pureBridges = getPureBridges();
+
+// Charged bridges: electromagnetic transitions
+// Expected: Residues 9, 10, 14, 25, 30, 33, 36
+const chargedBridges = getChargedBridges();
+
+// Maximum charge bridge: Residue 36 (Kr/Cm) with C=(7,3,0)
+const maxBridge = getMaximumChargeBridge();
+
+// Generate formatted table
+console.log(generateBridgeTable());
+
+// Analyze connectivity for specific residues
+const residues = [1, 9, 36];
+const connectivity = analyzeBridgeConnectivity(residues);
+```
+
+### Jewble Generation Applications
+
+Apply element theory to generate Jewble content:
+
+```typescript
+import {
+  generatePrimesFromCharge,
+  primeWalk,
+  chargeToFrequency,
+  generateHarmonicSeries,
+  createApertureModulation,
+  generateSacredGeometryVertices,
+  generateModulatedPolygon,
+  generateVisualizationData,
+  verticesToSVGPath,
+} from '@metapet/core/elements';
+
+// A. Prime walks from charge vector
+const charge = { c2: 2, c3: 1, c5: 1 };
+const primes = generatePrimesFromCharge(charge, 10);
+const walk = primeWalk(charge, 2, 10);
+
+// B. Frequency scaling (just intonation)
+// f(a) = f₀ · 2^(C₂/12) · 3^(C₃/19) · 5^(C₅/28)
+const frequency = chargeToFrequency(charge, 440.0);
+const harmonics = generateHarmonicSeries(charge, 440.0, 8);
+
+// C. Aperture modulation from HeptaTriple
+// r(t) = r₀ · [1 + ε₀·sin(ω₀t) + ε₁·sin(ω₁t) + ε₂·sin(ω₂t)]
+const hepta = { d0: 1, d1: 2, d2: 3 };
+const aperture = createApertureModulation(hepta, 1.0);
+const radius = aperture.modulation(0.5); // radius at time t=0.5
+
+// D. Sacred geometry from element wave
+const analysis = analyzeJewbleElements(red60, blue60, black60);
+const samples = sampleElementWave(analysis, 60);
+const vertices = generateSacredGeometryVertices(samples, 1.0, 0.2);
+const polygon = generateModulatedPolygon(7, samples, 1.0, 0.1);
+const svgPath = verticesToSVGPath(vertices);
+
+// Complete visualization data
+const vizData = generateVisualizationData(charge, hepta, samples);
+console.log(vizData.frequencies);      // Audio frequencies
+console.log(vizData.vertices);         // Geometric vertices
+console.log(vizData.apertureSamples);  // Animation keyframes
+console.log(vizData.primes);           // Prime sequence
+```
+
+## Complete Mathematical Framework
+
+This implementation covers all aspects of the JEWBLE-MATH specification:
+
+### I. Fundamental Coordinates
+- ✅ 60-adic coordinates (a, b)
+- ✅ Prime factorization relative to base-60 (mantle and core)
+- ✅ HeptaTriple system (base-7 representation)
+- ✅ Bridge score calculation
+
+### II. Reaction Algebra
+- ✅ Element addition (mod 60)
+- ✅ Charge combination
+- ✅ HeptaTriple composition
+- ✅ Element pathways and cycles
+- ✅ Tensor products (4D fusion)
+
+### III. Computational Invariants
+- ✅ Total bridge score
+- ✅ Charge magnitude (Euclidean, Manhattan, Max norms)
+- ✅ Frontier weight and counts
+- ✅ Hepta signature and magnitude
+- ✅ Genome comparison metrics
+
+### IV. Bridge Analysis
+- ✅ Complete bridge positions table
+- ✅ Pure vs charged bridge classification
+- ✅ Maximum charge bridge detection
+- ✅ Bridge connectivity analysis
+- ✅ Theorem verification
+
+### V. Applications
+- ✅ Deterministic prime walks
+- ✅ Frequency scaling (just intonation)
+- ✅ Aperture modulation (radial pulsing)
+- ✅ Sacred geometry generation
+- ✅ Complete visualization data
+
+### VI. Element Wave Formula
+- ✅ F_J(θ) complex amplitude calculation
+- ✅ Sampling at arbitrary angles
+- ✅ Magnitude and phase extraction
+- ✅ Integration with geometry and audio
+
+---
+
+**Philosophy**: Elements are not decorative labels—they ARE the mathematics. This module treats elements as **structured numbers** living in multiple mathematical spaces simultaneously, creating a unified framework where chemistry becomes inseparable from number theory.
