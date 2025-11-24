@@ -28,6 +28,12 @@ const getNextState = (state: EvolutionState): EvolutionState | null => {
   return EVOLUTION_ORDER[currentIndex + 1];
 };
 
+const getXpRequiredForLevel = (level: number): number => {
+  // BaseXP * Level^2
+  const BASE_XP = 10;
+  return BASE_XP * level * level;
+};
+
 const normalizeProgress = (value: number, maximum: number): number => {
   if (maximum <= 0) {
     return 1;
@@ -42,6 +48,9 @@ export function initializeEvolution(): EvolutionData {
     birthTime: now,
     lastEvolutionTime: now,
     experience: 0,
+    level: 1,
+    currentLevelXp: 0,
+    totalXp: 0,
     totalInteractions: 0,
     canEvolve: false,
   };
@@ -53,18 +62,19 @@ export function checkEvolutionEligibility(
 ): boolean {
   const nextState = getNextState(evolution.state);
   if (!nextState) {
-    return false;
+    return null;
   }
 
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
   const ageElapsed = getElapsedSinceLastEvolution(evolution);
-  const meetsAge = ageElapsed >= requirements.minAge;
-  const meetsInteractions = evolution.totalInteractions >= requirements.minInteractions;
-  const meetsVitals = vitalsAverage >= requirements.minVitalsAverage;
-  const meetsSpecial = requirements.specialCondition ? requirements.specialCondition() : true;
+  const isAgeMet = elapsed >= requirements.minAge;
+  const isInteractionsMet = evolution.totalInteractions >= requirements.minInteractions;
+  const isVitalsMet = vitalsAverage >= requirements.minVitalsAverage;
+  const isLevelMet = evolution.level >= requirements.minLevel;
+  const isSpecialMet = requirements.specialCondition ? requirements.specialCondition() : true;
 
-  return meetsAge && meetsInteractions && meetsVitals && meetsSpecial;
+  return isAgeMet && isInteractionsMet && isVitalsMet && isLevelMet && isSpecialMet;al;
 }
 
 export function evolvePet(evolution: EvolutionData): EvolutionData {
@@ -83,15 +93,32 @@ export function evolvePet(evolution: EvolutionData): EvolutionData {
   };
 }
 
-export function gainExperience(
-  evolution: EvolutionData,
-  amount: number
-): EvolutionData {
-  return {
+export function gainExperiencexport function gainExperience(evolution: EvolutionData, xp: number): EvolutionData {
+  let newEvolution = {
     ...evolution,
-    experience: Math.min(100, evolution.experience + amount),
+    totalXp: evolution.totalXp + xp,
+    currentLevelXp: evolution.currentLevelXp + xp,
     totalInteractions: evolution.totalInteractions + 1,
   };
+
+  let levelUp = true;
+  while (levelUp) {
+    const nextLevel = newEvolution.level + 1;
+    const xpToNextLevel = getXpRequiredForLevel(nextLevel);
+
+    if (newEvolution.currentLevelXp >= xpToNextLevel) {
+      newEvolution = {
+        ...newEvolution,
+        level: nextLevel,
+        currentLevelXp: newEvolution.currentLevelXp - xpToNextLevel,
+      };
+      // Continue the loop to check for multiple level-ups
+    } else {
+      levelUp = false;
+    }
+  }
+
+  return newEvolution;
 }
 
 export function getTimeUntilNextEvolution(evolution: EvolutionData): number {

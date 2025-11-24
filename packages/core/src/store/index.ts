@@ -234,7 +234,7 @@ export function createMetaPetWebStore(
     feed() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'feed'),
-        evolution: gainExperience(state.evolution, 2),
+        evolution: gainExperience(state.evolution, 5),
       }));
       get().setLastAction('feed');
     },
@@ -242,7 +242,7 @@ export function createMetaPetWebStore(
     clean() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'clean'),
-        evolution: gainExperience(state.evolution, 2),
+        evolution: gainExperience(state.evolution, 5),
       }));
       get().setLastAction('clean');
     },
@@ -250,7 +250,7 @@ export function createMetaPetWebStore(
     play() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'play'),
-        evolution: gainExperience(state.evolution, 3),
+        evolution: gainExperience(state.evolution, 10),
       }));
       get().setLastAction('play');
     },
@@ -258,7 +258,7 @@ export function createMetaPetWebStore(
     sleep() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'sleep'),
-        evolution: gainExperience(state.evolution, 1),
+        evolution: gainExperience(state.evolution, 3),
       }));
       get().setLastAction('sleep');
     },

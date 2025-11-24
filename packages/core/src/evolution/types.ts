@@ -6,13 +6,17 @@ export interface EvolutionRequirement {
   minVitalsAverage: number;
   specialCondition?: () => boolean;
   specialDescription?: string;
+  minLevel: number;
 }
 
 export interface EvolutionData {
   state: EvolutionState;
   birthTime: number;
   lastEvolutionTime: number;
-  experience: number;
+  experience: number; // Existing field, will be kept for now
+  level: number;
+  currentLevelXp: number;
+  totalXp: number;
   totalInteractions: number;
   canEvolve: boolean;
 }
@@ -36,23 +40,27 @@ export const EVOLUTION_REQUIREMENTS: Record<EvolutionState, EvolutionRequirement
     minAge: 0,
     minInteractions: 0,
     minVitalsAverage: 0,
+    minLevel: 1,
   },
   NEURO: {
     minAge: 1000 * 60 * 60,
     minInteractions: 12,
     minVitalsAverage: 55,
+    minLevel: 5,
     specialDescription: 'Stabilize the neural lattice and complete bonding rituals.',
   },
   QUANTUM: {
     minAge: 1000 * 60 * 60 * 24,
     minInteractions: 40,
     minVitalsAverage: 65,
+    minLevel: 10,
     specialDescription: 'Achieve quantum coherence and entanglement.',
   },
   SPECIATION: {
     minAge: 1000 * 60 * 60 * 48,
     minInteractions: 80,
     minVitalsAverage: 75,
+    minLevel: 15,
     specialDescription: 'PrimeTail crest refinement and consciousness alignment.',
   },
 };
