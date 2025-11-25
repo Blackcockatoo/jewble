@@ -68,13 +68,13 @@ export function checkEvolutionEligibility(
   const requirements = EVOLUTION_REQUIREMENTS[nextState];
 
   const ageElapsed = getElapsedSinceLastEvolution(evolution);
-  const isAgeMet = elapsed >= requirements.minAge;
+  const isAgeMet = ageElapsed >= requirements.minAge;
   const isInteractionsMet = evolution.totalInteractions >= requirements.minInteractions;
   const isVitalsMet = vitalsAverage >= requirements.minVitalsAverage;
   const isLevelMet = evolution.level >= requirements.minLevel;
   const isSpecialMet = requirements.specialCondition ? requirements.specialCondition() : true;
 
-  return isAgeMet && isInteractionsMet && isVitalsMet && isLevelMet && isSpecialMet;al;
+  return isAgeMet && isInteractionsMet && isVitalsMet && isLevelMet && isSpecialMet;
 }
 
 export function evolvePet(evolution: EvolutionData): EvolutionData {
@@ -93,7 +93,7 @@ export function evolvePet(evolution: EvolutionData): EvolutionData {
   };
 }
 
-export function gainExperiencexport function gainExperience(evolution: EvolutionData, xp: number): EvolutionData {
+export function gainExperience(evolution: EvolutionData, xp: number): EvolutionData {
   let newEvolution = {
     ...evolution,
     totalXp: evolution.totalXp + xp,

@@ -305,6 +305,11 @@ export function createMetaPetWebStore(
           update.achievements = achievements;
         }
 
+        // Grant XP for battle wins
+        if (result === 'win') {
+          update.evolution = gainExperience(state.evolution, 15);
+        }
+
         return update;
       });
     },
@@ -334,6 +339,10 @@ export function createMetaPetWebStore(
         if (achievements !== state.achievements) {
           update.achievements = achievements;
         }
+
+        // Grant XP based on score (5-10 XP)
+        const xpGain = Math.min(10, Math.max(5, Math.floor(score / 2)));
+        update.evolution = gainExperience(state.evolution, xpGain);
 
         return update;
       });
@@ -367,6 +376,12 @@ export function createMetaPetWebStore(
         const update: Partial<MetaPetState> = { miniGames: next };
         if (achievements !== state.achievements) {
           update.achievements = achievements;
+        }
+
+        // Grant XP based on performance (5-10 XP, scaled by lines and level)
+        if (hasProgress) {
+          const xpGain = Math.min(10, Math.max(5, Math.floor(lines / 2) + level));
+          update.evolution = gainExperience(state.evolution, xpGain);
         }
 
         return update;
