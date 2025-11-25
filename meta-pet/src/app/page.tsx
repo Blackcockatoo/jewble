@@ -1000,8 +1000,8 @@ export default function Home() {
             </div>
 
             {/* Genome Traits */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 max-h-[calc(100vh-8rem)] overflow-y-auto">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 sticky top-0 bg-slate-900/50 backdrop-blur-sm -mx-6 px-6 py-3 z-10">
                 <Dna className="w-5 h-5 text-purple-400" />
                 Genome Traits
               </h2>

@@ -136,7 +136,7 @@ export const TraitPanel = memo(function TraitPanel() {
       </section>
 
       {/* Element Web */}
-      <section className="space-y-3">
+      <section className="space-y-3 bg-amber-950/20 border border-amber-900/30 rounded-xl p-4 -mx-4">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
           <Orbit className="w-5 h-5 text-amber-300" />
           Element Web
