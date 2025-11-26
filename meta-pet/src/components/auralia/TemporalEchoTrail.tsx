@@ -16,7 +16,6 @@ interface EchoPosition {
 
 const MAX_HISTORY = 12;
 const MAX_AGE_MS = 1400;
-const UPDATE_INTERVAL_MS = 50;
 
 /**
  * Temporal Echo Trail (Upgrade 3)
@@ -32,19 +31,10 @@ export function TemporalEchoTrail({
   const [echoes, setEchoes] = useState<EchoPosition[]>([]);
   const rafRef = useRef<number>();
   const timestampRef = useRef<number>(0);
-  const lastUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     const animate = (timestamp: number) => {
       timestampRef.current = timestamp;
-
-      const elapsed = timestamp - lastUpdateRef.current;
-      if (elapsed < UPDATE_INTERVAL_MS) {
-        rafRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      lastUpdateRef.current = timestamp;
 
       const wobble = Math.sin(timestamp / 620 + curiosity / 35) * (8 + bond / 40);
       const orbit = 18 + (energy / 100) * 26;
