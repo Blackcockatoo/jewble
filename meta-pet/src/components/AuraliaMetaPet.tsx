@@ -16,10 +16,10 @@ import {
   type GuardianScaleName,
   type GuardianSigilPoint,
 } from '../../../shared/auralia/guardianBehavior';
-import { YantraMorphBackdrop } from './auralia/YantraMorphBackdrop';
-import { MechanicsShowcase } from './auralia/MechanicsShowcase';
 import { SubAtomicParticleField } from './auralia/SubAtomicParticleField';
 import { TemporalEchoTrail } from './auralia/TemporalEchoTrail';
+import { YantraMorphBackdrop } from './auralia/YantraMorphBackdrop';
+import { MechanicsShowcase } from './auralia/MechanicsShowcase';
 import { YantraTileGenomeVisualizer } from './auralia/YantraTileGenomeVisualizer';
 
 // ===== TYPE DEFINITIONS =====
@@ -897,7 +897,6 @@ const AuraliaMetaPet: React.FC = () => {
               curiosity={curiosity}
               bond={bond}
             />
-
             <SubAtomicParticleField
               energy={energy}
               curiosity={curiosity}
