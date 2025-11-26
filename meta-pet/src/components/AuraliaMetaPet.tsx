@@ -16,6 +16,8 @@ import {
   type GuardianScaleName,
   type GuardianSigilPoint,
 } from '../../../shared/auralia/guardianBehavior';
+import { SubAtomicParticleField } from './auralia/SubAtomicParticleField';
+import { TemporalEchoTrail } from './auralia/TemporalEchoTrail';
 
 // ===== TYPE DEFINITIONS =====
 type Bigish = bigint | number;
@@ -838,13 +840,29 @@ const AuraliaMetaPet: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           <div className="bg-gray-900/80 rounded-2xl p-8 border border-yellow-600/20 lg:sticky lg:top-4">
             <div 
-              className="aspect-square bg-gradient-to-br from-blue-950/30 to-gray-900/30 rounded-xl flex items-center justify-center relative overflow-hidden"
-              onMouseMove={handleMouseMove}
-              onMouseLeave={() => setEyePos({ x: 0, y: 0 })}
-            >
-              <div className="absolute inset-0 opacity-30 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
-              
-              <svg ref={svgRef} viewBox="0 0 400 400" className="w-full h-full max-w-3xl relative z-10" role="img" aria-label="Auralia guardian avatar">
+            className="aspect-square bg-gradient-to-br from-blue-950/30 to-gray-900/30 rounded-xl flex items-center justify-center relative overflow-hidden"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setEyePos({ x: 0, y: 0 })}
+          >
+            <div className="absolute inset-0 opacity-30 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
+
+            <SubAtomicParticleField
+              energy={energy}
+              curiosity={curiosity}
+              bond={bond}
+              size={400}
+              color={currentForm.tealAccent}
+            />
+
+            <TemporalEchoTrail
+              energy={energy}
+              curiosity={curiosity}
+              bond={bond}
+              size={400}
+              color={currentForm.primaryGold}
+            />
+
+            <svg ref={svgRef} viewBox="0 0 400 400" className="w-full h-full max-w-3xl relative z-10" role="img" aria-label="Auralia guardian avatar">
                 <defs>
                   <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                   <filter id="strongGlow"><feGaussianBlur stdDeviation="6" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>

@@ -6,6 +6,8 @@
 
 // ===== MAIN COMPONENT =====
 export { default as AuraliaMetaPet } from '../AuraliaMetaPet';
+export { SubAtomicParticleField } from './SubAtomicParticleField';
+export { TemporalEchoTrail } from './TemporalEchoTrail';
 
 // ===== TYPES =====
 export type * from './types';
