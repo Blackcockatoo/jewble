@@ -14,7 +14,10 @@
       "Bash(npx tsc:*)",
       "Bash(node node_modules/typescript/bin/tsc:*)",
       "Bash(curl:*)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(git mv:*)",
+      "Bash(npm ls:*)",
+      "Bash(dir /b:*)"
     ],
     "deny": [],
     "ask": []

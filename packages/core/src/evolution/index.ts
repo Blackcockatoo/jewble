@@ -62,7 +62,7 @@ export function checkEvolutionEligibility(
 ): boolean {
   const nextState = getNextState(evolution.state);
   if (!nextState) {
-    return null;
+    return false;
   }
 
   const requirements = EVOLUTION_REQUIREMENTS[nextState];

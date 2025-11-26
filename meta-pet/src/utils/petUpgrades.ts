@@ -1,4 +1,4 @@
-import { Vitals } from '@/store';
+import { Vitals } from '@/lib/store';
 
 // --- 1. Hepta-Chromatic Aura Logic ---
 

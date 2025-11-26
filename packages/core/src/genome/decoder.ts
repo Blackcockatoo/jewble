@@ -185,6 +185,6 @@ function decodeLatentTraits(black60: number[]): LatentTraits {
 }
 
 export function getTraitSummary(traits: DerivedTraits): string {
-  const { bridgeScore, frontierWeight } = traits.elements;
-  return `${traits.personality.temperament} ${traits.physical.bodyType} - ${traits.latent.evolutionPath} Path | Bridge ${bridgeScore} / Frontier ${frontierWeight}`;
+  const { bridgeCount, frontierAffinity } = traits.elementWeb;
+  return `${traits.personality.temperament} ${traits.physical.bodyType} - ${traits.latent.evolutionPath} Path | Bridge ${bridgeCount} / Frontier ${frontierAffinity}`;
 }

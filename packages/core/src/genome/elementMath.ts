@@ -88,7 +88,7 @@ function factorizeRelativeTo60(z: number): FactorizationRelativeTo60 {
   }
 
   const unit = remaining % 60;
-  const coreCode = UNITS_MOD_60.indexOf(unit);
+  const coreCode = UNITS_MOD_60.indexOf(unit as typeof UNITS_MOD_60[number]);
 
   if (coreCode === -1) {
     throw new Error(`Unit ${unit} (from Z=${z}) is not a member of (Z/60Z)^×`);
