@@ -4,7 +4,6 @@
   "workspaces": [
     "meta-pet",
     "meta-pet-mobile",
-    "apps/*",
     "packages/*"
   ],
   "scripts": {

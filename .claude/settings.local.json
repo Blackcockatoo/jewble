@@ -22,7 +22,12 @@
       "Bash(powershell:*)",
       "Bash(npx expo start:*)",
       "Bash(cat:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(git checkout:*)",
+      "Bash(xargs rm:*)"
     ],
     "deny": [],
     "ask": []
