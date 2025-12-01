@@ -14,10 +14,23 @@ This repository contains the Meta-Pet experience across mobile (Expo), Next.js w
 
 ## Development
 
-Install dependencies and build packages using the workspace root.
+Install dependencies from the workspace root (this bootstraps every app and package):
 
 ```bash
 npm install
+```
+
+Workspace-level helper scripts:
+
+```bash
+# Next.js dashboard
+npm run dev:web
+
+# Vite shell
+npm run dev:vite
+
+# Expo app
+npm run dev:mobile
 ```
 
 ### Run Next.js web app

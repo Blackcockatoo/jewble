@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "^6.1.2",
-    "@metapet/core": "file:../packages/core",
+    "@metapet/core": "0.1.0",
     "@react-navigation/native": "^6.1.9",
     "ajv": "^8.17.1",
     "expo": "^54.0.23",
