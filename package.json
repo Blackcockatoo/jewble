@@ -1,0 +1,20 @@
+{
+  "name": "jewble-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "meta-pet",
+    "meta-pet-mobile",
+    "apps/web-vite",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace meta-pet",
+    "dev:vite": "npm run dev --workspace apps/web-vite",
+    "dev:mobile": "npm run start --workspace meta-pet-mobile",
+    "build:web": "npm run build --workspace meta-pet",
+    "build:vite": "npm run build --workspace apps/web-vite",
+    "lint:web": "npm run lint --workspace meta-pet",
+    "test:web": "npm run test --workspace meta-pet"
+  }
+}
