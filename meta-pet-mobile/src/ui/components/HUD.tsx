@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -28,7 +28,7 @@ const VitalBar: React.FC<VitalBarProps> = ({ label, value, icon, onPress }) => {
   const barColor = colors.vitals[status];
 
   const handlePress = () => {
-    if (hapticsEnabled) {
+    if (hapticsEnabled && Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onPress?.();
@@ -78,7 +78,7 @@ export const HUD: React.FC = () => {
   const handleEvolve = () => {
     const success = tryEvolve();
     if (success) {
-      if (useStore.getState().hapticsEnabled) {
+      if (useStore.getState().hapticsEnabled && Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     }
@@ -123,10 +123,10 @@ export const HUD: React.FC = () => {
       {/* Vitals */}
       <View style={styles.vitalsContainer}>
         <VitalBar label="Hunger" value={100 - vitals.hunger} icon="<V" onPress={feed} />
-        <VitalBar label="Hygiene" value={vitals.hygiene} icon="=Á" onPress={clean} />
+        <VitalBar label="Hygiene" value={vitals.hygiene} icon="=ï¿½" onPress={clean} />
         <VitalBar label="Mood" value={vitals.mood} icon="=
 " onPress={play} />
-        <VitalBar label="Energy" value={vitals.energy} icon="¡" onPress={sleep} />
+        <VitalBar label="Energy" value={vitals.energy} icon="ï¿½" onPress={sleep} />
       </View>
 
       {/* Evolution Button */}
@@ -141,7 +141,7 @@ export const HUD: React.FC = () => {
             style={styles.evolveButtonGradient}
           >
             <Text style={[styles.evolveButtonText, { color: theme.background }]}>
-              ¡ EVOLVE TO {EVOLUTION_STAGE_INFO[evolution.state]?.celebration?.split('')?.[0] || 'NEXT STAGE'}
+              ï¿½ EVOLVE TO {EVOLUTION_STAGE_INFO[evolution.state]?.celebration?.split('')?.[0] || 'NEXT STAGE'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
