@@ -4,8 +4,8 @@ import {
   createSealedExport,
   importSealedExport,
   verifySealedExport,
-} from './sealed';
-import type { PetSaveData } from './indexeddb';
+} from '@/lib/persistence/sealed';
+import type { PetSaveData } from '@/lib/persistence/indexeddb';
 import { createDefaultBattleStats, createDefaultMiniGameProgress, createDefaultVimanaState } from '@/lib/progression/types';
 
 describe('Sealed Export/Import', () => {
@@ -77,6 +77,16 @@ describe('Sealed Export/Import', () => {
             social: 80,
           },
           hiddenGenes: [1, 2, 3, 4, 5],
+        },
+        elementWeb: {
+          usedResidues: [1, 2, 3],
+          pairSlots: [1, 2],
+          frontierSlots: [3],
+          voidSlotsHit: [],
+          coverage: 0.5,
+          frontierAffinity: 0.3,
+          bridgeCount: 2,
+          voidDrift: 0.1,
         },
       },
       evolution: {

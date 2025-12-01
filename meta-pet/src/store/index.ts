@@ -31,6 +31,7 @@ import {
   tick as runTick,
 } from '../vitals/index';
 
+export type { Vitals };
 export type PetType = 'geometric' | 'auralia';
 
 export interface MetaPetState {

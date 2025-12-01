@@ -42,6 +42,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000_000, // Old enough
         lastEvolutionTime: Date.now() - 100_000_000,
         experience: 50,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 50,
         totalInteractions: 0, // Not enough interactions
         canEvolve: false,
       };
@@ -59,6 +62,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000_000,
         lastEvolutionTime: Date.now() - 100_000_000,
         experience: 50,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 50,
         totalInteractions: requirements.minInteractions,
         canEvolve: false,
       };
@@ -76,6 +82,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000_000,
         lastEvolutionTime: Date.now() - 100_000_000,
         experience: 50,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 50,
         totalInteractions: requirements.minInteractions,
         canEvolve: false,
       };
@@ -92,6 +101,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000_000,
         lastEvolutionTime: Date.now() - 100_000_000,
         experience: 50,
+        level: 15,
+        currentLevelXp: 0,
+        totalXp: 200,
         totalInteractions: 100,
         canEvolve: false,
       };
@@ -110,6 +122,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000,
         lastEvolutionTime: Date.now() - 100_000,
         experience: 75,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 75,
         totalInteractions: 50,
         canEvolve: true,
       };
@@ -128,6 +143,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000,
         lastEvolutionTime: Date.now() - 50_000,
         experience: 100,
+        level: 15,
+        currentLevelXp: 0,
+        totalXp: 300,
         totalInteractions: 200,
         canEvolve: false,
       };
@@ -144,6 +162,9 @@ describe('Evolution System', () => {
         birthTime: 1000,
         lastEvolutionTime: 5000,
         experience: 75,
+        level: 5,
+        currentLevelXp: 0,
+        totalXp: 150,
         totalInteractions: 120,
         canEvolve: true,
       };
@@ -198,6 +219,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - timeSince,
         lastEvolutionTime: Date.now() - timeSince,
         experience: 50,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 50,
         totalInteractions: 10,
         canEvolve: false,
       };
@@ -214,6 +238,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000_000,
         lastEvolutionTime: Date.now() - 100_000_000,
         experience: 50,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 50,
         totalInteractions: 10,
         canEvolve: false,
       };
@@ -229,6 +256,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000,
         lastEvolutionTime: Date.now() - 50_000,
         experience: 50,
+        level: 15,
+        currentLevelXp: 0,
+        totalXp: 200,
         totalInteractions: 100,
         canEvolve: false,
       };
@@ -246,6 +276,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000,
         lastEvolutionTime: Date.now() - 50_000,
         experience: 50,
+        level: 15,
+        currentLevelXp: 0,
+        totalXp: 200,
         totalInteractions: 100,
         canEvolve: false,
       };
@@ -261,6 +294,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - 100_000,
         lastEvolutionTime: Date.now() - 100_000,
         experience: 25,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 25,
         totalInteractions: 5,
         canEvolve: false,
       };
@@ -279,6 +315,9 @@ describe('Evolution System', () => {
         birthTime: Date.now(),
         lastEvolutionTime: Date.now(),
         experience: 0,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 0,
         totalInteractions: 0,
         canEvolve: false,
       };
@@ -296,6 +335,9 @@ describe('Evolution System', () => {
         birthTime: Date.now(),
         lastEvolutionTime: Date.now(),
         experience: 0,
+        level: 15,
+        currentLevelXp: 0,
+        totalXp: 0,
         totalInteractions: 0,
         canEvolve: false,
       };
@@ -314,6 +356,9 @@ describe('Evolution System', () => {
         birthTime: Date.now() - requirements.minAge / 2, // 50% age progress
         lastEvolutionTime: Date.now() - requirements.minAge / 2,
         experience: 50,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 50,
         totalInteractions: requirements.minInteractions / 2, // 50% interaction progress
         canEvolve: false,
       };
@@ -334,6 +379,9 @@ describe('Evolution System', () => {
         birthTime: Date.now(),
         lastEvolutionTime: Date.now(),
         experience: 0,
+        level: 15,
+        currentLevelXp: 0,
+        totalXp: 0,
         totalInteractions: 0,
         canEvolve: false,
       };

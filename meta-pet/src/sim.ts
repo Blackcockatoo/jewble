@@ -1,5 +1,5 @@
 import { PetVitals } from "./state";
-import { PetGenome } from "./genome";
+import { Genome } from "./genome";
 import { nextRandom } from "./rng";
 
 // The tick interval in milliseconds for the simulation.
@@ -16,7 +16,7 @@ const SIMULATION_TICK_MS = 1000;
  */
 export function deterministicVitalsTick(
   currentVitals: PetVitals,
-  genome: PetGenome,
+  genome: Genome,
   timeElapsedMs: number
 ): PetVitals {
   let newVitals = { ...currentVitals };
@@ -30,17 +30,22 @@ export function deterministicVitalsTick(
     
     // Convert tick time to a fraction of a day or other relevant unit
     const tickUnit = SIMULATION_TICK_MS / (24 * 60 * 60 * 1000); // Example: fraction of a day
-    
+
+    // TODO: Derive these from genome data
+    const metabolismRate = 1.0;
+    const baseHealthRegen = 0.5;
+    const moodSensitivity = 2.0;
+
     // Energy depletion (Metabolism)
-    const energyLoss = genome.metabolismRate * tickUnit * (1 + nextRandom() * 0.1);
+    const energyLoss = metabolismRate * tickUnit * (1 + nextRandom() * 0.1);
     newVitals.energy = Math.max(0, newVitals.energy - energyLoss);
-    
+
     // Health regeneration/loss
-    const healthChange = genome.baseHealthRegen * tickUnit;
+    const healthChange = baseHealthRegen * tickUnit;
     newVitals.health = Math.min(100, newVitals.health + healthChange);
-    
+
     // Mood drift
-    const moodDrift = (nextRandom() - 0.5) * genome.moodSensitivity * tickUnit;
+    const moodDrift = (nextRandom() - 0.5) * moodSensitivity * tickUnit;
     newVitals.mood = Math.min(100, Math.max(0, newVitals.mood + moodDrift));
     
     // Enforce bounds

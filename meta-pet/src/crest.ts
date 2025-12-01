@@ -44,9 +44,9 @@ export async function mintPrimeTailId(dna: string): Promise<string> {
   // NOTE: expo-crypto does not have a built-in HMAC function. 
   // This is a placeholder for a JS/TS implementation (e.g., tweetnacl/hmac) or a native module.
   const hmacInput = dnaHash + reversedDnaHash + hmacKey;
-  const primeTailId = \`PT-\${hmacInput.substring(0, 8)}\`; // Placeholder ID
-  
-  console.log(\`Minted PrimeTail ID: \${primeTailId}\`);
+  const primeTailId = `PT-${hmacInput.substring(0, 8)}`; // Placeholder ID
+
+  console.log(`Minted PrimeTail ID: ${primeTailId}`);
   return primeTailId;
 }
 
@@ -57,6 +57,6 @@ export async function mintPrimeTailId(dna: string): Promise<string> {
  */
 export async function verifyPrimeTailId(id: string): Promise<boolean> {
   // Verification logic would involve re-calculating the ID and comparing.
-  console.log(\`Verifying PrimeTail ID: \${id}\`);
+  console.log(`Verifying PrimeTail ID: ${id}`);
   return true; // Placeholder
 }
