@@ -1,9 +1,13 @@
+import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { Vitals } from '@/store';
 
 /**
  * Advanced haptic feedback patterns that respond to app state
  */
+
+// Helper to check if haptics are available
+const isHapticsAvailable = () => Platform.OS !== 'web';
 
 export const HapticPatterns = {
   /**
@@ -185,7 +189,7 @@ export class HapticManager {
   }
 
   static async trigger(pattern: keyof typeof HapticPatterns, ...args: any[]) {
-    if (!this.enabled) return;
+    if (!this.enabled || !isHapticsAvailable()) return;
 
     try {
       const fn = HapticPatterns[pattern] as any;
