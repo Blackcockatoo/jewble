@@ -8,3 +8,9 @@ export const useStore = createMetaPetWebStore();
 
 // Element number theory exports
 export * from './elements';
+
+// Yantra analysis exports
+export * from './yantra';
+
+// Genetics exports
+export * from './genetics';

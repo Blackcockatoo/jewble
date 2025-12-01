@@ -14,7 +14,10 @@
     "./rng": "./src/rng/index.ts",
     "./auralia": "./src/auralia/index.ts",
     "./auralia/persistence": "./src/auralia/persistence.ts",
-    "./astrogenetics": "./src/astrogenetics/index.ts"
+    "./astrogenetics": "./src/astrogenetics/index.ts",
+    "./yantra": "./src/yantra/index.ts",
+    "./yantra/baseConversion": "./src/yantra/baseConversion.ts",
+    "./genetics": "./src/genetics/index.ts"
   },
   "scripts": {
     "test": "vitest"
