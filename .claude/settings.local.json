@@ -27,7 +27,8 @@
       "Bash(rm:*)",
       "Bash(rmdir:*)",
       "Bash(git checkout:*)",
-      "Bash(xargs rm:*)"
+      "Bash(xargs rm:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []
