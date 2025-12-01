@@ -1,3 +1,19 @@
+export interface ElementInfo {
+  atomicNumber: number;
+  symbol: string;
+  name: string;
+}
+
+export interface ResidueMeta {
+  residue: number;
+  elements: ElementInfo[];
+  hasBridge60: boolean;
+  hasFrontier: boolean;
+  isVoid: boolean;
+}
+
+export type SequenceColor = 'red' | 'blue' | 'black';
+
 export interface Genome {
   red60: number[];
   blue60: number[];

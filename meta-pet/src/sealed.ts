@@ -8,7 +8,7 @@ import * as FileSystem from 'expo-file-system';
  */
 export async function createSealedExport(data: any): Promise<string> {
   const sealedData = JSON.stringify(data); // Placeholder for actual sealing/encryption
-  const fileUri = FileSystem.documentDirectory + 'sealed-export.json';
+  const fileUri = ((FileSystem as any).documentDirectory as string | undefined) + 'sealed-export.json';
 
   await FileSystem.writeAsStringAsync(fileUri, sealedData);
   console.log(`Created sealed export at: ${fileUri}`);

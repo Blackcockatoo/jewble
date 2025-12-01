@@ -124,7 +124,7 @@ export async function deletePet(id: string): Promise<void> {
 /**
  * Auto-save helper - debounced save
  */
-let saveTimeout: NodeJS.Timeout | null = null;
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function autoSavePet(pet: PetData, delay = 5000): void {
   if (saveTimeout) {

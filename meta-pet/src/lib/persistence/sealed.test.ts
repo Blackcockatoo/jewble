@@ -78,6 +78,16 @@ describe('Sealed Export/Import', () => {
           },
           hiddenGenes: [1, 2, 3, 4, 5],
         },
+        elementWeb: {
+          usedResidues: [1, 2, 3],
+          pairSlots: [1, 2],
+          frontierSlots: [3],
+          voidSlotsHit: [],
+          coverage: 0.5,
+          frontierAffinity: 0.3,
+          bridgeCount: 2,
+          voidDrift: 0.1,
+        },
       },
       evolution: {
         state: 'GENETICS',
