@@ -4,8 +4,8 @@ import React from 'react';
 // manage feature toggles that can be changed at runtime (e.g., from a settings screen).
 // For now, it just provides the static config.
 
-export const FeatureProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function FeatureProvider({ children }: { children: React.ReactNode }) {
   // In a real app, you might load persisted feature states here (e.g., from MMKV)
   // and provide them via a context.
   return <>{children}</>;
-};
+}
