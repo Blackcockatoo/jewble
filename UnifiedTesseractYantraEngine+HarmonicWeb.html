@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Unified Tesseract Yantra Engine + Harmonic Web</title>
+  <style>
+    :root {
+      --bg: #050514;
+      --text: #e4e8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      background:
+        radial-gradient(circle at top, #262b60 0%, #050514 55%, #000000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0.4em 0 0.1em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 0.9em;
+      font-size: 0.86rem;
+      opacity: 0.85;
+      text-align: center;
+      max-width: 780px;
+    }
+
+    #controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(5, 5, 25, 0.9);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+    }
+
+    button {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        radial-gradient(circle at top, #383a65 0%, #0d0f24 60%, #04050b 100%);
+      color: var(--text);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease,
+                  background 0.12s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+    button:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: none;
+    }
+
+    #canvas-wrapper {
+      padding: 8px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg,
+          rgba(56, 61, 122, 0.95),
+          rgba(5, 7, 19, 0.98));
+      box-shadow:
+        0 0 30px rgba(0, 0, 0, 0.9),
+        0 0 80px rgba(27, 206, 255, 0.14);
+      max-width: 100%;
+    }
+
+    #yantraCanvas {
+      display: block;
+      background: #050514;
+      border-radius: 14px;
+    }
+
+    @media (max-width: 900px) {
+      #yantraCanvas {
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Unified Tesseract Yantra Engine</h1>
+  <p class="subtitle">
+    One index stream; five projections.
+    1 = Phyllotaxis flower, 2 = Hex spiral grid,
+    3 = Sri Yantra + tesseract, 4 = Morph blend, 5 = Harmonic Web.
+  </p>
+
+  <div id="controls">
+    <button data-mode="1">Mode 1: Phyllo</button>
+    <button data-mode="2">Mode 2: Hex</button>
+    <button data-mode="3">Mode 3: Yantra</button>
+    <button data-mode="4">Mode 4: Morph</button>
+    <button data-mode="5">Mode 5: Harmonic</button>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="yantraCanvas" width="960" height="720"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('yantraCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const modes = {
+      PHYLLO: 1,
+      HEX: 2,
+      YANTRA: 3,
+      MORPH: 4,
+      HARMONIC: 5
+    };
+
+    let currentMode = modes.PHYLLO;
+
+    document.querySelectorAll('#controls button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMode = parseInt(btn.getAttribute('data-mode'), 10);
+      });
+    });
+
+    window.addEventListener('keydown', e => {
+      if (['1','2','3','4','5'].includes(e.key)) {
+        currentMode = parseInt(e.key, 10);
+      }
+    });
+
+    // --- Fibonacci 60-digit cycle ---
+    function buildFib60() {
+      const digits = [];
+      let a = 0, b = 1;
+      for (let i = 0; i < 60; i++) {
+        digits.push(a % 10);
+        const next = (a + b) % 10;
+        a = b; b = next;
+      }
+      return digits;
+    }
+
+    const FIB60 = buildFib60();
+
+    // Lukas 12 sectors (sum 60)
+    const LUKAS = [2,1,3,4,7,1,8,9,7,6,3,9];
+
+    const LUKAS_BOUNDS = (() => {
+      const bounds = [0];
+      let s = 0;
+      for (const d of LUKAS) { s += d; bounds.push(s); }
+      return bounds;
+    })();
+
+    function sectorForIndex(k) {
+      for (let s = 0; s < 12; s++) {
+        if (k >= LUKAS_BOUNDS[s] && k < LUKAS_BOUNDS[s+1]) return s;
+      }
+      return 11;
+    }
+
+    const palette = [
+      '#0b3c5d', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+      '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+    ];
+
+    function hexToRgb(hex) {
+      hex = hex.replace('#','');
+      const n = parseInt(hex, 16);
+      return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+    }
+
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    // ---------- Mode 1: Phyllotaxis ----------
+    function drawPhyllo(t, mix = 1.0) {
+      const { width:w, height:h } = canvas;
+      const cx = w/2, cy = h/2;
+      const N = 1500;
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const maxR = Math.min(w, h) * 0.47;
+
+      for (let n = 0; n < N; n++) {
+        const baseR = maxR * Math.sqrt(n/N);
+        const baseAng = n * golden + 0.25 * t;
+        const k = n % 60;
+        const fib = FIB60[k];
+        const sector = sectorForIndex(k);
+        const L = LUKAS[sector];
+
+        const rScale = 0.7 + 0.3 * (L / 9);
+        const angOffset = sector * (Math.PI/6) * 0.15;
+        const r = baseR * rScale;
+        const ang = baseAng + angOffset;
+
+        const x = cx + r * Math.cos(ang);
+        const y = cy + r * Math.sin(ang);
+
+        const col = palette[fib];
+        const rgb = hexToRgb(col);
+        const pulse = 0.5 + 0.4 * Math.sin(t * 2 + n * 0.03);
+        const R = clamp(Math.floor(rgb.r * pulse), 0, 255);
+        const G = clamp(Math.floor(rgb.g * pulse), 0, 255);
+        const B = clamp(Math.floor(rgb.b * pulse), 0, 255);
+        const size = (1.5 + 1.3 * pulse) * mix;
+
+        ctx.fillStyle = `rgb(${R},${G},${B})`;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ang);
+        ctx.fillRect(-size/2, -size/2, size, size);
+        ctx.restore();
+      }
+    }
+
+    // ---------- Mode 2: Hex spiral grid ----------
+    function drawHexGrid(t, mix = 1.0) {
+      const { width:w, height:h } = canvas;
+      const cx = w/2, cy = h/2;
+      const radius = 10;
+      const cols = 22, rows = 22;
+
+      for (let q = -cols; q <= cols; q++) {
+        for (let r = -rows; r <= rows; r++) {
+          const x = radius * (Math.sqrt(3)*q + Math.sqrt(3)/2 * r);
+          const y = radius * (3/2 * r);
+          const dist = Math.hypot(x,y);
+          if (dist > Math.min(w,h)*0.46) continue;
+
+          const sx = cx + x;
+          const sy = cy + y;
+
+          const idx = (q*q + r*r + 1000) >>> 0;
+          const k = idx % 60;
+          const fib = FIB60[k];
+          const col = palette[fib];
+          const rgb = hexToRgb(col);
+          const pulse = 0.6 + 0.3 * Math.sin(t*2 + idx*0.02);
+          const R = clamp(Math.floor(rgb.r * pulse), 0, 255);
+          const G = clamp(Math.floor(rgb.g * pulse), 0, 255);
+          const B = clamp(Math.floor(rgb.b * pulse), 0, 255);
+
+          ctx.fillStyle = `rgba(${R},${G},${B},${0.75*mix})`;
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = Math.PI/3 * i + 0.05 * t;
+            const px = sx + radius * Math.cos(a) * mix;
+            const py = sy + radius * Math.sin(a) * mix;
+            if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
+    // ---------- Mode 3: Sri Yantra + tesseract ----------
+    function drawYantra(t, mix = 1.0) {
+      const { width:w, height:h } = canvas;
+      const cx = w/2, cy = h/2;
+      const baseR = Math.min(w,h) * 0.42 * mix;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 0.7;
+      for (let i = 1; i <= 6; i++) {
+        const r = baseR * (i/6);
+        ctx.beginPath();
+        ctx.arc(0,0,r,0,Math.PI*2);
+        ctx.stroke();
+      }
+
+      const levels = 9;
+      for (let k = 0; k < levels; k++) {
+        const r = baseR * (0.22 + 0.74 * k/(levels-1));
+        const fib = FIB60[(k*7)%60];
+        const col = palette[fib];
+        ctx.strokeStyle = col + 'AA';
+        const spin = t*0.2 + k*0.11;
+
+        ctx.save();
+        ctx.rotate(spin);
+        ctx.beginPath();
+        for (let i = 0; i < 3; i++) {
+          const a = (Math.PI*2/3)*i - Math.PI/2;
+          const x = r*Math.cos(a);
+          const y = r*Math.sin(a);
+          if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      for (let i = 0; i < 12; i++) {
+        const L = LUKAS[i];
+        const lenFactor = 0.4 + 0.5 * (L/9);
+        const r = baseR * lenFactor;
+        const angle = (Math.PI*2*i/12) + 0.15*Math.sin(t + i);
+        const x = r*Math.cos(angle);
+        const y = r*Math.sin(angle);
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(x,y);
+        ctx.stroke();
+      }
+
+      const size1 = baseR * 0.9;
+      const size2 = baseR * 0.55;
+      const a = t*0.4;
+
+      ctx.save();
+      ctx.rotate(a);
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      const s1 = size1/2, s2 = size2/2;
+      const sq1 = [
+        {x:-s1,y:-s1},{x:s1,y:-s1},{x:s1,y:s1},{x:-s1,y:s1}
+      ];
+      const sq2 = [
+        {x:-s2,y:-s2},{x:s2,y:-s2},{x:s2,y:s2},{x:-s2,y:s2}
+      ];
+
+      ctx.beginPath();
+      sq1.forEach((p,i)=>{ if(i===0)ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+      ctx.closePath();
+      ctx.stroke();
+
+      const off = Math.PI/8;
+      const c = Math.cos(off), s = Math.sin(off);
+      const rot2 = sq2.map(p=>({x:p.x*c-p.y*s,y:p.x*s+p.y*c}));
+      ctx.beginPath();
+      rot2.forEach((p,i)=>{ if(i===0)ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);});
+      ctx.closePath();
+      ctx.stroke();
+
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(sq1[i].x,sq1[i].y);
+        ctx.lineTo(rot2[i].x,rot2[i].y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    // ---------- Mode 5: Harmonic Web ----------
+    function drawHarmonicWeb(t, mix = 1.0) {
+      const { width:w, height:h } = canvas;
+      const cx = w/2, cy = h/2;
+      const rings = 8;
+      const maxR = Math.min(w,h) * 0.45 * mix;
+
+      const ringPoints = Array.from({length:rings}, () => new Array(60));
+
+      for (let ring = 0; ring < rings; ring++) {
+        const baseR = maxR * (ring + 1) / rings;
+
+        for (let j = 0; j < 60; j++) {
+          const theta = 2*Math.PI * j / 60;
+          const k = j;                  // index around the circle
+          const fib = FIB60[k];
+          const sector = sectorForIndex(k);
+          const L = LUKAS[sector];
+
+          const kH = 2 + (fib % 5);                 // harmonic frequency
+          const amp = 0.18 + 0.03 * L;             // amplitude
+          const phase = 0.4 * L;
+          const wave = 1 + amp * Math.sin(kH*theta + 1.4*t + phase);
+
+          const radius = baseR * wave;
+          const x = cx + radius * Math.cos(theta);
+          const y = cy + radius * Math.sin(theta);
+
+          ringPoints[ring][j] = {x,y,fib,L};
+
+          const baseColor = palette[fib];
+          const rgb = hexToRgb(baseColor);
+          const pulse = 0.55 + 0.35*Math.sin(t*3 + ring*0.5 + j*0.1);
+          const R = clamp(Math.floor(rgb.r * pulse),0,255);
+          const G = clamp(Math.floor(rgb.g * pulse),0,255);
+          const B = clamp(Math.floor(rgb.b * pulse),0,255);
+          const size = 2 + 2*pulse;
+
+          ctx.fillStyle = `rgba(${R},${G},${B},${0.95*mix})`;
+          ctx.fillRect(x-size/2, y-size/2, size, size);
+        }
+      }
+
+      // Connect around each ring
+      for (let ring = 0; ring < rings; ring++) {
+        ctx.beginPath();
+        for (let j = 0; j < 60; j++) {
+          const p = ringPoints[ring][j];
+          if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(255,255,255,${0.08 + 0.05*ring})`;
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+
+      // Connect radials between rings
+      for (let j = 0; j < 60; j++) {
+        ctx.beginPath();
+        for (let ring = 0; ring < rings; ring++) {
+          const p = ringPoints[ring][j];
+          if (ring === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        }
+        const fib = FIB60[j];
+        const col = palette[fib];
+        ctx.strokeStyle = col + '55';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // ---------- Main loop ----------
+    let running = true;
+
+    function loop(ts) {
+      if (!running) return;
+      const t = ts/1000;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      if (currentMode === modes.PHYLLO) {
+        drawPhyllo(t, 1.0);
+      } else if (currentMode === modes.HEX) {
+        drawHexGrid(t, 1.0);
+      } else if (currentMode === modes.YANTRA) {
+        drawYantra(t, 1.0);
+      } else if (currentMode === modes.HARMONIC) {
+        drawHarmonicWeb(t, 1.0);
+      } else { // MORPH
+        const m = 0.5 + 0.5*Math.sin(t*0.4);
+        drawPhyllo(t, 1-m);
+        drawHexGrid(t, m*0.7);
+        drawYantra(t, m*0.8);
+        drawHarmonicWeb(t, m*0.6);
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MOSS60 Consciousness — Psychoacoustic Reality Engine</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: radial-gradient(ellipse at center, #0f0c29 0%, #302b63 50%, #24243e 100%);
+      color: #ffd700;
+      font-family: 'Share Tech Mono', monospace;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    
+    .consciousness-field {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.1;
+      background: radial-gradient(circle at center, 
+        transparent 0%, 
+        rgba(255,215,0,0.1) 30%,
+        transparent 60%);
+      animation: breathe 7.83s ease-in-out infinite;
+    }
+    
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); opacity: 0.1; }
+      50% { transform: scale(1.2); opacity: 0.3; }
+    }
+    
+    .container { 
+      max-width: 1800px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      position: relative;
+      z-index: 1;
+    }
+    
+    header {
+      text-align: center;
+      padding: 40px 0;
+      background: rgba(0,0,0,.6);
+      border: 1px solid rgba(255,215,0,.3);
+      border-radius: 12px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+    
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      background: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4, #ffd700);
+      background-size: 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient-shift 3s ease infinite;
+      margin-bottom: 10px;
+    }
+    
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .subtitle {
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: #88d8ff;
+      opacity: .9;
+    }
+    
+    .main-grid {
+      display: grid;
+      grid-template-columns: 450px 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .sidebar {
+      background: rgba(0,0,0,.7);
+      border: 1px solid rgba(255,215,0,.4);
+      border-radius: 12px;
+      padding: 25px;
+      max-height: 90vh;
+      overflow-y: auto;
+      backdrop-filter: blur(5px);
+    }
+    
+    .canvas-area {
+      background: rgba(0,0,0,.5);
+      border: 1px solid rgba(255,215,0,.4);
+      border-radius: 12px;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+    }
+    
+    canvas {
+      border: 3px solid transparent;
+      border-radius: 8px;
+      background: #000;
+      box-shadow: 0 0 60px rgba(255,215,0,.4);
+      position: relative;
+      border-image: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4, #ffd700) 1;
+      animation: border-pulse 4s linear infinite;
+    }
+    
+    @keyframes border-pulse {
+      0%, 100% { border-image-source: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4, #ffd700); }
+      50% { border-image-source: linear-gradient(45deg, #4ecdc4, #ffd700, #ff6b6b, #4ecdc4); }
+    }
+    
+    .section {
+      margin-bottom: 25px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid rgba(255,215,0,.2);
+    }
+    
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+      background: linear-gradient(90deg, #88d8ff, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      background: rgba(0,0,0,.8);
+      border: 1px solid rgba(255,215,0,.5);
+      color: #ffd700;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+    }
+    
+    input[type="text"]:focus, textarea:focus {
+      border-color: #ff6b6b;
+      box-shadow: 0 0 10px rgba(255,107,107,.3);
+      outline: none;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all .3s;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    
+    button:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102,126,234,.4);
+    }
+    
+    button.primary {
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      color: #000;
+    }
+    
+    .control-group { margin-bottom: 18px; }
+    
+    label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      color: #88d8ff;
+      text-transform: uppercase;
+    }
+    
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, rgba(255,215,0,.2), rgba(255,215,0,.5));
+      outline: none;
+      border-radius: 3px;
+      -webkit-appearance: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #ffd700, #ff6b6b);
+      cursor: pointer;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(255,215,0,.8);
+      transition: all 0.3s;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 25px rgba(255,215,0,1);
+    }
+    
+    select {
+      width: 100%;
+      padding: 10px;
+      background: rgba(0,0,0,.8);
+      border: 1px solid rgba(255,215,0,.5);
+      color: #ffd700;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      border-radius: 6px;
+    }
+    
+    .frequency-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      letter-spacing: 5px;
+      font-weight: 700;
+      text-align: center;
+      padding: 20px;
+      background: rgba(0,0,0,.8);
+      border: 2px solid rgba(255,215,0,.6);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 15px currentColor;
+      animation: frequency-pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes frequency-pulse {
+      0%, 100% { color: #ffd700; }
+      50% { color: #ff6b6b; }
+    }
+    
+    .sacred-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    
+    .sacred-overlay.active {
+      opacity: 0.3;
+    }
+    
+    .consciousness-meter {
+      width: 100%;
+      height: 30px;
+      background: rgba(0,0,0,.6);
+      border: 1px solid rgba(255,215,0,.4);
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    
+    .consciousness-level {
+      height: 100%;
+      background: linear-gradient(90deg, #4ecdc4, #44a0ff, #667eea, #764ba2, #f093fb);
+      width: 0%;
+      transition: width 0.5s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .consciousness-level::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+      animation: shimmer 2s linear infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .value-display {
+      float: right;
+      color: #ffd700;
+      font-weight: 700;
+    }
+    
+    .inline {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 10px;
+      background: rgba(255,215,0,.1);
+      border: 1px solid rgba(255,215,0,.3);
+      color: #ffd700;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      border-radius: 6px;
+      text-align: center;
+      transition: all .3s;
+      text-transform: uppercase;
+    }
+    
+    .tab.active {
+      background: linear-gradient(135deg, rgba(255,215,0,.3), rgba(255,107,107,.3));
+      border-color: #ffd700;
+      transform: scale(1.05);
+    }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { 
+      background: rgba(0,0,0,.5); 
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb { 
+      background: linear-gradient(180deg, #667eea, #764ba2); 
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover { 
+      background: linear-gradient(180deg, #764ba2, #667eea); 
+    }
+  </style>
+</head>
+<body>
+  <div class="consciousness-field"></div>
+  
+  <header>
+    <h1>MOSS60</h1>
+    <div class="subtitle">CONSCIOUSNESS FIELD MODULATION ENGINE</div>
+  </header>
+
+  <div class="container">
+    <div class="main-grid">
+      <!-- Consciousness Control Panel -->
+      <div class="sidebar">
+        <div class="section">
+          <div class="section-title">⚛️ QUANTUM SEED</div>
+          <input id="msg" type="text" placeholder="Consciousness seed phrase" value="Blue Snake Studios">
+          <textarea id="mantra" placeholder="Sacred mantra encoding (optional)" rows="3"></textarea>
+          <button class="primary" onclick="generateConsciousness()">ACTIVATE FIELD</button>
+        </div>
+
+        <!-- Consciousness Meter -->
+        <div class="section">
+          <div class="section-title">🧠 COHERENCE LEVEL</div>
+          <div class="consciousness-meter">
+            <div class="consciousness-level" id="coherence-meter"></div>
+          </div>
+          <div class="frequency-display" id="frequency-display">432 Hz</div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this,'frequency')">FREQUENCY</div>
+          <div class="tab" onclick="switchTab(this,'geometry')">GEOMETRY</div>
+          <div class="tab" onclick="switchTab(this,'psyche')">PSYCHE</div>
+        </div>
+
+        <!-- Frequency Tab -->
+        <div id="frequency-tab" class="tab-content active">
+          <div class="section">
+            <div class="section-title">🎵 BINAURAL SYNTHESIS</div>
+            
+            <div class="control-group">
+              <label>Base Frequency <span class="value-display" id="freqVal">432 Hz</span></label>
+              <select id="baseFreq" onchange="updateFrequency()">
+                <option value="432">432 Hz - Universal Harmony</option>
+                <option value="528">528 Hz - DNA Repair</option>
+                <option value="639">639 Hz - Connection</option>
+                <option value="741">741 Hz - Awakening</option>
+                <option value="852">852 Hz - Third Eye</option>
+                <option value="963">963 Hz - Crown Chakra</option>
+                <option value="174">174 Hz - Foundation</option>
+                <option value="285">285 Hz - Quantum Field</option>
+                <option value="396">396 Hz - Liberation</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label>Binaural Beat <span class="value-display" id="beatVal">7.83 Hz</span></label>
+              <input type="range" id="binauralBeat" min="0.5" max="40" step="0.01" value="7.83" oninput="updateBinaural()">
+            </div>
+
+            <div class="control-group">
+              <label>Harmonic Layers <span class="value-display" id="harmonicVal">3</span></label>
+              <input type="range" id="harmonics" min="1" max="9" step="1" value="3" oninput="updateHarmonics()">
+            </div>
+
+            <button onclick="startAudioField()">🔊 ACTIVATE AUDIO FIELD</button>
+            <button onclick="stopAudioField()">🔇 SILENCE</button>
+          </div>
+
+          <div class="section">
+            <div class="section-title">🌊 WAVE MODULATION</div>
+            
+            <div class="control-group">
+              <label>Schumann Resonance <span class="value-display" id="schumannVal">ON</span></label>
+              <div class="inline">
+                <input id="schumann" type="checkbox" checked onchange="updateSchumann()">
+                <label for="schumann" style="margin:0">7.83 Hz Earth Frequency</label>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label>Golden Ratio Timing</label>
+              <div class="inline">
+                <input id="golden-timing" type="checkbox" checked>
+                <label for="golden-timing" style="margin:0">φ-based animation cycles</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Geometry Tab -->
+        <div id="geometry-tab" class="tab-content">
+          <div class="section">
+            <div class="section-title">🔯 SACRED OVERLAYS</div>
+            
+            <select id="sacred-geometry" onchange="updateSacredGeometry()">
+              <option value="none">None</option>
+              <option value="sri-yantra">Sri Yantra</option>
+              <option value="metatron">Metatron's Cube</option>
+              <option value="flower">Flower of Life</option>
+              <option value="torus">Toroidal Field</option>
+              <option value="merkaba">Merkaba</option>
+              <option value="vesica">Vesica Piscis</option>
+              <option value="platonic">Platonic Solids</option>
+            </select>
+
+            <div class="control-group">
+              <label>Overlay Intensity <span class="value-display" id="overlayVal">0.3</span></label>
+              <input type="range" id="overlayIntensity" min="0" max="1" step="0.05" value="0.3" oninput="updateOverlay()">
+            </div>
+
+            <div class="control-group">
+              <label>Rotation Speed <span class="value-display" id="rotSpeedVal">1.0x</span></label>
+              <input type="range" id="geoRotation" min="0" max="5" step="0.1" value="1" oninput="updateGeoRotation()">
+            </div>
+
+            <div class="control-group">
+              <label>Dimensional Layers <span class="value-display" id="dimVal">3</span></label>
+              <input type="range" id="dimensions" min="1" max="12" step="1" value="3" oninput="updateDimensions()">
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">⚛️ QUANTUM GEOMETRY</div>
+            
+            <div class="inline">
+              <input id="quantum-entangle" type="checkbox">
+              <label for="quantum-entangle" style="margin:0">Quantum Entanglement</label>
+            </div>
+            
+            <div class="inline">
+              <input id="hyperdimensional" type="checkbox">
+              <label for="hyperdimensional" style="margin:0">Hyperdimensional Projection</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Psyche Tab -->
+        <div id="psyche-tab" class="tab-content">
+          <div class="section">
+            <div class="section-title">🧿 CONSCIOUSNESS MODES</div>
+            
+            <select id="consciousness-mode" onchange="updateConsciousnessMode()">
+              <option value="meditation">Deep Meditation</option>
+              <option value="lucid">Lucid Dreaming</option>
+              <option value="astral">Astral Projection</option>
+              <option value="healing">Healing Field</option>
+              <option value="creativity">Creative Flow</option>
+              <option value="transcendence">Transcendence</option>
+              <option value="akashic">Akashic Access</option>
+            </select>
+          </div>
+
+          <div class="section">
+            <div class="section-title">✨ PRIME CONSCIOUSNESS</div>
+            
+            <div class="control-group">
+              <label>Prime Pulse Rate <span class="value-display" id="primeVal">2.0 Hz</span></label>
+              <input type="range" id="primePulse" min="0.1" max="10" step="0.1" value="2" oninput="updatePrimePulse()">
+            </div>
+
+            <div class="control-group">
+              <label>Subliminal Depth <span class="value-display" id="subVal">0.3</span></label>
+              <input type="range" id="subliminal" min="0" max="1" step="0.05" value="0.3" oninput="updateSubliminal()">
+            </div>
+
+            <div class="inline">
+              <input id="hypnagogic" type="checkbox">
+              <label for="hypnagogic" style="margin:0">Hypnagogic Induction</label>
+            </div>
+            
+            <div class="inline">
+              <input id="theta-entrainment" type="checkbox">
+              <label for="theta-entrainment" style="margin:0">Theta Entrainment (4-8 Hz)</label>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">🌈 CHAKRA ACTIVATION</div>
+            
+            <div class="control-group">
+              <label>Active Chakras</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="inline"><input type="checkbox" id="root"><label for="root" style="margin:0; color:#ff0000">Root</label></div>
+                <div class="inline"><input type="checkbox" id="sacral"><label for="sacral" style="margin:0; color:#ff7f00">Sacral</label></div>
+                <div class="inline"><input type="checkbox" id="solar"><label for="solar" style="margin:0; color:#ffff00">Solar</label></div>
+                <div class="inline"><input type="checkbox" id="heart"><label for="heart" style="margin:0; color:#00ff00">Heart</label></div>
+                <div class="inline"><input type="checkbox" id="throat"><label for="throat" style="margin:0; color:#0000ff">Throat</label></div>
+                <div class="inline"><input type="checkbox" id="third-eye" checked><label for="third-eye" style="margin:0; color:#4b0082">Third Eye</label></div>
+                <div class="inline"><input type="checkbox" id="crown" checked><label for="crown" style="margin:0; color:#9400d3">Crown</label></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Area -->
+      <div class="canvas-area">
+        <canvas id="c" width="800" height="800"></canvas>
+        <canvas id="sacred-overlay" class="sacred-overlay" width="800" height="800"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONSCIOUSNESS ENGINE CORE =====
+    const PHI = (1 + Math.sqrt(5)) / 2;
+    const R = "113031491493585389543778774590997079619617525721567332336510".split('').map(Number);
+    const K = "011235831459437077415617853819099875279651673033695493257291".split('').map(Number);
+    const B = "012776329785893036118967145479098334781325217074992143965631".split('').map(Number);
+    const primes = new Set([2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59]);
+    
+    // Audio Context for binaural beats
+    let audioContext = null;
+    let oscillators = [];
+    let gainNodes = [];
+    let isPlaying = false;
+    
+    // Animation state
+    let animationFrame = null;
+    let animationTime = 0;
+    let currentHash = '';
+    let consciousnessLevel = 0;
+    let primePulsePhase = 0;
+    let sacredGeometry = 'none';
+    let consciousnessMode = 'meditation';
+    
+    // ===== HASH GENERATION =====
+    function moss60Hash(s) {
+      let x = 0;
+      for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        const j = i % 60;
+        x ^= c;
+        x = ((x << 5) | (x >>> 27)) + R[j];
+        x ^= K[j] << 3;
+        x = ((x << 7) | (x >>> 25)) + B[j];
+        x = (x * 31) & 0x7FFFFFFF;
+      }
+      return x.toString(16).padStart(8, '0');
+    }
+    
+    function extendedHash(s) {
+      let result = '';
+      for (let i = 0; i < 8; i++) result += moss60Hash(s + i.toString());
+      return result;
+    }
+    
+    // ===== BINAURAL AUDIO SYNTHESIS =====
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+    
+    function startAudioField() {
+      initAudio();
+      if (isPlaying) return;
+      
+      const baseFreq = parseInt(document.getElementById('baseFreq').value);
+      const binauralBeat = parseFloat(document.getElementById('binauralBeat').value);
+      const harmonics = parseInt(document.getElementById('harmonics').value);
+      
+      // Create oscillators for left and right channels
+      const merger = audioContext.createChannelMerger(2);
+      
+      for (let h = 0; h < harmonics; h++) {
+        const harmonic = h + 1;
+        const leftFreq = baseFreq * harmonic;
+        const rightFreq = (baseFreq * harmonic) + binauralBeat;
+        
+        // Left channel
+        const leftOsc = audioContext.createOscillator();
+        const leftGain = audioContext.createGain();
+        leftOsc.frequency.value = leftFreq;
+        leftOsc.type = 'sine';
+        leftGain.gain.value = 0.3 / harmonic; // Decrease volume for higher harmonics
+        leftOsc.connect(leftGain);
+        leftGain.connect(merger, 0, 0);
+        
+        // Right channel  
+        const rightOsc = audioContext.createOscillator();
+        const rightGain = audioContext.createGain();
+        rightOsc.frequency.value = rightFreq;
+        rightOsc.type = 'sine';
+        rightGain.gain.value = 0.3 / harmonic;
+        rightOsc.connect(rightGain);
+        rightGain.connect(merger, 0, 1);
+        
+        oscillators.push(leftOsc, rightOsc);
+        gainNodes.push(leftGain, rightGain);
+        
+        leftOsc.start();
+        rightOsc.start();
+      }
+      
+      // Add Schumann resonance if enabled
+      if (document.getElementById('schumann').checked) {
+        const schumannOsc = audioContext.createOscillator();
+        const schumannGain = audioContext.createGain();
+        schumannOsc.frequency.value = 7.83;
+        schumannOsc.type = 'sine';
+        schumannGain.gain.value = 0.1;
+        schumannOsc.connect(schumannGain);
+        schumannGain.connect(audioContext.destination);
+        oscillators.push(schumannOsc);
+        gainNodes.push(schumannGain);
+        schumannOsc.start();
+      }
+      
+      merger.connect(audioContext.destination);
+      isPlaying = true;
+    }
+    
+    function stopAudioField() {
+      oscillators.forEach(osc => osc.stop());
+      oscillators = [];
+      gainNodes = [];
+      isPlaying = false;
+    }
+    
+    // ===== SACRED GEOMETRY OVERLAYS =====
+    function drawSacredGeometry(ctx, type, time) {
+      const cx = 400, cy = 400;
+      ctx.save();
+      ctx.globalAlpha = parseFloat(document.getElementById('overlayIntensity').value);
+      ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+      ctx.lineWidth = 1;
+      
+      const rotSpeed = parseFloat(document.getElementById('geoRotation').value);
+      ctx.translate(cx, cy);
+      ctx.rotate(time * 0.0001 * rotSpeed * PHI);
+      ctx.translate(-cx, -cy);
+      
+      switch(type) {
+        case 'sri-yantra':
+          drawSriYantra(ctx, cx, cy);
+          break;
+        case 'metatron':
+          drawMetatronsCube(ctx, cx, cy);
+          break;
+        case 'flower':
+          drawFlowerOfLife(ctx, cx, cy);
+          break;
+        case 'torus':
+          drawToroidalField(ctx, cx, cy, time);
+          break;
+        case 'merkaba':
+          drawMerkaba(ctx, cx, cy);
+          break;
+        case 'vesica':
+          drawVesicaPiscis(ctx, cx, cy);
+          break;
+        case 'platonic':
+          drawPlatonicProjection(ctx, cx, cy, time);
+          break;
+      }
+      
+      ctx.restore();
+    }
+    
+    function drawSriYantra(ctx, cx, cy) {
+      // Simplified Sri Yantra with 9 interlocking triangles
+      const size = 300;
+      
+      // Upward triangles
+      for (let i = 0; i < 5; i++) {
+        const offset = i * 20;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - size + offset);
+        ctx.lineTo(cx - size + offset, cy + size/2 - offset);
+        ctx.lineTo(cx + size - offset, cy + size/2 - offset);
+        ctx.closePath();
+        ctx.stroke();
+      }
+      
+      // Downward triangles
+      for (let i = 0; i < 4; i++) {
+        const offset = i * 25;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + size - offset);
+        ctx.lineTo(cx - size/1.5 + offset, cy - size/2 + offset);
+        ctx.lineTo(cx + size/1.5 - offset, cy - size/2 + offset);
+        ctx.closePath();
+        ctx.stroke();
+      }
+      
+      // Bindu point
+      ctx.fillStyle = 'rgba(255,215,0,0.8)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    function drawMetatronsCube(ctx, cx, cy) {
+      const radius = 200;
+      const points = [];
+      
+      // 13 circles of Metatron's Cube
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const x = cx + radius/2 * Math.cos(angle);
+        const y = cy + radius/2 * Math.sin(angle);
+        points.push({x, y});
+        
+        ctx.beginPath();
+        ctx.arc(x, y, radius/3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius/3, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Connect all points
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          ctx.beginPath();
+          ctx.moveTo(points[i].x, points[i].y);
+          ctx.lineTo(points[j].x, points[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    function drawFlowerOfLife(ctx, cx, cy) {
+      const radius = 50;
+      const circles = 19; // Traditional flower of life
+      
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // First ring
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      // Second ring
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const x = cx + radius * 2 * Math.cos(angle);
+        const y = cy + radius * 2 * Math.sin(angle);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    
+    function drawToroidalField(ctx, cx, cy, time) {
+      const phase = time * 0.0001;
+      ctx.strokeStyle = 'rgba(78,205,196,0.5)';
+      
+      // Draw torus field lines
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        ctx.beginPath();
+        
+        for (let t = 0; t <= Math.PI * 2; t += 0.1) {
+          const r = 150 + 50 * Math.sin(t + phase);
+          const x = cx + r * Math.cos(angle + t * 0.5);
+          const y = cy + r * Math.sin(angle + t * 0.5) * Math.sin(t);
+          
+          if (t === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+    
+    function drawMerkaba(ctx, cx, cy) {
+      // Two interlocking tetrahedra
+      const size = 250;
+      
+      // Upward tetrahedron
+      ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - size);
+      ctx.lineTo(cx - size * 0.866, cy + size * 0.5);
+      ctx.lineTo(cx + size * 0.866, cy + size * 0.5);
+      ctx.closePath();
+      ctx.stroke();
+      
+      // Downward tetrahedron
+      ctx.strokeStyle = 'rgba(78,205,196,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + size);
+      ctx.lineTo(cx - size * 0.866, cy - size * 0.5);
+      ctx.lineTo(cx + size * 0.866, cy - size * 0.5);
+      ctx.closePath();
+      ctx.stroke();
+    }
+    
+    function drawVesicaPiscis(ctx, cx, cy) {
+      const radius = 150;
+      
+      ctx.beginPath();
+      ctx.arc(cx - radius/2, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(cx + radius/2, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Highlight intersection
+      ctx.fillStyle = 'rgba(255,215,0,0.2)';
+      ctx.beginPath();
+      ctx.arc(cx - radius/2, cy, radius, -Math.PI/3, Math.PI/3);
+      ctx.arc(cx + radius/2, cy, radius, Math.PI*2/3, Math.PI*4/3);
+      ctx.fill();
+    }
+    
+    function drawPlatonicProjection(ctx, cx, cy, time) {
+      const phase = time * 0.0002;
+      const solids = ['tetrahedron', 'cube', 'octahedron', 'dodecahedron', 'icosahedron'];
+      const activeIndex = Math.floor(phase * 5) % 5;
+      
+      // Simplified 2D projections
+      const size = 200;
+      ctx.strokeStyle = 'rgba(102,126,234,0.5)';
+      
+      switch(solids[activeIndex]) {
+        case 'tetrahedron':
+          for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2 + phase;
+            const x = cx + size * Math.cos(angle);
+            const y = cy + size * Math.sin(angle);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+          break;
+        // Additional cases would go here
+      }
+    }
+    
+    // ===== MAIN RENDER LOOP =====
+    function render() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      
+      // Clear with slight trail effect
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(0, 0, 800, 800);
+      
+      const cx = 400, cy = 400;
+      const goldenTiming = document.getElementById('golden-timing').checked;
+      const timeMultiplier = goldenTiming ? PHI : 1;
+      
+      animationTime += 16.67 * timeMultiplier;
+      
+      // Update consciousness level
+      consciousnessLevel = Math.sin(animationTime * 0.0001) * 0.5 + 0.5;
+      document.getElementById('coherence-meter').style.width = (consciousnessLevel * 100) + '%';
+      
+      // Prime consciousness pulsing
+      const primePulseRate = parseFloat(document.getElementById('primePulse').value);
+      primePulsePhase += primePulseRate * 0.01;
+      
+      // Draw base MOSS60 spiral with consciousness modifications
+      drawConsciousnessSpiral(ctx, cx, cy);
+      
+      // Draw sacred geometry overlay
+      const overlayCanvas = document.getElementById('sacred-overlay');
+      const overlayCtx = overlayCanvas.getContext('2d');
+      overlayCtx.clearRect(0, 0, 800, 800);
+      
+      if (sacredGeometry !== 'none') {
+        overlayCanvas.classList.add('active');
+        drawSacredGeometry(overlayCtx, sacredGeometry, animationTime);
+      } else {
+        overlayCanvas.classList.remove('active');
+      }
+      
+      // Continue animation
+      animationFrame = requestAnimationFrame(render);
+    }
+    
+    function drawConsciousnessSpiral(ctx, cx, cy) {
+      const baseR = 340;
+      
+      // Generate points
+      const points = [];
+      for (let i = 0; i < 60; i++) {
+        const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+        const digitVal = R[i] + K[i] + B[i];
+        const rMod = 0.95 + 0.1 * (digitVal / 27);
+        
+        // Add consciousness field distortion
+        const consciousnessDistortion = Math.sin(animationTime * 0.001 + i * 0.2) * 20 * consciousnessLevel;
+        const r = baseR * rMod + consciousnessDistortion;
+        
+        points.push({
+          x: cx + r * Math.cos(angle),
+          y: cy + r * Math.sin(angle),
+          isPrime: primes.has(i),
+          index: i
+        });
+      }
+      
+      // Generate triangular spiral path
+      const path = [];
+      let pos = 1;
+      path.push(pos);
+      for (let i = 1; i <= 60; i++) {
+        pos = (pos + i) % 60;
+        path.push(pos);
+      }
+      
+      // Draw connections with consciousness effects
+      for (let i = 0; i < path.length - 1; i++) {
+        const p1 = points[path[i]];
+        const p2 = points[path[i + 1]];
+        
+        // Calculate color based on consciousness mode
+        let color;
+        switch(consciousnessMode) {
+          case 'meditation':
+            color = `hsl(${240 + i * 2}, 70%, 60%)`;
+            break;
+          case 'healing':
+            color = `hsl(${120 + i * 3}, 80%, 55%)`;
+            break;
+          case 'creativity':
+            color = `hsl(${(i * 15) % 360}, 90%, 60%)`;
+            break;
+          default:
+            color = `hsl(${(i * 6) % 360}, 70%, 50%)`;
+        }
+        
+        // Prime pulsing effect
+        let alpha = 0.7;
+        if (p1.isPrime || p2.isPrime) {
+          const subliminalDepth = parseFloat(document.getElementById('subliminal').value);
+          alpha += Math.sin(primePulsePhase + i * 0.1) * subliminalDepth;
+          alpha = Math.max(0.1, Math.min(1, alpha));
+        }
+        
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = 2 + (p1.isPrime || p2.isPrime ? 2 : 0);
+        
+        // Add glow for primes
+        if (p1.isPrime || p2.isPrime) {
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = color;
+        } else {
+          ctx.shadowBlur = 5;
+          ctx.shadowColor = color;
+        }
+        
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+      
+      // Draw chakra points if enabled
+      drawChakraPoints(ctx, points);
+      
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    }
+    
+    function drawChakraPoints(ctx, points) {
+      const chakras = [
+        { id: 'root', color: '#ff0000', index: 1 },
+        { id: 'sacral', color: '#ff7f00', index: 9 },
+        { id: 'solar', color: '#ffff00', index: 17 },
+        { id: 'heart', color: '#00ff00', index: 25 },
+        { id: 'throat', color: '#0000ff', index: 33 },
+        { id: 'third-eye', color: '#4b0082', index: 41 },
+        { id: 'crown', color: '#9400d3', index: 49 }
+      ];
+      
+      chakras.forEach(chakra => {
+        if (document.getElementById(chakra.id).checked) {
+          const p = points[chakra.index];
+          ctx.fillStyle = chakra.color;
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = chakra.color;
+          ctx.globalAlpha = 0.8;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 8 + Math.sin(animationTime * 0.002 + chakra.index) * 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+    
+    // ===== CONTROLS =====
+    function generateConsciousness() {
+      const msg = document.getElementById('msg').value;
+      const mantra = document.getElementById('mantra').value;
+      currentHash = extendedHash(msg + mantra);
+      
+      if (!animationFrame) {
+        render();
+      }
+    }
+    
+    function updateFrequency() {
+      const freq = document.getElementById('baseFreq').value;
+      document.getElementById('frequency-display').textContent = freq + ' Hz';
+      document.getElementById('freqVal').textContent = freq + ' Hz';
+      
+      if (isPlaying) {
+        stopAudioField();
+        startAudioField();
+      }
+    }
+    
+    function updateBinaural() {
+      const beat = document.getElementById('binauralBeat').value;
+      document.getElementById('beatVal').textContent = beat + ' Hz';
+      
+      if (isPlaying) {
+        stopAudioField();
+        startAudioField();
+      }
+    }
+    
+    function updateHarmonics() {
+      const h = document.getElementById('harmonics').value;
+      document.getElementById('harmonicVal').textContent = h;
+    }
+    
+    function updateSchumann() {
+      const enabled = document.getElementById('schumann').checked;
+      document.getElementById('schumannVal').textContent = enabled ? 'ON' : 'OFF';
+    }
+    
+    function updateSacredGeometry() {
+      sacredGeometry = document.getElementById('sacred-geometry').value;
+    }
+    
+    function updateOverlay() {
+      const intensity = document.getElementById('overlayIntensity').value;
+      document.getElementById('overlayVal').textContent = intensity;
+    }
+    
+    function updateGeoRotation() {
+      const speed = document.getElementById('geoRotation').value;
+      document.getElementById('rotSpeedVal').textContent = speed + 'x';
+    }
+    
+    function updateDimensions() {
+      const dims = document.getElementById('dimensions').value;
+      document.getElementById('dimVal').textContent = dims;
+    }
+    
+    function updateConsciousnessMode() {
+      consciousnessMode = document.getElementById('consciousness-mode').value;
+    }
+    
+    function updatePrimePulse() {
+      const rate = document.getElementById('primePulse').value;
+      document.getElementById('primeVal').textContent = rate + ' Hz';
+    }
+    
+    function updateSubliminal() {
+      const depth = document.getElementById('subliminal').value;
+      document.getElementById('subVal').textContent = depth;
+    }
+    
+    function switchTab(el, tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(tab + '-tab').classList.add('active');
+    }
+    
+    // Initialize
+    generateConsciousness();
+  </script>
+</body>
+</html>

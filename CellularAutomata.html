@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cellular Automata – Moss60 Lineages</title>
+  <style>
+    :root {
+      --bg: #050514;
+      --panel: #0c0f24;
+      --accent: #ffd700;
+      --text: #e4e8ff;
+
+      --moss-red: #ff3455;
+      --moss-blue: #3399ff;
+      --moss-black: #000000;
+      --void: #050514;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      background: radial-gradient(circle at top, #1a1c3d 0%, #050514 55%, #000000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0.4em 0 0.1em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 1em;
+      font-size: 0.9rem;
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(5, 5, 20, 0.9);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+      margin-bottom: 12px;
+    }
+
+    #controls label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.9;
+    }
+
+    #ruleInput {
+      width: 70px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: #080a16;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    button {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: radial-gradient(circle at top, #313254 0%, #0d0f24 60%, #04050b 100%);
+      color: var(--text);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: none;
+    }
+
+    #canvas-wrapper {
+      padding: 8px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #26294a, #060713);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.85);
+      max-width: 100%;
+    }
+
+    #ca {
+      display: block;
+      background: #050514;
+      border-radius: 12px;
+    }
+
+    #legend {
+      margin-top: 10px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    .legend-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .swatch-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+    }
+
+    .swatch-red {
+      background: radial-gradient(circle, var(--accent) 0%, var(--moss-red) 75%);
+    }
+
+    .swatch-blue {
+      background: radial-gradient(circle, var(--accent) 0%, var(--moss-blue) 75%);
+    }
+
+    .swatch-black {
+      background: radial-gradient(circle, var(--accent) 0%, var(--moss-black) 75%);
+    }
+
+    .swatch-dead {
+      background: var(--void);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 768px) {
+      #ca {
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Cellular Automata – Moss60 Lineages</h1>
+  <p class="subtitle">
+    Elementary 1D CA on a ring. Columns inherit red / black / blue lineages from your 60-digit sequences.
+  </p>
+
+  <div id="controls">
+    <label for="ruleInput">Rule (0–255)</label>
+    <input type="number" id="ruleInput" min="0" max="255" value="90" />
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="seedBtn">New Seed</button>
+    <button id="randomBtn">Random Seed</button>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="ca" width="960" height="480"></canvas>
+  </div>
+
+  <div id="legend">
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-red"></span> red lineage
+    </span>
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-blue"></span> blue lineage
+    </span>
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-black"></span> black lineage
+    </span>
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-dead"></span> void / dead
+    </span>
+  </div>
+
+  <script>
+    // === Moss60 sequences (60 digits each) ===
+    // From Frontier Elements 3-Digit Analysis document:
+    // RED, BLACK, BLUE 60-digit numerical sequences.
+
+    const RED_SEQ =
+      "113031491493585389543778774590997079619617525721567332336510";
+
+    const BLACK_SEQ =
+      "011235831459437077415617853819099875279651673033695493257291";
+
+    const BLUE_SEQ =
+      "012776329785893036118967145479098334781325217074992143965631";
+
+    // === Derive lineage per residue mod 60 ===
+    // At each of the 60 positions, take the digit from each sequence.
+    // The biggest digit "wins" and defines the lineage for that residue.
+    // Ties fall back to black like a shadow.
+
+    const LINEAGE = []; // 'red' | 'blue' | 'black'
+
+    (function buildLineages() {
+      const len = 60;
+      for (let i = 0; i < len; i++) {
+        const r = parseInt(RED_SEQ.charAt(i), 10);
+        const k = parseInt(BLACK_SEQ.charAt(i), 10);
+        const b = parseInt(BLUE_SEQ.charAt(i), 10);
+
+        let max = r;
+        let col = "red";
+
+        if (b > max) {
+          max = b;
+          col = "blue";
+        }
+        if (k > max) {
+          max = k;
+          col = "black";
+        }
+
+        LINEAGE[i] = col;
+      }
+    })();
+
+    function lineageForColumn(colIndex) {
+      const idx = ((colIndex % 60) + 60) % 60;
+      return LINEAGE[idx];
+    }
+
+    // === Canvas & CA setup ===
+
+    const canvas = document.getElementById("ca");
+    const ctx = canvas.getContext("2d");
+
+    const COLS = 240; // number of cells in the ring
+    const ROWS = 240; // visible generations (wraps)
+    const cellW = canvas.width / COLS;
+    const cellH = canvas.height / ROWS;
+
+    let state = new Array(COLS).fill(0);
+    let nextState = new Array(COLS).fill(0);
+    let rowIndex = 0;
+    let rule = 90; // default rule
+    let running = false;
+    let timer = null;
+    const STEP_MS = 50;
+
+    const COLORS = {
+      dead: "#050514",
+      red: "#ff3455",
+      blue: "#3399ff",
+      black: "#000000"
+    };
+
+    // === Elementary CA rule ===
+    // Standard Wolfram numbering:
+    // neighbourhood bits (left, self, right) form a number 0–7:
+    //   111 -> 7, ... 000 -> 0.
+    // Bit at that position (from MSB) gives next state.
+
+    function computeNext(ruleNumber) {
+      for (let c = 0; c < COLS; c++) {
+        const left = state[(c - 1 + COLS) % COLS];
+        const self = state[c];
+        const right = state[(c + 1) % COLS];
+
+        const neighbourhood = (left << 2) | (self << 1) | right; // 0..7
+        const bitIndex = 7 - neighbourhood; // MSB = 111
+        const bit = (ruleNumber >> bitIndex) & 1;
+        nextState[c] = bit;
+      }
+
+      // swap references instead of copying arrays
+      const tmp = state;
+      state = nextState;
+      nextState = tmp;
+    }
+
+    function drawRow() {
+      for (let c = 0; c < COLS; c++) {
+        const alive = state[c] === 1;
+        const lineage = lineageForColumn(c);
+
+        let color = COLORS.dead;
+        if (alive) {
+          if (lineage === "red") {
+            color = COLORS.red;
+          } else if (lineage === "blue") {
+            color = COLORS.blue;
+          } else {
+            color = COLORS.black;
+          }
+        }
+
+        ctx.fillStyle = color;
+        ctx.fillRect(c * cellW, rowIndex * cellH, cellW + 1, cellH + 1);
+      }
+
+      rowIndex = (rowIndex + 1) % ROWS;
+      if (rowIndex === 0) {
+        // When we wrap back to the top, fade the canvas a bit so patterns echo
+        ctx.fillStyle = "rgba(5, 5, 20, 0.9)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function step() {
+      computeNext(rule);
+      drawRow();
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      timer = setInterval(step, STEP_MS);
+    }
+
+    function stop() {
+      running = false;
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function clearCanvas() {
+      ctx.fillStyle = COLORS.dead;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      rowIndex = 0;
+    }
+
+    function seedCenter() {
+      state.fill(0);
+      state[Math.floor(COLS / 2)] = 1;
+      clearCanvas();
+    }
+
+    function seedRandom() {
+      for (let i = 0; i < COLS; i++) {
+        state[i] = Math.random() < 0.5 ? 0 : 1;
+      }
+      clearCanvas();
+    }
+
+    // === Hook up controls ===
+
+    const ruleInput = document.getElementById("ruleInput");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const seedBtn = document.getElementById("seedBtn");
+    const randomBtn = document.getElementById("randomBtn");
+
+    ruleInput.addEventListener("change", () => {
+      let val = parseInt(ruleInput.value, 10);
+      if (isNaN(val)) val = 0;
+      if (val < 0) val = 0;
+      if (val > 255) val = 255;
+      rule = val;
+      ruleInput.value = String(val);
+    });
+
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", stop);
+    seedBtn.addEventListener("click", () => {
+      stop();
+      seedCenter();
+    });
+    randomBtn.addEventListener("click", () => {
+      stop();
+      seedRandom();
+    });
+
+    // === Initial state ===
+    seedCenter();
+    drawRow(); // show the seed line
+  </script>
+</body>
+</html>
