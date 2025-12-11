@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Moss60 Cellular Automata – Sacred Lineages</title>
+  <style>
+    :root {
+      --bg: #050514;
+      --panel: #0c0f24;
+      --accent: #ffd700;
+      --text: #e4e8ff;
+
+      --moss-red: #ff3455;
+      --moss-blue: #44aaff;
+      --moss-black: #111111;
+      --void: #050514;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      background:
+        radial-gradient(circle at top, #262b60 0%, #050514 55%, #000000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0.6em 0 0.1em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 1.25rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 0.9em;
+      font-size: 0.88rem;
+      opacity: 0.85;
+      text-align: center;
+      max-width: 720px;
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(5, 5, 25, 0.95);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      margin-bottom: 14px;
+    }
+
+    #controls label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      opacity: 0.9;
+    }
+
+    #ruleInput {
+      width: 70px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #080a16;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    #ruleDisplay {
+      font-size: 0.75rem;
+      opacity: 0.85;
+    }
+
+    button {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        radial-gradient(circle at top, #383a65 0%, #0d0f24 60%, #04050b 100%);
+      color: var(--text);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: none;
+    }
+
+    #canvas-wrapper {
+      padding: 8px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(56, 61, 122, 0.9), rgba(5, 7, 19, 0.98));
+      box-shadow:
+        0 0 30px rgba(0, 0, 0, 0.9),
+        0 0 80px rgba(27, 206, 255, 0.1);
+      max-width: 100%;
+    }
+
+    #ca {
+      display: block;
+      background: radial-gradient(circle at center, #050514 0%, #02020a 50%, #000000 100%);
+      border-radius: 14px;
+    }
+
+    #legend {
+      margin-top: 10px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    .legend-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+    }
+
+    .swatch-red {
+      background: radial-gradient(circle, var(--accent) 0%, var(--moss-red) 75%);
+    }
+
+    .swatch-blue {
+      background: radial-gradient(circle, var(--accent) 0%, var(--moss-blue) 75%);
+    }
+
+    .swatch-black {
+      background: radial-gradient(circle, var(--accent) 0%, var(--moss-black) 75%);
+    }
+
+    .swatch-dead {
+      background: var(--void);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 768px) {
+      #ca {
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Moss60 Cellular Automata</h1>
+  <p class="subtitle">
+    A 1D automaton on a ring. Space is tiled by your 60-digit lineages; time is driven by them.
+    Each living cell becomes a glowing glyph whose shape and motion come from its Moss digits.
+  </p>
+
+  <div id="controls">
+    <label for="ruleInput">Base Rule</label>
+    <input type="number" id="ruleInput" min="0" max="255" value="90" />
+    <span id="ruleDisplay">Dynamic rule: 90</span>
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="seedBtn">Center Seed</button>
+    <button id="randomBtn">Random Seed</button>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="ca" width="960" height="540"></canvas>
+  </div>
+
+  <div id="legend">
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-red"></span> red lineage (triangles / diamonds)
+    </span>
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-blue"></span> blue lineage (orbs / circles)
+    </span>
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-black"></span> black lineage (hex / structure)
+    </span>
+    <span class="legend-swatch">
+      <span class="swatch-box swatch-dead"></span> void / dead
+    </span>
+  </div>
+
+  <script>
+    // === Moss60 sequences (60 digits each) ===
+    // From your Frontier_Elements_3Digit_Analysis; they define the "Moss wheel".
+
+    const RED_SEQ =
+      "113031491493585389543778774590997079619617525721567332336510";
+
+    const BLACK_SEQ =
+      "011235831459437077415617853819099875279651673033695493257291";
+
+    const BLUE_SEQ =
+      "012776329785893036118967145479098334781325217074992143965631";
+
+    const RED_DIGITS = RED_SEQ.split("").map(d => parseInt(d, 10));
+    const BLACK_DIGITS = BLACK_SEQ.split("").map(d => parseInt(d, 10));
+    const BLUE_DIGITS = BLUE_SEQ.split("").map(d => parseInt(d, 10));
+
+    // === Spatial lineages per residue mod 60 ===
+    // At each residue, whichever sequence has the biggest digit "claims" that column.
+
+    const LINEAGE = []; // 'red' | 'blue' | 'black'
+
+    (function buildLineages() {
+      const len = 60;
+      for (let i = 0; i < len; i++) {
+        const r = RED_DIGITS[i];
+        const k = BLACK_DIGITS[i];
+        const b = BLUE_DIGITS[i];
+
+        let max = r;
+        let col = "red";
+
+        if (b > max) {
+          max = b;
+          col = "blue";
+        }
+        if (k > max) {
+          max = k;
+          col = "black";
+        }
+
+        LINEAGE[i] = col;
+      }
+    })();
+
+    function residueIndex(n) {
+      return ((n % 60) + 60) % 60;
+    }
+
+    function lineageForColumn(colIndex) {
+      return LINEAGE[residueIndex(colIndex)];
+    }
+
+    // === Time-varying rule: digits drive the physics too ===
+    // For each row t, take digits at t mod 60:
+    //  R, K, B in 0..9 -> three-digit number RKB.
+    // Dynamic rule = (baseRule + RKB) mod 256.
+
+    let baseRule = 90;
+
+    function ruleFromDigits(rowIndex) {
+      const idx = residueIndex(rowIndex);
+      const R = RED_DIGITS[idx];
+      const K = BLACK_DIGITS[idx];
+      const B = BLUE_DIGITS[idx];
+      const combo = R * 100 + K * 10 + B; // 0..999
+      return (baseRule + combo) % 256;
+    }
+
+    // === Canvas & CA setup ===
+
+    const canvas = document.getElementById("ca");
+    const ctx = canvas.getContext("2d");
+
+    const COLS = 200; // # cells in the ring
+    const ROWS = 200; // visible generations (wraps)
+    const cellW = canvas.width / COLS;
+    const cellH = canvas.height / ROWS;
+
+    let state = new Array(COLS).fill(0);
+    let nextState = new Array(COLS).fill(0);
+    let rowIndex = 0;
+    let running = false;
+    let timer = null;
+    const STEP_MS = 60;
+
+    const COLORS = {
+      dead: "#050514",
+      redCore: "#ffd700",
+      redHalo: "#ff3455",
+      blueCore: "#e4f5ff",
+      blueHalo: "#44aaff",
+      blackCore: "#ffd700",
+      blackHalo: "#111111"
+    };
+
+    // === Elementary CA rule ===
+
+    function computeNext(ruleNumber) {
+      for (let c = 0; c < COLS; c++) {
+        const left = state[(c - 1 + COLS) % COLS];
+        const self = state[c];
+        const right = state[(c + 1) % COLS];
+
+        const neighbourhood = (left << 2) | (self << 1) | right; // 0..7
+        const bitIndex = 7 - neighbourhood; // MSB = 111
+        const bit = (ruleNumber >> bitIndex) & 1;
+        nextState[c] = bit;
+      }
+
+      const tmp = state;
+      state = nextState;
+      nextState = tmp;
+    }
+
+    // === Shape drawing helpers ===
+
+    function drawCircle(cx, cy, radius, core, halo) {
+      const grad = ctx.createRadialGradient(
+        cx,
+        cy,
+        radius * 0.1,
+        cx,
+        cy,
+        radius
+      );
+      grad.addColorStop(0, core);
+      grad.addColorStop(0.6, halo);
+      grad.addColorStop(1, "rgba(0, 0, 0, 0.2)");
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawDiamond(cx, cy, radius, angle, core, halo) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+
+      const grad = ctx.createLinearGradient(-radius, -radius, radius, radius);
+      grad.addColorStop(0, halo);
+      grad.addColorStop(0.5, core);
+      grad.addColorStop(1, halo);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(0, -radius);
+      ctx.lineTo(radius, 0);
+      ctx.lineTo(0, radius);
+      ctx.lineTo(-radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawHexagon(cx, cy, radius, angle, core, halo) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+
+      const grad = ctx.createRadialGradient(
+        0,
+        0,
+        radius * 0.1,
+        0,
+        0,
+        radius
+      );
+      grad.addColorStop(0, core);
+      grad.addColorStop(0.7, halo);
+      grad.addColorStop(1, "rgba(0, 0, 0, 0.4)");
+      ctx.fillStyle = grad;
+
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (Math.PI / 3) * i;
+        const x = radius * Math.cos(a);
+        const y = radius * Math.sin(a);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Draw one row of shapes based on current state
+    function drawRow(ruleUsed) {
+      // Clean the row strip first (soft void)
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(5, 5, 20, 0.8)";
+      ctx.fillRect(0, rowIndex * cellH, canvas.width, cellH);
+
+      ctx.globalCompositeOperation = "lighter";
+
+      const minDim = Math.min(cellW, cellH);
+      const rowResidue = residueIndex(rowIndex);
+      const Rrow = RED_DIGITS[rowResidue];
+      const Brow = BLUE_DIGITS[rowResidue];
+      const Krow = BLACK_DIGITS[rowResidue];
+
+      // use row digits + rule as a slow twist
+      const rowPhase =
+        ((ruleUsed / 256) * Math.PI * 2 + (rowResidue / 60) * Math.PI * 2) %
+        (Math.PI * 2);
+
+      for (let c = 0; c < COLS; c++) {
+        if (state[c] === 0) continue;
+
+        const cx = c * cellW + cellW / 2;
+        const cy = rowIndex * cellH + cellH / 2;
+
+        const idx = residueIndex(c);
+        const Rd = RED_DIGITS[idx];
+        const Bd = BLUE_DIGITS[idx];
+        const Kd = BLACK_DIGITS[idx];
+
+        const lineage = LINEAGE[idx];
+
+        // size: around half a cell, modulated by digit sum
+        const sumDigits = Rd + Bd + Kd;
+        const scale = 0.4 + (sumDigits / 27) * 0.6; // roughly 0.4..1
+        const radius = (minDim * 0.5) * scale;
+
+        // angle: influenced by per-column digits and row phase
+        const angle =
+          rowPhase +
+          (Rd - Bd) * (Math.PI / 16) +
+          (Kd % 3) * (Math.PI / 10);
+
+        if (lineage === "red") {
+          drawDiamond(
+            cx,
+            cy,
+            radius,
+            angle,
+            COLORS.redCore,
+            COLORS.redHalo
+          );
+        } else if (lineage === "blue") {
+          drawCircle(
+            cx,
+            cy,
+            radius,
+            COLORS.blueCore,
+            COLORS.blueHalo
+          );
+        } else {
+          drawHexagon(
+            cx,
+            cy,
+            radius * 0.9,
+            angle,
+            COLORS.blackCore,
+            COLORS.blackHalo
+          );
+        }
+      }
+
+      rowIndex = (rowIndex + 1) % ROWS;
+      if (rowIndex === 0) {
+        // soft global fade to keep it breathing
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function step() {
+      const dynamicRule = ruleFromDigits(rowIndex);
+      computeNext(dynamicRule);
+      drawRow(dynamicRule);
+      ruleDisplay.textContent = "Dynamic rule: " + dynamicRule;
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      timer = setInterval(step, STEP_MS);
+    }
+
+    function stop() {
+      running = false;
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function clearCanvas() {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = COLORS.dead;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      rowIndex = 0;
+    }
+
+    function seedCenter() {
+      state.fill(0);
+      state[Math.floor(COLS / 2)] = 1;
+      clearCanvas();
+    }
+
+    function seedRandom() {
+      for (let i = 0; i < COLS; i++) {
+        state[i] = Math.random() < 0.5 ? 0 : 1;
+      }
+      clearCanvas();
+    }
+
+    // === Hook up controls ===
+
+    const ruleInput = document.getElementById("ruleInput");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const seedBtn = document.getElementById("seedBtn");
+    const randomBtn = document.getElementById("randomBtn");
+    const ruleDisplay = document.getElementById("ruleDisplay");
+
+    ruleInput.addEventListener("change", () => {
+      let val = parseInt(ruleInput.value, 10);
+      if (isNaN(val)) val = 0;
+      if (val < 0) val = 0;
+      if (val > 255) val = 255;
+      baseRule = val;
+      ruleInput.value = String(val);
+    });
+
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", stop);
+    seedBtn.addEventListener("click", () => {
+      stop();
+      seedCenter();
+    });
+    randomBtn.addEventListener("click", () => {
+      stop();
+      seedRandom();
+    });
+
+    // === Initial state ===
+    seedCenter();
+    drawRow(ruleFromDigits(0)); // show initial glyph row
+  </script>
+</body>
+</html>

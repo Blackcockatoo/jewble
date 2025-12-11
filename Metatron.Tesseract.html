@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fibonacci Flower of Life – Metatron/Tesseract Yantra</title>
+  <style>
+    :root {
+      --bg: #050514;
+      --text: #e4e8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      background:
+        radial-gradient(circle at top, #262b60 0%, #050514 55%, #000000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0.4em 0 0.1em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 0.9em;
+      font-size: 0.9rem;
+      opacity: 0.85;
+      text-align: center;
+      max-width: 780px;
+    }
+
+    #controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(5, 5, 25, 0.9);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+    }
+
+    button {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        radial-gradient(circle at top, #383a65 0%, #0d0f24 60%, #04050b 100%);
+      color: var(--text);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease,
+                  background 0.12s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+    button:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: none;
+    }
+
+    #canvas-wrapper {
+      padding: 8px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg,
+          rgba(56, 61, 122, 0.95),
+          rgba(5, 7, 19, 0.98));
+      box-shadow:
+        0 0 30px rgba(0, 0, 0, 0.9),
+        0 0 80px rgba(27, 206, 255, 0.14);
+      max-width: 100%;
+    }
+
+    #yantraCanvas {
+      display: block;
+      background: #050514;
+      border-radius: 14px;
+    }
+
+    @media (max-width: 900px) {
+      #yantraCanvas {
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Fibonacci Flower of Life – Metatron/Tesseract Yantra</h1>
+  <p class="subtitle">
+    7-circle Flower of Life. Metatron lines between the centers.  
+    Each circle holds a Fibonacci 60 × Lukas 12 digit mandala,  
+    with a rotating tesseract frame in the middle.
+  </p>
+
+  <div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="shuffleBtn">Shuffle Phases</button>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="yantraCanvas" width="960" height="540"></canvas>
+  </div>
+
+  <script>
+    // -------- 1. Fibonacci 60-digit cycle (mod 10) --------
+    function buildFibMod10Cycle() {
+      const digits = [];
+      let a = 0, b = 1;
+      for (let i = 0; i < 60; i++) {
+        digits.push(a % 10);
+        const next = (a + b) % 10;
+        a = b;
+        b = next;
+      }
+      return digits;
+    }
+    const FIB60 = buildFibMod10Cycle();
+
+    // -------- 2. Lukas string: 12 numbers summing to 60 --------
+    // [2,1,3,4,7,1,8,9,7,6,3,9]
+    const LUKAS_DIGITS = [2, 1, 3, 4, 7, 1, 8, 9, 7, 6, 3, 9];
+
+    // Cumulative bounds partitioning 0..59
+    const LUKAS_BOUNDS = (() => {
+      const bounds = [0];
+      let s = 0;
+      for (const d of LUKAS_DIGITS) {
+        s += d;
+        bounds.push(s);
+      }
+      return bounds;
+    })();
+
+    function sectorForIndex(k) {
+      for (let s = 0; s < 12; s++) {
+        if (k >= LUKAS_BOUNDS[s] && k < LUKAS_BOUNDS[s + 1]) return s;
+      }
+      return 11;
+    }
+
+    // -------- 3. Colours for digits 0–9 --------
+    const digitColors = {
+      0: "#0b3c5d", // deep blue
+      1: "#ff7f0e", // orange
+      2: "#2ca02c", // green
+      3: "#d62728", // red
+      4: "#9467bd", // purple
+      5: "#8c564b", // brown
+      6: "#e377c2", // pink
+      7: "#7f7f7f", // grey
+      8: "#bcbd22", // yellow-green
+      9: "#17becf"  // cyan
+    };
+
+    const canvas = document.getElementById("yantraCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // -------- 4. Flower-of-Life circle centers --------
+    const nodes = [];
+
+    function initNodes() {
+      nodes.length = 0;
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const cx0 = cw / 2;
+      const cy0 = ch / 2;
+
+      const R_loop = Math.min(cw, ch) * 0.18;  // radius of each big circle
+      const digitRadius = R_loop * 0.75;       // radius where digits mostly live
+
+      // central circle
+      nodes.push({
+        cx: cx0,
+        cy: cy0,
+        R_loop,
+        rDigits: digitRadius,
+        phase: Math.random() * Math.PI * 2,
+        offset: 0
+      });
+
+      // 6 outer circles at 60° steps, distance = R_loop (Flower-of-Life)
+      for (let k = 0; k < 6; k++) {
+        const angle = (Math.PI / 3) * k; // 0..300°
+        const cx = cx0 + R_loop * Math.cos(angle);
+        const cy = cy0 + R_loop * Math.sin(angle);
+        nodes.push({
+          cx,
+          cy,
+          R_loop,
+          rDigits: digitRadius,
+          phase: Math.random() * Math.PI * 2,
+          offset: ((k + 1) * 9) % 60 // different slice of FIB60
+        });
+      }
+    }
+
+    // -------- 5. Helper: hex color -> rgb --------
+    function hexToRgb(hex) {
+      hex = hex.replace("#", "");
+      const bigint = parseInt(hex, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return { r, g, b };
+    }
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    // -------- 6. Draw Flower-of-Life circles & Metatron lines --------
+    function drawFlowerCircles() {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 1.0;
+      for (const node of nodes) {
+        ctx.beginPath();
+        ctx.arc(node.cx, node.cy, node.R_loop, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawMetatronLines() {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.13)";
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i];
+          const b = nodes[j];
+          ctx.beginPath();
+          ctx.moveTo(a.cx, a.cy);
+          ctx.lineTo(b.cx, b.cy);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    // -------- 7. Digit geometry inside each node --------
+    function drawNodeDigits(node, globalTime) {
+      const { cx, cy, rDigits, phase, offset } = node;
+
+      // base rotation of the ring
+      const baseAngleOffset = globalTime * 0.6 + phase * 0.7;
+
+      for (let i = 0; i < 60; i++) {
+        const fibIndex = (i + offset) % 60;
+        const digit = FIB60[fibIndex];
+        const sectorIndex = sectorForIndex(fibIndex);
+        const sectorDigit = LUKAS_DIGITS[sectorIndex]; // 1..9-ish
+
+        const angle = (2 * Math.PI * i) / 60 + baseAngleOffset;
+
+        // radial sculpting by Lukas sector
+        const wobble = 0.06 * Math.sin(globalTime * 1.5 + sectorIndex);
+        const radialFactor = 0.65 + 0.28 * (sectorDigit / 9) + wobble;
+        const radius = rDigits * radialFactor;
+
+        let x = cx + radius * Math.cos(angle);
+        let y = cy + radius * Math.sin(angle);
+
+        // size and brightness pulses
+        const sizeBase = rDigits * 0.08;
+        const size =
+          sizeBase *
+          (0.8 + 0.4 * Math.sin(globalTime * 2.1 + digit + phase));
+
+        const baseColor = digitColors[digit];
+        const rgb = hexToRgb(baseColor);
+
+        const pulse =
+          0.6 +
+          0.25 * Math.sin(globalTime * 2.4 + digit + phase) +
+          0.08 * ((sectorDigit - 5) / 5);
+
+        const r = clamp(Math.floor(rgb.r * pulse), 0, 255);
+        const g = clamp(Math.floor(rgb.g * pulse), 0, 255);
+        const b = clamp(Math.floor(rgb.b * pulse), 0, 255);
+
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x - size / 2, y - size / 2, size, size);
+      }
+    }
+
+    // -------- 8. Tesseract-style double square in the central node --------
+    function drawTesseract(globalTime) {
+      const node = nodes[0]; // central circle
+      const { cx, cy, R_loop } = node;
+
+      const angle = globalTime * 0.5;
+      const size1 = R_loop * 1.2;
+      const size2 = R_loop * 0.7;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.lineWidth = 0.9;
+
+      const s1 = size1 / 2;
+      const s2 = size2 / 2;
+
+      const square1 = [
+        { x: -s1, y: -s1 },
+        { x:  s1, y: -s1 },
+        { x:  s1, y:  s1 },
+        { x: -s1, y:  s1 }
+      ];
+      const square2 = [
+        { x: -s2, y: -s2 },
+        { x:  s2, y: -s2 },
+        { x:  s2, y:  s2 },
+        { x: -s2, y:  s2 }
+      ];
+
+      // big square
+      ctx.beginPath();
+      square1.forEach((p, idx) => {
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+
+      // small square (offset in angle a bit for 4D feel)
+      const offsetAngle = Math.PI / 8;
+      const cosA = Math.cos(offsetAngle);
+      const sinA = Math.sin(offsetAngle);
+
+      const rot2 = square2.map(p => ({
+        x: p.x * cosA - p.y * sinA,
+        y: p.x * sinA + p.y * cosA
+      }));
+
+      ctx.beginPath();
+      rot2.forEach((p, idx) => {
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+
+      // connect corresponding corners
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(square1[i].x, square1[i].y);
+        ctx.lineTo(rot2[i].x, rot2[i].y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // -------- 9. Animation loop --------
+    let running = true;
+
+    function drawFrame(timestamp) {
+      if (!running) return;
+      const t = timestamp / 1000; // seconds
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawFlowerCircles();
+      drawMetatronLines();
+
+      // digits in each node
+      for (const node of nodes) {
+        drawNodeDigits(node, t);
+      }
+
+      // central tesseract skeleton
+      drawTesseract(t);
+
+      requestAnimationFrame(drawFrame);
+    }
+
+    // -------- 10. Controls --------
+    const startBtn   = document.getElementById("startBtn");
+    const stopBtn    = document.getElementById("stopBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+
+    startBtn.addEventListener("click", () => {
+      if (!running) {
+        running = true;
+        requestAnimationFrame(drawFrame);
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      running = false;
+    });
+
+    shuffleBtn.addEventListener("click", () => {
+      // randomise phases and Fibo offsets for extra variety
+      nodes.forEach((node, idx) => {
+        node.phase = Math.random() * Math.PI * 2;
+        node.offset = ((idx + 1) * 9 + Math.floor(Math.random() * 60)) % 60;
+      });
+    });
+
+    // -------- 11. Init --------
+    initNodes();
+    requestAnimationFrame(drawFrame);
+  </script>
+</body>
+</html>
