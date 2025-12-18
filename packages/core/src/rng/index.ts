@@ -61,3 +61,19 @@ export function createGenomeRNG(genomeHash: string): SeededRNG {
   }
   return new SeededRNG(seed);
 }
+
+// Legacy function-based API for backward compatibility
+let globalSeed = 12345;
+
+export function setSeed(newSeed: number) {
+  globalSeed = newSeed;
+}
+
+export function nextRandom(): number {
+  globalSeed = (globalSeed * 9301 + 49297) % 233280;
+  return globalSeed / 233280;
+}
+
+export function nextInt(min: number, max: number): number {
+  return Math.floor(nextRandom() * (max - min + 1)) + min;
+}

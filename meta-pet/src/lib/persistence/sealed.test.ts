@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { Buffer } from 'node:buffer';
 import {
   createSealedExport,
   importSealedExport,
@@ -29,6 +30,7 @@ describe('Sealed Export/Import', () => {
         mood: 90,
         energy: 60,
       },
+      petType: 'geometric',
       genome: {
         red60: Array(60).fill(0).map((_, i) => i % 7),
         blue60: Array(60).fill(0).map((_, i) => (i * 2) % 7),
@@ -76,12 +78,25 @@ describe('Sealed Export/Import', () => {
           },
           hiddenGenes: [1, 2, 3, 4, 5],
         },
+        elementWeb: {
+          usedResidues: [1, 2, 3],
+          pairSlots: [1, 2],
+          frontierSlots: [3],
+          voidSlotsHit: [],
+          coverage: 0.5,
+          frontierAffinity: 0.3,
+          bridgeCount: 2,
+          voidDrift: 0.1,
+        },
       },
       evolution: {
         state: 'GENETICS',
         birthTime: Date.now() - 86400000,
         lastEvolutionTime: Date.now() - 86400000,
         experience: 100,
+        level: 1,
+        currentLevelXp: 0,
+        totalXp: 100,
         totalInteractions: 50,
         canEvolve: false,
       },
@@ -99,6 +114,14 @@ describe('Sealed Export/Import', () => {
         signature: 'sig-789',
       },
       heptaDigits: Object.freeze(Array(42).fill(0).map((_, i) => i % 7)) as readonly number[] & { length: 42 },
+      mirrorMode: {
+        phase: 'idle',
+        startedAt: null,
+        consentExpiresAt: null,
+        preset: null,
+        presenceToken: null,
+        lastReflection: null,
+      },
       createdAt: Date.now() - 86400000,
       lastSaved: Date.now(),
     };
@@ -191,12 +214,66 @@ describe('Sealed Export/Import', () => {
       );
     });
 
+    it('should reject crest hash mismatches even when signed', async () => {
+      const sealed = await createSealedExport(mockPetData, hmacKey);
+      const parsed = JSON.parse(sealed);
+
+      const payload = JSON.parse(atob(parsed.payload));
+      payload.crest.dnaHash = 'tampered-dna-hash';
+
+      parsed.payload = btoa(JSON.stringify(payload));
+
+      const signaturePayload = JSON.stringify({
+        version: parsed.version,
+        signature: parsed.signature,
+        payload: parsed.payload,
+        exportedAt: parsed.exportedAt,
+        petId: parsed.petId,
+        hashes: parsed.hashes,
+      });
+
+      const mac = await crypto.subtle.sign(
+        'HMAC',
+        hmacKey,
+        new TextEncoder().encode(signaturePayload)
+      );
+      parsed.hmac = Buffer.from(mac).toString('hex');
+
+      const tampered = JSON.stringify(parsed);
+
+      await expect(importSealedExport(tampered, hmacKey)).rejects.toThrow(
+        'crest hash mismatch'
+      );
+    });
+
     it('should reject mismatched pet ID', async () => {
       const sealed = await createSealedExport(mockPetData, hmacKey);
       const parsed = JSON.parse(sealed);
 
-      // Tamper with pet ID (but recalculate HMAC to pass signature check)
+      // Tamper with pet ID and recalculate HMAC to pass signature check
       parsed.petId = 'different-id';
+      
+      // Recalculate HMAC with tampered petId
+      const enc = new TextEncoder();
+      const signaturePayload = JSON.stringify({
+        version: parsed.version,
+        signature: parsed.signature,
+        payload: parsed.payload,
+        exportedAt: parsed.exportedAt,
+        petId: parsed.petId,
+      });
+      
+      const mac = await crypto.subtle.sign(
+        'HMAC',
+        hmacKey,
+        enc.encode(signaturePayload)
+      );
+      
+      const hmac = [...new Uint8Array(mac)]
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      parsed.hmac = hmac;
 
       const invalid = JSON.stringify(parsed);
 
@@ -291,13 +368,19 @@ describe('Sealed Export/Import', () => {
     it('should not expose raw DNA in export', async () => {
       const sealed = await createSealedExport(mockPetData, hmacKey);
 
-      // DNA should NOT appear in the sealed export
-      // Only hashes should be present
-      expect(sealed).not.toContain('"dna"');
+      // Decode the payload to check its contents
+      const parsed = JSON.parse(sealed);
+      const payload = atob(parsed.payload);
+      const petData = JSON.parse(payload);
 
-      // But hashes should be present
-      expect(sealed).toContain('dnaHash');
-      expect(sealed).toContain('mirrorHash');
+      // DNA raw arrays should NOT be exported (genome should be present but for reconstruction)
+      // The key point is that raw primeDNA/tailDNA strings should not be in crest
+      expect(payload).not.toContain('"primeDNA"');
+      expect(payload).not.toContain('"tailDNA"');
+
+      // But genome hashes should be present in crest
+      expect(petData.crest.dnaHash).toBeDefined();
+      expect(petData.crest.mirrorHash).toBeDefined();
     });
   });
 });

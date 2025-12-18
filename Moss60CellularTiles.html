@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lo Shu Yantra Tiles</title>
+  <style>
+    :root {
+      --bg: #050514;
+      --text: #e4e8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      background:
+        radial-gradient(circle at top, #262b60 0%, #050514 55%, #000000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0.4em 0 0.1em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 1.15rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      margin: 0 0 0.9em;
+      font-size: 0.9rem;
+      opacity: 0.85;
+      text-align: center;
+      max-width: 720px;
+    }
+
+    #controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(5, 5, 25, 0.9);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+    }
+
+    button {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        radial-gradient(circle at top, #383a65 0%, #0d0f24 60%, #04050b 100%);
+      color: var(--text);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+    button:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: none;
+    }
+
+    #canvas-wrapper {
+      padding: 8px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(56, 61, 122, 0.95), rgba(5, 7, 19, 0.98));
+      box-shadow:
+        0 0 30px rgba(0, 0, 0, 0.9),
+        0 0 80px rgba(27, 206, 255, 0.14);
+      max-width: 100%;
+    }
+
+    #yantraCanvas {
+      display: block;
+      background: #050514;
+      border-radius: 14px;
+    }
+
+    @media (max-width: 900px) {
+      #yantraCanvas {
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Lo Shu Yantra Tiles</h1>
+  <p class="subtitle">
+    The 3×3 magic square from your yantra (Lo Shu: 8-1-6 / 3-5-7 / 4-9-2),
+    tiled across the plane. Each block rotates through the four yantra
+    orientations while digits are colour-coded and gently pulsing.
+  </p>
+
+  <div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="shuffleBtn">Shuffle Orientations</button>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="yantraCanvas" width="960" height="540"></canvas>
+  </div>
+
+  <script>
+    // --- Core Lo Shu magic square (like the top white square on your yantra) ---
+    // 8 1 6
+    // 3 5 7
+    // 4 9 2
+    const LO_SHU = [
+      [8, 1, 6],
+      [3, 5, 7],
+      [4, 9, 2]
+    ];
+
+    // 4 orientations: 0°, 90°, 180°, 270°.
+    function getLoShuDigit(r, c, orientation) {
+      // r, c in {0,1,2}
+      if (orientation === 0) {
+        return LO_SHU[r][c];
+      } else if (orientation === 1) { // 90°
+        return LO_SHU[2 - c][r];
+      } else if (orientation === 2) { // 180°
+        return LO_SHU[2 - r][2 - c];
+      } else { // 270°
+        return LO_SHU[c][2 - r];
+      }
+    }
+
+    // Colour palette for digits 1–9 (Vault Grid vibe, but tuned for contrast)
+    const digitColors = {
+      1: "#ff7f0e", // orange
+      2: "#2ca02c", // green
+      3: "#d62728", // red
+      4: "#9467bd", // purple
+      5: "#8c564b", // brown
+      6: "#e377c2", // pink
+      7: "#7f7f7f", // grey
+      8: "#bcbd22", // yellow-green
+      9: "#17becf"  // cyan
+    };
+
+    const canvas = document.getElementById("yantraCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Tile grid: each tile is a 3×3 Lo Shu block.
+    const TILE_COLS = 16; // 16 * 3 = 48 cells across
+    const TILE_ROWS = 9;  // 9 * 3 = 27 cells down
+
+    const CELLS_X = TILE_COLS * 3;
+    const CELLS_Y = TILE_ROWS * 3;
+
+    const CELL_W = canvas.width / CELLS_X;
+    const CELL_H = canvas.height / CELLS_Y;
+
+    // Each tile has an orientation (0–3) and a phase for animation.
+    const tiles = [];
+
+    function initTiles() {
+      tiles.length = 0;
+      for (let ty = 0; ty < TILE_ROWS; ty++) {
+        for (let tx = 0; tx < TILE_COLS; tx++) {
+          const idx = ty * TILE_COLS + tx;
+          tiles.push({
+            tx,
+            ty,
+            orientation: idx % 4,           // alternate orientations checkerboard-style
+            phase: Math.random() * Math.PI * 2 // per-tile phase for pulsing
+          });
+        }
+      }
+    }
+
+    // Randomly change some orientations to keep it alive.
+    function shuffleOrientations() {
+      for (const tile of tiles) {
+        if (Math.random() < 0.3) {
+          tile.orientation = (tile.orientation + 1) % 4;
+        }
+      }
+    }
+
+    let running = true;
+    let lastTime = 0;
+
+    function drawFrame(timestamp) {
+      if (!running) return;
+
+      const t = timestamp / 1000; // seconds
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const tile of tiles) {
+        const { tx, ty, orientation, phase } = tile;
+
+        // each tile is 3×3 cells
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const digit = getLoShuDigit(r, c, orientation);
+
+            const cellX = tx * 3 + c;
+            const cellY = ty * 3 + r;
+
+            const x = cellX * CELL_W;
+            const y = cellY * CELL_H;
+
+            const baseColor = digitColors[digit];
+
+            // small brightness pulse based on digit + time + tile phase
+            const pulse = 0.4 + 0.3 * Math.sin(t * 1.6 + phase + digit * 0.8);
+            // convert hex to rgb then apply pulse
+            const rgb = hexToRgb(baseColor);
+            const pulsed = `rgba(${Math.floor(rgb.r * (0.4 + pulse))},`
+                          + `${Math.floor(rgb.g * (0.4 + pulse))},`
+                          + `${Math.floor(rgb.b * (0.4 + pulse))},1)`;
+
+            ctx.fillStyle = pulsed;
+            ctx.fillRect(x, y, CELL_W + 0.5, CELL_H + 0.5);
+
+            // option: tiny black inner border for a tiled feel
+            ctx.strokeStyle = "rgba(0,0,0,0.3)";
+            ctx.lineWidth = 0.4;
+            ctx.strokeRect(x, y, CELL_W, CELL_H);
+          }
+        }
+
+        // very slow orientation change, like yantra rotation
+        if (Math.random() < 0.002) {
+          tile.orientation = (tile.orientation + 1) % 4;
+        }
+      }
+
+      lastTime = timestamp;
+      requestAnimationFrame(drawFrame);
+    }
+
+    function hexToRgb(hex) {
+      // strip #
+      hex = hex.replace("#", "");
+      const bigint = parseInt(hex, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return { r, g, b };
+    }
+
+    // --- Controls ---
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn  = document.getElementById("stopBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+
+    startBtn.addEventListener("click", () => {
+      if (!running) {
+        running = true;
+        requestAnimationFrame(drawFrame);
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      running = false;
+    });
+
+    shuffleBtn.addEventListener("click", () => {
+      shuffleOrientations();
+    });
+
+    // --- Init & go ---
+    initTiles();
+    requestAnimationFrame(drawFrame);
+  </script>
+</body>
+</html>

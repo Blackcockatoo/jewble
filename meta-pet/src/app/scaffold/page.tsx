@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/lib/store';
 import { HUD } from '@/components/HUD';
 import { HeptaTag } from '@/components/HeptaTag';
@@ -24,7 +24,8 @@ import type {
   Rotation,
   PrivacyPreset
 } from '@/lib/identity/types';
-import { Play, Volume2, VolumeX, RefreshCw, Shield, Info } from 'lucide-react';
+import type { MirrorOutcome } from '@/lib/store';
+import { Play, Volume2, VolumeX, RefreshCw, Shield, Info, Sparkles, Clock3, HeartHandshake, Hash } from 'lucide-react';
 
 /**
  * Mock Mode Configuration
@@ -61,9 +62,13 @@ const SAFETY_RAILS = {
  * - Mock mode with safety rails
  */
 export default function ScaffoldPage() {
-  const vitals = useStore(s => s.vitals);
   const startTick = useStore(s => s.startTick);
   const stopTick = useStore(s => s.stopTick);
+  const mirrorMode = useStore(s => s.mirrorMode);
+  const beginMirrorMode = useStore(s => s.beginMirrorMode);
+  const confirmMirrorCross = useStore(s => s.confirmMirrorCross);
+  const completeMirrorMode = useStore(s => s.completeMirrorMode);
+  const refreshConsent = useStore(s => s.refreshConsent);
 
   const [mockConfig, setMockConfig] = useState<MockConfig>(DEFAULT_MOCK_CONFIG);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -71,74 +76,29 @@ export default function ScaffoldPage() {
   const [hmacKey, setHmacKey] = useState<CryptoKey | null>(null);
   const [primeTailId, setPrimeTailId] = useState<PrimeTailId | null>(null);
   const [heptaCode, setHeptaCode] = useState<HeptaDigits | null>(null);
+   const [ritualPreset, setRitualPreset] = useState<PrivacyPreset>('standard');
+   const [ritualNote, setRitualNote] = useState('');
+   const [ritualOutcome, setRitualOutcome] = useState<MirrorOutcome>('anchor');
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize system
-  useEffect(() => {
-    async function initialize() {
-      try {
-        // Start vitals tick if mock decay enabled
-        if (mockConfig.mockVitalsDecay) {
-          startTick();
-        }
-
-        // Generate HMAC key
-        const key = await getDeviceHmacKey();
-        setHmacKey(key);
-
-        // Mint initial identity
-        await mintNewIdentity(key);
-
-        setIsInitialized(true);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Initialization failed');
-      }
-    }
-
-    initialize();
-
-    return () => {
-      stopTick();
-      stopHepta();
-    };
-  }, []);
-
-  // Auto-play chime if enabled
-  useEffect(() => {
-    if (mockConfig.autoPlay && heptaCode && !isAudioPlaying) {
-      handlePlayChime();
-    }
-  }, [heptaCode, mockConfig.autoPlay]);
-
-  /**
-   * Generate mock DNA for testing
-   */
-  function generateMockDNA(): string {
+  const generateMockDNA = useCallback((): string => {
     const chars = 'ACTG0123456789abcdef';
     let dna = '';
     for (let i = 0; i < SAFETY_RAILS.MOCK_DNA_LENGTH; i++) {
       dna += chars[Math.floor(Math.random() * chars.length)];
     }
     return dna;
-  }
+  }, []);
 
-  /**
-   * Generate random tail (4 base-60 digits)
-   */
-  function generateTail(): [number, number, number, number] {
-    return [
-      Math.floor(Math.random() * 60),
-      Math.floor(Math.random() * 60),
-      Math.floor(Math.random() * 60),
-      Math.floor(Math.random() * 60),
-    ];
-  }
+  const generateTail = useCallback((): [number, number, number, number] => [
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+  ], []);
 
-  /**
-   * Mint new PrimeTailId and generate HeptaCode
-   */
-  async function mintNewIdentity(key: CryptoKey) {
+  const mintNewIdentity = useCallback(async (key: CryptoKey) => {
     try {
       setError(null);
 
@@ -182,6 +142,7 @@ export default function ScaffoldPage() {
       };
 
       const digits = await heptaEncode42(payload, key);
+      setRitualPreset(preset);
       setHeptaCode(digits);
 
       // Verify decode
@@ -193,12 +154,9 @@ export default function ScaffoldPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Minting failed');
     }
-  }
+  }, [generateMockDNA, generateTail]);
 
-  /**
-   * Play HeptaCode audio chime (with safety timeout)
-   */
-  async function handlePlayChime() {
+  const handlePlayChime = useCallback(async () => {
     if (!heptaCode || isAudioPlaying) return;
 
     try {
@@ -223,7 +181,44 @@ export default function ScaffoldPage() {
       setError(err instanceof Error ? err.message : 'Audio playback failed');
       setIsAudioPlaying(false);
     }
-  }
+  }, [heptaCode, isAudioPlaying]);
+
+  // Initialize system
+  useEffect(() => {
+    async function initialize() {
+      try {
+        // Start vitals tick if mock decay enabled
+        if (mockConfig.mockVitalsDecay) {
+          startTick();
+        }
+
+        // Generate HMAC key
+        const key = await getDeviceHmacKey();
+        setHmacKey(key);
+
+        // Mint initial identity
+        await mintNewIdentity(key);
+
+        setIsInitialized(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Initialization failed');
+      }
+    }
+
+    initialize();
+
+    return () => {
+      stopTick();
+      stopHepta();
+    };
+  }, [mockConfig.mockVitalsDecay, startTick, stopTick, mintNewIdentity]);
+
+  // Auto-play chime if enabled
+  useEffect(() => {
+    if (mockConfig.autoPlay && heptaCode && !isAudioPlaying) {
+      handlePlayChime();
+    }
+  }, [handlePlayChime, heptaCode, isAudioPlaying, mockConfig.autoPlay]);
 
   /**
    * Stop audio playback
@@ -240,6 +235,32 @@ export default function ScaffoldPage() {
     if (!hmacKey) return;
     await mintNewIdentity(hmacKey);
   }
+
+  const handleBeginRitual = useCallback(() => {
+    beginMirrorMode(ritualPreset);
+  }, [beginMirrorMode, ritualPreset]);
+
+  const handleCrossThreshold = useCallback(async () => {
+    confirmMirrorCross();
+    if (heptaCode && !isAudioPlaying) {
+      await handlePlayChime();
+    }
+  }, [confirmMirrorCross, heptaCode, handlePlayChime, isAudioPlaying]);
+
+  const handleCompleteRitual = useCallback(() => {
+    completeMirrorMode(ritualOutcome, ritualNote.trim() || undefined);
+    setRitualNote('');
+  }, [completeMirrorMode, ritualOutcome, ritualNote]);
+
+  const consentRemainingMinutes = useMemo(() => {
+    if (!mirrorMode.consentExpiresAt) return null;
+    const delta = mirrorMode.consentExpiresAt - Date.now();
+    return Math.max(0, Math.ceil(delta / 60000));
+  }, [mirrorMode.consentExpiresAt]);
+
+  const handleRefreshConsent = useCallback(() => {
+    refreshConsent(15);
+  }, [refreshConsent]);
 
   /**
    * Toggle mock vitals decay
@@ -415,6 +436,151 @@ export default function ScaffoldPage() {
                 </div>
               </div>
             )}
+
+            {/* Mirror Mode Ritual */}
+            <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 backdrop-blur border border-purple-500/30 rounded-2xl p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-300" />
+                  <div>
+                    <h2 className="text-xl font-bold">Threshold Ritual</h2>
+                    <p className="text-xs text-zinc-400">Bridge reality ↔ meta with consent</p>
+                  </div>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                  mirrorMode.phase === 'crossed'
+                    ? 'border-emerald-400 text-emerald-300'
+                    : mirrorMode.phase === 'entering'
+                      ? 'border-amber-300 text-amber-200'
+                      : mirrorMode.phase === 'returning'
+                        ? 'border-cyan-300 text-cyan-200'
+                        : 'border-zinc-500 text-zinc-300'
+                }`}>
+                  {mirrorMode.phase.toUpperCase()}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs text-zinc-300">
+                <div>
+                  <div className="mb-1 text-zinc-400">Privacy Preset</div>
+                  <select
+                    value={ritualPreset}
+                    onChange={event => setRitualPreset(event.target.value as PrivacyPreset)}
+                    className="w-full bg-zinc-900/60 border border-purple-500/30 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="stealth">Stealth • keeps crest local</option>
+                    <option value="standard">Standard • vault broadcast</option>
+                    <option value="radiant">Radiant • full metadata</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock3 className="w-4 h-4 text-cyan-300" />
+                    <span className="text-zinc-400">Consent</span>
+                    <span className="font-mono text-zinc-100">
+                      {consentRemainingMinutes !== null ? `${consentRemainingMinutes}m` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Hash className="w-4 h-4 text-purple-300" />
+                    <span className="text-zinc-400">Presence Token</span>
+                    <span className="font-mono text-[11px] text-zinc-100 truncate">
+                      {mirrorMode.presenceToken ?? '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={handleBeginRitual}
+                  disabled={mirrorMode.phase !== 'idle' && mirrorMode.phase !== 'returning'}
+                  className="gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Open Ritual
+                </Button>
+                <Button
+                  onClick={handleCrossThreshold}
+                  disabled={mirrorMode.phase !== 'entering'}
+                  variant="secondary"
+                  className="gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Cross & Chime
+                </Button>
+                <Button
+                  onClick={handleRefreshConsent}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Clock3 className="w-4 h-4" />
+                  +15m Consent
+                </Button>
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">Reflection Note</label>
+                <textarea
+                  value={ritualNote}
+                  onChange={event => setRitualNote(event.target.value)}
+                  rows={3}
+                  className="w-full bg-zinc-900/70 border border-purple-500/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  placeholder="What shifted when you crossed?"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={ritualOutcome === 'anchor' ? 'default' : 'outline'}
+                  onClick={() => setRitualOutcome('anchor')}
+                  className="gap-1"
+                >
+                  <Shield className="w-4 h-4" />
+                  Anchor Buff
+                </Button>
+                <Button
+                  type="button"
+                  variant={ritualOutcome === 'drift' ? 'default' : 'outline'}
+                  onClick={() => setRitualOutcome('drift')}
+                  className="gap-1"
+                >
+                  <VolumeX className="w-4 h-4" />
+                  Drift Reset
+                </Button>
+                <Button
+                  onClick={handleCompleteRitual}
+                  disabled={mirrorMode.phase === 'idle'}
+                  variant="secondary"
+                  className="gap-2"
+                >
+                  <HeartHandshake className="w-4 h-4" />
+                  Commit Reflection
+                </Button>
+              </div>
+
+              {mirrorMode.lastReflection && (
+                <div className="border border-purple-500/30 rounded-lg p-3 bg-zinc-900/60">
+                  <div className="flex items-center justify-between text-sm text-zinc-200">
+                    <span className="font-semibold">
+                      {mirrorMode.lastReflection.outcome === 'anchor' ? 'Anchored' : 'Drifted'} •{' '}
+                      {mirrorMode.lastReflection.preset.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-zinc-400">
+                      {new Date(mirrorMode.lastReflection.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  {mirrorMode.lastReflection.note && (
+                    <p className="text-xs text-zinc-300 mt-2">{mirrorMode.lastReflection.note}</p>
+                  )}
+                  <div className="text-xs text-zinc-400 mt-2">
+                    Mood {mirrorMode.lastReflection.moodDelta >= 0 ? '+' : ''}{mirrorMode.lastReflection.moodDelta} /
+                    Energy {mirrorMode.lastReflection.energyDelta >= 0 ? '+' : ''}{mirrorMode.lastReflection.energyDelta}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Column: Vitals & Controls */}

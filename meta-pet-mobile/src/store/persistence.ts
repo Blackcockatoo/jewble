@@ -9,6 +9,7 @@ import type { Genome, DerivedTraits } from '../engine/genome';
 import type { EvolutionData } from '../engine/evolution';
 import type { Achievement, BattleStats, MiniGameProgress, VimanaState } from '../engine/progression/types';
 import type { ConsentState } from '../identity/types';
+import type { BirthChart, DailyHoroscope, GRSResult, BreedingPreview } from '../engine/astrogenetics';
 
 const storage = new MMKV();
 
@@ -26,6 +27,10 @@ const KEYS = {
   AUDIO_ENABLED: 'meta-pet:audioEnabled',
   HAPTICS_ENABLED: 'meta-pet:hapticsEnabled',
   CONSENT: 'meta-pet:consent',
+  BIRTH_CHART: 'meta-pet:birthChart',
+  HOROSCOPE: 'meta-pet:horoscope',
+  GRS: 'meta-pet:grs',
+  BREEDING_PREVIEW: 'meta-pet:breedingPreview',
 };
 
 export const persistence = {
@@ -138,6 +143,71 @@ export const persistence = {
   loadConsent: (): ConsentState | null => {
     const data = storage.getString(KEYS.CONSENT);
     return data ? JSON.parse(data) : null;
+  },
+
+  // Birth Chart
+  saveBirthChart: (chart: BirthChart) => {
+    // Serialize Date objects to ISO strings
+    const serializable = {
+      ...chart,
+      birthTime: chart.birthTime.toISOString(),
+    };
+    storage.set(KEYS.BIRTH_CHART, JSON.stringify(serializable));
+  },
+  loadBirthChart: (): BirthChart | null => {
+    const data = storage.getString(KEYS.BIRTH_CHART);
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    // Deserialize Date objects
+    return {
+      ...parsed,
+      birthTime: new Date(parsed.birthTime),
+    };
+  },
+
+  // Horoscope
+  saveHoroscope: (horoscope: DailyHoroscope) => {
+    const serializable = {
+      ...horoscope,
+      date: horoscope.date.toISOString(),
+    };
+    storage.set(KEYS.HOROSCOPE, JSON.stringify(serializable));
+  },
+  loadHoroscope: (): DailyHoroscope | null => {
+    const data = storage.getString(KEYS.HOROSCOPE);
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    return {
+      ...parsed,
+      date: new Date(parsed.date),
+    };
+  },
+
+  // GRS
+  saveGRS: (grs: GRSResult) => {
+    storage.set(KEYS.GRS, JSON.stringify(grs));
+  },
+  loadGRS: (): GRSResult | null => {
+    const data = storage.getString(KEYS.GRS);
+    return data ? JSON.parse(data) : null;
+  },
+
+  // Breeding Preview
+  saveBreedingPreview: (preview: BreedingPreview) => {
+    const serializable = {
+      ...preview,
+      breedTime: preview.breedTime.toISOString(),
+    };
+    storage.set(KEYS.BREEDING_PREVIEW, JSON.stringify(serializable));
+  },
+  loadBreedingPreview: (): BreedingPreview | null => {
+    const data = storage.getString(KEYS.BREEDING_PREVIEW);
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    return {
+      ...parsed,
+      breedTime: new Date(parsed.breedTime),
+    };
   },
 
   // Clear all data

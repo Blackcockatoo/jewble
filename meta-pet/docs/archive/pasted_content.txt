@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MetaPet SVG Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020617;
+      --panel: #020617;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.25);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-subtle: rgba(148, 163, 184, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      background: radial-gradient(circle at top, #020617 0, #000 40%, #020617 100%);
+      color: var(--text-main);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 1.25rem;
+      padding: 1.5rem;
+      max-width: 1120px;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.12), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.16), transparent 55%),
+        var(--panel);
+      border-radius: 1.25rem;
+      border: 1px solid var(--border-subtle);
+      box-shadow:
+        0 32px 80px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 1);
+      padding: 1.25rem 1.5rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(129, 140, 248, 0.18), transparent 60%),
+        radial-gradient(circle at 80% 110%, rgba(45, 212, 191, 0.15), transparent 60%);
+      opacity: 0.9;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      gap: 0.75rem;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+      background: radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.35), transparent 60%);
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .svg-shell {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background:
+        radial-gradient(circle at top, rgba(148, 163, 184, 0.28), transparent 60%),
+        radial-gradient(circle at bottom, rgba(15, 23, 42, 1), rgba(15, 23, 42, 1));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .svg-shell-inner {
+      position: absolute;
+      inset: 0.7rem;
+      border-radius: inherit;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 1), #020617 60%, #000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .control-group {
+      padding: 0.75rem 0.75rem 0.85rem;
+      border-radius: 0.9rem;
+      background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9)),
+        radial-gradient(circle at top left, rgba(148, 163, 184, 0.25), transparent 60%);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .control-label span:last-child {
+      opacity: 0.65;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .slider-row input[type='range'] {
+      flex: 1;
+    }
+
+    input[type='range'] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0 50%, rgba(59, 130, 246, 0.6), transparent 50%),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.9));
+      outline: none;
+    }
+
+    input[type='range']::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #020617;
+      border: 2px solid rgba(191, 219, 254, 1);
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 1),
+        0 0 12px rgba(96, 165, 250, 0.8);
+      cursor: pointer;
+      margin-top: -6px;
+    }
+
+    input[type='range']::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #020617;
+      border: 2px solid rgba(191, 219, 254, 1);
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 1),
+        0 0 12px rgba(96, 165, 250, 0.8);
+      cursor: pointer;
+    }
+
+    input[type='range']::-moz-range-track {
+      height: 4px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0 50%, rgba(59, 130, 246, 0.6), transparent 50%),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.9));
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .chip {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.35), transparent 60%),
+        rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background 140ms ease, border-color 140ms ease, transform 80ms ease;
+    }
+
+    .chip span.circle {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, rgba(248, 250, 252, 0.9), transparent 60%),
+        rgba(96, 165, 250, 0.85);
+      box-shadow: 0 0 10px rgba(96, 165, 250, 0.9);
+    }
+
+    .chip.active {
+      border-color: rgba(129, 140, 248, 1);
+      color: #e5e7eb;
+      background:
+        radial-gradient(circle at 0 0, rgba(129, 140, 248, 0.55), transparent 60%),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.98));
+      transform: translateY(-1px);
+    }
+
+    .chip:active {
+      transform: translateY(0);
+      opacity: 0.9;
+    }
+
+    .stat-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+      font-size: 0.7rem;
+    }
+
+    .stat-pill {
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .footer-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      opacity: 0.9;
+    }
+
+    .footer-hint span {
+      white-space: nowrap;
+    }
+
+    .footer-hint strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .dot-sep::before {
+      content: '•';
+      margin: 0 0.3rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Metapet Aura Prototype</div>
+          <div class="subtitle">Quick-and-dirty HTML to play with <strong>body gloss</strong>, <strong>aura</strong>, and <strong>orbit motes</strong> before wiring it into React.</div>
+        </div>
+        <div class="pill">SVG Exploration</div>
+      </div>
+      <div class="svg-shell">
+        <div class="svg-shell-inner">
+          <!-- SVG gets injected here -->
+          <svg id="petSvg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+      <div class="footer-hint">
+        <div>
+          <strong>Tip:</strong> drag sliders, flip chips, stare at it too long.
+        </div>
+        <div>
+          <span>Copy the &lt;svg&gt; into React when you're happy</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div class="card-title">Controls</div>
+        <div class="pill">Form + Mood</div>
+      </div>
+
+      <div class="control-group" style="margin-bottom: 0.75rem;">
+        <div class="control-label">
+          <span>Form</span>
+          <span id="formLabel">Explorer</span>
+        </div>
+        <div class="chip-row" id="formChips"></div>
+      </div>
+
+      <div class="controls-grid" style="margin-bottom: 0.75rem;">
+        <div class="control-group">
+          <div class="control-label">
+            <span>Energy</span>
+            <span id="energyVal">70</span>
+          </div>
+          <div class="slider-row">
+            <input id="energy" type="range" min="0" max="100" value="70" />
+          </div>
+          <div class="stat-pill-row">
+            <div class="stat-pill">Glow strength</div>
+            <div class="stat-pill">Pulse speed</div>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Curiosity</span>
+            <span id="curiosityVal">60</span>
+          </div>
+          <div class="slider-row">
+            <input id="curiosity" type="range" min="0" max="100" value="60" />
+          </div>
+          <div class="stat-pill-row">
+            <div class="stat-pill">Orbit speed</div>
+            <div class="stat-pill">Eye openness</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-group">
+          <div class="control-label">
+            <span>Mood</span>
+            <span id="moodLabel">Calm</span>
+          </div>
+          <div class="chip-row" id="moodChips"></div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Palette</span>
+            <span id="paletteLabel">Iris</span>
+          </div>
+          <div class="chip-row" id="paletteChips"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // --- crude-but-fine state ---
+    const state = {
+      form: 'explorer',
+      mood: 'calm',
+      palette: 'iris',
+      energy: 70,
+      curiosity: 60,
+    };
+
+    const paletteDefs = {
+      iris: {
+        base: '#1d2345',
+        glow: '#6366f1',
+        accent: '#a5b4fc',
+        secondary: '#22c1c3',
+      },
+      ember: {
+        base: '#331515',
+        glow: '#f97316',
+        accent: '#fed7aa',
+        secondary: '#fcd34d',
+      },
+      tide: {
+        base: '#022c3a',
+        glow: '#22d3ee',
+        accent: '#bae6fd',
+        secondary: '#4ade80',
+      },
+    };
+
+    const forms = ['explorer', 'sleep', 'study', 'battle'];
+    const moods = ['calm', 'focused', 'agitated'];
+    const palettes = Object.keys(paletteDefs);
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function clamp01(x) {
+      return Math.max(0, Math.min(1, x));
+    }
+
+    function render() {
+      const svg = document.getElementById('petSvg');
+      const { form, mood, palette, energy, curiosity } = state;
+      const colors = paletteDefs[palette];
+
+      const energyN = clamp01(energy / 100);
+      const curiosityN = clamp01(curiosity / 100);
+
+      const isAsleep = form === 'sleep';
+      const isBattle = form === 'battle';
+      const isStudy = form === 'study';
+
+      const baseRy = isAsleep ? 60 : isBattle ? 50 : 60;
+      const baseRx = isAsleep ? 50 : isBattle ? 45 : 55;
+      const cy = isAsleep ? 160 : 150;
+
+      // Body squish based on energy: low energy => more squished & droopy
+      const squish = lerp(0.0, 0.18, 1 - energyN);
+      const rx = baseRx * (1 + squish * 0.4);
+      const ry = baseRy * (1 - squish * 0.4);
+
+      const glowOpacity = lerp(0.35, 1.0, energyN);
+      const pulseDur = lerp(5.5, 2.2, energyN).toFixed(1);
+
+      const orbitSpeed = lerp(20, 6, curiosityN).toFixed(1);
+
+      const moodTilt = mood === 'calm' ? 0 : mood === 'focused' ? -5 : 6;
+
+      const eyeOpen = isAsleep
+        ? 0
+        : lerp(0.35, 1, curiosityN * (mood === 'agitated' ? 1.05 : 0.9));
+
+      const bgGradTop = colors.glow;
+      const bgGradMid = colors.base;
+      const bgGradBottom = '#020617';
+
+      const orbitCount = form === 'explorer' ? 4 : form === 'battle' ? 3 : 2;
+
+      const sleepMotes = form === 'sleep' ? 5 : 0;
+
+      svg.innerHTML = `
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="10" result="blur" />
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="0 0 0 0 0  0 0 0 0 0.5  0 0 0 0 1  0 0 0 0.8 0"
+            />
+          </filter>
+
+          <radialGradient id="petBgGrad" cx="50%" cy="40%" r="70%">
+            <stop offset="0%" stop-color="${bgGradTop}" stop-opacity="0.5" />
+            <stop offset="55%" stop-color="${bgGradMid}" stop-opacity="0.08" />
+            <stop offset="100%" stop-color="${bgGradBottom}" stop-opacity="1" />
+          </radialGradient>
+
+          <radialGradient id="bodyHighlightGrad" cx="35%" cy="30%" r="60%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7" />
+            <stop offset="40%" stop-color="#ffffff" stop-opacity="0" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+          </radialGradient>
+
+          <radialGradient id="orbitGrad" cx="50%" cy="50%" r="50%">

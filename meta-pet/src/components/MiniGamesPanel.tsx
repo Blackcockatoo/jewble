@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { BrainCircuit, Gamepad2, Music4, Rocket } from 'lucide-react';
+import { BrainCircuit, Gamepad2, Lock, Music4, Rocket } from 'lucide-react';
 
 import { useStore } from '@/lib/store';
 
+import { SafeCrackMini } from './SafeCrackMini';
 import { VimanaTetris } from './VimanaTetris';
 import { Button } from './ui/button';
 
@@ -37,6 +38,10 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
   const [rhythmLog, setRhythmLog] = useState<string>(RHYTHM_HINT);
   const [vimanaLog, setVimanaLog] = useState<string>(VIMANA_HINT);
   const [vimanaOpen, setVimanaOpen] = useState<boolean>(false);
+  const [safeCrackLog, setSafeCrackLog] = useState<string>('Crack the vault to earn rewards.');
+  const [safeCrackOpen, setSafeCrackOpen] = useState<boolean>(false);
+  const [safeCrackHighScore, setSafeCrackHighScore] = useState<number>(0);
+  const [safeCrackAttempts, setSafeCrackAttempts] = useState<number>(0);
 
   const playMemory = () => {
     const base = Math.round((vitals.mood + vitals.energy) / 20);
@@ -71,6 +76,27 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
     setVimanaLog(`Run collapsed at level ${level}. Score ${score} with ${lines} lines cleared.`);
   };
 
+  const handleLaunchSafeCrack = () => {
+    setSafeCrackOpen(true);
+    setSafeCrackLog('Safe lock engaged. Match the combo to unlock.');
+  };
+
+  const handleCloseSafeCrack = () => {
+    setSafeCrackOpen(false);
+    setSafeCrackLog('Crack the vault to earn rewards.');
+  };
+
+  const handleSafeCrackGameOver = (success: boolean, score: number, attempts: number) => {
+    setSafeCrackAttempts(prev => prev + 1);
+    if (success) {
+      const multiplier = score.toFixed(2);
+      setSafeCrackHighScore(prev => Math.max(prev, score));
+      setSafeCrackLog(`Vault cracked! Multiplier: ${multiplier}x. Attempts: ${safeCrackAttempts + 1}.`);
+    } else {
+      setSafeCrackLog(`Lock jammed after ${attempts} strikes. Try again with steadier hands.`);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -83,7 +109,7 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-zinc-300">
             <BrainCircuit className="w-4 h-4 text-emerald-300" />
@@ -150,6 +176,31 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
             </div>
           </div>
         </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm text-zinc-300">
+            <Lock className="w-4 h-4 text-amber-300" />
+            Safe Crack Challenge
+          </div>
+          <p className="text-xs text-zinc-400">
+            Match the 3-number combo by rotating the dial. Precision and patience unlock rewards.
+          </p>
+          <Button onClick={handleLaunchSafeCrack} className="gap-2">
+            <Lock className="w-4 h-4" />
+            Attempt Crack
+          </Button>
+          <p className="text-xs text-zinc-400 italic">{safeCrackLog}</p>
+          <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-400">
+            <div>
+              High Score
+              <div className="text-amber-300 font-semibold">{safeCrackHighScore.toFixed(2)}x</div>
+            </div>
+            <div>
+              Attempts
+              <div className="text-slate-300 font-semibold">{safeCrackAttempts}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {vimanaOpen && (
@@ -165,6 +216,24 @@ export function MiniGamesPanel({ petName }: MiniGamesPanelProps) {
               genomeSeed={genomeSeed}
               onExit={handleCloseVimana}
               onGameOver={handleVimanaGameOver}
+            />
+          </div>
+        </div>
+      )}
+
+      {safeCrackOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="relative w-full max-w-3xl">
+            <div className="absolute -top-10 right-0 flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleCloseSafeCrack}>
+                Close
+              </Button>
+            </div>
+            <SafeCrackMini
+              petName={petName}
+              genomeSeed={genomeSeed}
+              onExit={handleCloseSafeCrack}
+              onGameOver={handleSafeCrackGameOver}
             />
           </div>
         </div>

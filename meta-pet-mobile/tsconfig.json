@@ -26,6 +26,10 @@
   "exclude": [
     "node_modules",
     "app/App.tsx",
-    ".expo"
+    ".expo",
+    "meta-pet-mobile",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

@@ -4,10 +4,50 @@ export interface Genome {
   black60: number[];
 }
 
+export interface ElementResidue {
+  residue: number;
+  elements2d: number[];
+  elements3d: number[];
+  hasPair60: boolean;
+  isFrontierResidue: boolean;
+  isVoid: boolean;
+}
+
+export interface ElementWebSummary {
+  usedResidues: number[];
+  pairSlots: number[];
+  frontierSlots: number[];
+  voidSlotsHit: number[];
+  coverage: number;
+  frontierAffinity: number;
+  bridgeCount: number;
+  voidDrift: number;
+}
+
 export interface GenomeHash {
   redHash: string;
   blueHash: string;
   blackHash: string;
+}
+
+export interface ElementTraits {
+  bridgeScore: number;
+  frontierWeight: number;
+  chargeVector: {
+    c2: number;
+    c3: number;
+    c5: number;
+  };
+  heptaSignature: {
+    total: readonly [number, number, number];
+    mod7: readonly [number, number, number];
+  };
+  elementWave: {
+    real: number;
+    imag: number;
+    magnitude: number;
+    angle: number;
+  };
 }
 
 export interface PhysicalTraits {
@@ -53,4 +93,5 @@ export interface DerivedTraits {
   physical: PhysicalTraits;
   personality: PersonalityTraits;
   latent: LatentTraits;
+  elementWeb: ElementWebSummary;
 }

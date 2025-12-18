@@ -11,13 +11,24 @@
     "./progression": "./src/progression/index.ts",
     "./genome": "./src/genome/index.ts",
     "./store": "./src/store/index.ts",
-    "./rng": "./src/rng/index.ts"
+    "./rng": "./src/rng/index.ts",
+    "./auralia": "./src/auralia/index.ts",
+    "./auralia/persistence": "./src/auralia/persistence.ts",
+    "./astrogenetics": "./src/astrogenetics/index.ts",
+    "./yantra": "./src/yantra/index.ts",
+    "./yantra/baseConversion": "./src/yantra/baseConversion.ts",
+    "./genetics": "./src/genetics/index.ts"
+  },
+  "scripts": {
+    "test": "vitest"
   },
   "dependencies": {
     "zustand": "^5.0.8"
   },
   "sideEffects": false,
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vitest": "^4.0.13"
   }
 }

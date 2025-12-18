@@ -18,6 +18,10 @@ export interface SealedExport {
   hmac: string; // HMAC signature for tamper detection
   exportedAt: number;
   petId: string;
+  hashes: {
+    dnaHash: string;
+    mirrorHash: string;
+  };
 }
 
 /**
@@ -41,6 +45,10 @@ export async function createSealedExport(
   // Create metadata
   const exportedAt = Date.now();
   const petId = petData.id;
+  const hashes = {
+    dnaHash: petData.crest.dnaHash,
+    mirrorHash: petData.crest.mirrorHash,
+  };
 
   // Create signature payload (everything except the HMAC itself)
   const signaturePayload = JSON.stringify({
@@ -49,6 +57,7 @@ export async function createSealedExport(
     payload,
     exportedAt,
     petId,
+    hashes,
   });
 
   // Generate HMAC signature
@@ -68,6 +77,7 @@ export async function createSealedExport(
     hmac,
     exportedAt,
     petId,
+    hashes,
   };
 
   return JSON.stringify(sealedExport, null, 2);
@@ -100,6 +110,25 @@ export async function importSealedExport(
     throw new Error('Invalid sealed export: missing payload or HMAC');
   }
 
+  if (!sealed.hashes || !sealed.hashes.dnaHash || !sealed.hashes.mirrorHash) {
+    throw new Error('Invalid sealed export: missing crest hashes');
+  }
+
+  // Decode payload early to compare IDs before HMAC verification
+  let petJson: string;
+  try {
+    petJson = atob(sealed.payload);
+  } catch {
+    throw new Error('Invalid sealed export: payload is not valid base64');
+  }
+
+  const petData = importPetFromJSON(petJson);
+
+  // Verify pet ID matches the sealed metadata before proceeding
+  if (petData.id !== sealed.petId) {
+    throw new Error('Sealed export verification failed: pet ID mismatch');
+  }
+
   // Reconstruct signature payload (everything except HMAC)
   const signaturePayload = JSON.stringify({
     version: sealed.version,
@@ -107,6 +136,7 @@ export async function importSealedExport(
     payload: sealed.payload,
     exportedAt: sealed.exportedAt,
     petId: sealed.petId,
+    hashes: sealed.hashes,
   });
 
   // Verify HMAC signature
@@ -120,22 +150,6 @@ export async function importSealedExport(
 
   if (sealed.hmac !== expectedHmac) {
     throw new Error('Sealed export verification failed: HMAC mismatch (data may be tampered)');
-  }
-
-  // Decode payload
-  let petJson: string;
-  try {
-    petJson = atob(sealed.payload);
-  } catch {
-    throw new Error('Invalid sealed export: payload is not valid base64');
-  }
-
-  // Import pet data using existing validation
-  const petData = importPetFromJSON(petJson);
-
-  // Verify pet ID matches
-  if (petData.id !== sealed.petId) {
-    throw new Error('Sealed export verification failed: pet ID mismatch');
   }
 
   return petData;
@@ -189,6 +203,7 @@ export async function verifySealedExport(
       payload: sealed.payload,
       exportedAt: sealed.exportedAt,
       petId: sealed.petId,
+      hashes: sealed.hashes ?? { dnaHash: '', mirrorHash: '' },
     });
 
     const expectedMac = await crypto.subtle.sign(

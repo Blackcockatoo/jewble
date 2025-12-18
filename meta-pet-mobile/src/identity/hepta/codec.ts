@@ -11,8 +11,8 @@ async function hmacSha256(key: Uint8Array, message: Uint8Array): Promise<Uint8Ar
 
   let keyPrime = new Uint8Array(blockSize);
   if (key.length > blockSize) {
-    const hashed = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, key);
-    keyPrime.set(new Uint8Array(hashed));
+    const hashed = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, key as BufferSource);
+    keyPrime.set(new Uint8Array(hashed as ArrayBuffer));
   } else {
     keyPrime.set(key);
   }

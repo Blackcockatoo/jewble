@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useStore } from '../../store';
@@ -24,7 +24,7 @@ export const HeptaTag: React.FC<HeptaTagProps> = ({
   const hapticsEnabled = useStore((s) => s.hapticsEnabled);
 
   const handlePress = () => {
-    if (hapticsEnabled) {
+    if (hapticsEnabled && Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     onPress?.();

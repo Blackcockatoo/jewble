@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useStore } from './index';
 import { initializeEvolution } from '@/lib/evolution';
 import type { Genome, DerivedTraits } from '@/lib/genome';
+import { summarizeElementWeb } from '@/lib/genome';
 import {
   createDefaultBattleStats,
   createDefaultMiniGameProgress,
@@ -16,6 +17,7 @@ type TraitOverrides = {
         potential?: Partial<DerivedTraits['latent']['potential']>;
         hiddenGenes?: number[];
       });
+  elementWeb?: Partial<DerivedTraits['elementWeb']>;
 };
 
 const createMockGenome = (seed = 0): Genome => ({
@@ -25,6 +27,7 @@ const createMockGenome = (seed = 0): Genome => ({
 });
 
 const createMockTraits = (overrides: TraitOverrides = {}): DerivedTraits => {
+  const baseGenome = createMockGenome();
   const base: DerivedTraits = {
     physical: {
       bodyType: 'Spherical',
@@ -54,6 +57,7 @@ const createMockTraits = (overrides: TraitOverrides = {}): DerivedTraits => {
       potential: { physical: 82, mental: 78, social: 76 },
       hiddenGenes: Array.from({ length: 15 }, () => 0),
     },
+    elementWeb: summarizeElementWeb(baseGenome),
   };
 
   const latentOverrides = overrides.latent ?? {};
@@ -70,6 +74,7 @@ const createMockTraits = (overrides: TraitOverrides = {}): DerivedTraits => {
       },
       hiddenGenes: latentOverrides.hiddenGenes ?? base.latent.hiddenGenes,
     },
+    elementWeb: { ...base.elementWeb, ...(overrides.elementWeb ?? {}) },
   };
 };
 
@@ -201,6 +206,9 @@ describe('Store State Management', () => {
           birthTime: Date.now() - 100_000_000, // Very old
           lastEvolutionTime: Date.now() - 100_000_000,
           experience: 100,
+          level: 1,
+          currentLevelXp: 0,
+          totalXp: 100,
           totalInteractions: 100,
           canEvolve: true,
         },
@@ -400,6 +408,9 @@ describe('Store State Management', () => {
           birthTime: 1000000,
           lastEvolutionTime: 2000000,
           experience: 50,
+          level: 5,
+          currentLevelXp: 0,
+          totalXp: 150,
           totalInteractions: 75,
           canEvolve: false,
         },

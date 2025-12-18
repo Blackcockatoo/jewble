@@ -31,9 +31,10 @@ export function breedPets(
   parent2: Genome,
   mode: 'DOMINANT' | 'BALANCED' | 'MUTATION' = 'BALANCED'
 ): BreedingResult {
-  let offspring: Genome;
   const fingerprint = fingerprintParents(parent1, parent2);
   const rng = createSeededRng(`${fingerprint}|${mode}`);
+
+  let offspring: Genome;
 
   switch (mode) {
     case 'DOMINANT':
@@ -51,7 +52,6 @@ export function breedPets(
   }
 
   const traits = decodeGenome(offspring);
-
   const inheritanceMap = calculateInheritanceMap(parent1, parent2, offspring);
   const lineageKey = generateLineageKey(fingerprint, mode, offspring);
 

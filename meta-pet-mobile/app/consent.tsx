@@ -11,6 +11,7 @@ import { useTheme } from '../src/providers/ThemeProvider';
 import { useStore } from '../src/store';
 import { SeedOfLifeGlyph } from '../src/ui/components/SeedOfLifeGlyph';
 import { isConsentValid } from '../src/identity/consent';
+import { COLORS } from '../src/ui/theme/colors';
 
 export default function ConsentScreen() {
   const { theme } = useTheme();
@@ -90,7 +91,7 @@ export default function ConsentScreen() {
             generation. Your companion's traits are derived deterministically from its genome.
           </Text>
 
-          <Text style={[styles.warning, { color: theme.ui.warning, marginTop: 20 }]}>
+          <Text style={[styles.warning, { color: COLORS.ui.warning, marginTop: 20 }]}>
             ⚠️ Experimental Software
           </Text>
           <Text style={[styles.paragraph, { color: theme.textSecondary }]}>

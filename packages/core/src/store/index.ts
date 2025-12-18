@@ -9,6 +9,7 @@ import {
   checkEvolutionEligibility,
   evolvePet,
 } from '../evolution/index';
+import { summarizeElementWeb } from '../genome/elementResidue';
 import type {
   Achievement,
   BattleStats,
@@ -30,6 +31,8 @@ import {
   tick as runTick,
 } from '../vitals/index';
 
+export type PetType = 'geometric' | 'auralia';
+
 export interface MetaPetState {
   vitals: Vitals;
   genome: Genome | null;
@@ -39,8 +42,13 @@ export interface MetaPetState {
   battle: BattleStats;
   miniGames: MiniGameProgress;
   vimana: VimanaState;
+  petType: PetType;
+  mirrorMode: MirrorModeState;
+  lastAction: null | 'feed' | 'clean' | 'play' | 'sleep';
+  lastActionAt: number;
   tickId?: ReturnType<typeof setInterval>;
   setGenome: (genome: Genome, traits: DerivedTraits) => void;
+  setPetType: (petType: PetType) => void;
   hydrate: (data: {
     vitals: Vitals;
     genome: Genome;
@@ -50,6 +58,8 @@ export interface MetaPetState {
     battle?: BattleStats;
     miniGames?: MiniGameProgress;
     vimana?: VimanaState;
+    petType?: PetType;
+    mirrorMode?: MirrorModeState;
   }) => void;
   startTick: () => void;
   stopTick: () => void;
@@ -57,12 +67,40 @@ export interface MetaPetState {
   clean: () => void;
   play: () => void;
   sleep: () => void;
+  setLastAction: (action: 'feed' | 'clean' | 'play' | 'sleep') => void;
   tryEvolve: () => boolean;
   recordBattle: (result: 'win' | 'loss', opponent: string) => void;
   updateMiniGameScore: (game: 'memory' | 'rhythm', score: number) => void;
   recordVimanaRun: (score: number, lines: number, level: number) => void;
   exploreCell: (cellId: string) => void;
   resolveAnomaly: (cellId: string) => void;
+  beginMirrorMode: (preset: MirrorPrivacyPreset, durationMinutes?: number) => void;
+  confirmMirrorCross: () => void;
+  completeMirrorMode: (outcome: MirrorOutcome, note?: string) => void;
+  refreshConsent: (durationMinutes: number) => void;
+}
+
+export type MirrorPhase = 'idle' | 'entering' | 'crossed' | 'returning';
+export type MirrorPrivacyPreset = 'stealth' | 'standard' | 'radiant';
+export type MirrorOutcome = 'anchor' | 'drift';
+
+export interface MirrorReflection {
+  id: string;
+  note?: string;
+  outcome: MirrorOutcome;
+  moodDelta: number;
+  energyDelta: number;
+  timestamp: number;
+  preset: MirrorPrivacyPreset;
+}
+
+export interface MirrorModeState {
+  phase: MirrorPhase;
+  startedAt: number | null;
+  consentExpiresAt: number | null;
+  preset: MirrorPrivacyPreset | null;
+  presenceToken: string | null;
+  lastReflection: MirrorReflection | null;
 }
 
 export interface CreateMetaPetWebStoreOptions {
@@ -81,6 +119,15 @@ type AchievementMap = Map<Achievement['id'], Achievement>;
 const achievementDefinitions: AchievementMap = new Map(
   ACHIEVEMENT_CATALOG.map(item => [item.id, item])
 );
+
+const DEFAULT_MIRROR_MODE: MirrorModeState = {
+  phase: 'idle',
+  startedAt: null,
+  consentExpiresAt: null,
+  preset: null,
+  presenceToken: null,
+  lastReflection: null,
+};
 
 function unlockAchievement(list: Achievement[], id: Achievement['id']): Achievement[] {
   if (list.some(entry => entry.id === id)) {
@@ -131,21 +178,31 @@ export function createMetaPetWebStore(
     battle: createDefaultBattleStats(),
     miniGames: createDefaultMiniGameProgress(),
     vimana: createDefaultVimanaState(),
+    petType: 'geometric',
+    mirrorMode: { ...DEFAULT_MIRROR_MODE },
+    lastAction: null,
+    lastActionAt: 0,
 
     setGenome(genome, traits) {
-      set({ genome, traits });
+      set({ genome, traits: normalizeTraits(genome, traits) });
     },
 
-    hydrate({ vitals, genome, traits, evolution, achievements, battle, miniGames, vimana }) {
+    setPetType(petType) {
+      set({ petType });
+    },
+
+    hydrate({ vitals, genome, traits, evolution, achievements, battle, miniGames, vimana, petType, mirrorMode }) {
       set(state => ({
         vitals: { ...vitals },
         genome,
-        traits,
+        traits: normalizeTraits(genome, traits),
         evolution: { ...evolution },
         achievements: achievements ? achievements.map(entry => ({ ...entry })) : state.achievements,
         battle: battle ? { ...battle } : state.battle,
         miniGames: miniGames ? { ...miniGames } : state.miniGames,
         vimana: vimana ? cloneVimanaState(vimana) : state.vimana,
+        petType: petType ?? state.petType,
+        mirrorMode: mirrorMode ? { ...mirrorMode } : state.mirrorMode,
         tickId: state.tickId,
       }));
     },
@@ -170,32 +227,40 @@ export function createMetaPetWebStore(
       }
     },
 
+    setLastAction(action) {
+      set({ lastAction: action, lastActionAt: Date.now() });
+    },
+
     feed() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'feed'),
-        evolution: gainExperience(state.evolution, 2),
+        evolution: gainExperience(state.evolution, 5),
       }));
+      get().setLastAction('feed');
     },
 
     clean() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'clean'),
-        evolution: gainExperience(state.evolution, 2),
+        evolution: gainExperience(state.evolution, 5),
       }));
+      get().setLastAction('clean');
     },
 
     play() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'play'),
-        evolution: gainExperience(state.evolution, 3),
+        evolution: gainExperience(state.evolution, 10),
       }));
+      get().setLastAction('play');
     },
 
     sleep() {
       set(state => ({
         vitals: applyInteraction(state.vitals, 'sleep'),
-        evolution: gainExperience(state.evolution, 1),
+        evolution: gainExperience(state.evolution, 3),
       }));
+      get().setLastAction('sleep');
     },
 
     tryEvolve() {
@@ -240,6 +305,11 @@ export function createMetaPetWebStore(
           update.achievements = achievements;
         }
 
+        // Grant XP for battle wins
+        if (result === 'win') {
+          update.evolution = gainExperience(state.evolution, 15);
+        }
+
         return update;
       });
     },
@@ -269,6 +339,10 @@ export function createMetaPetWebStore(
         if (achievements !== state.achievements) {
           update.achievements = achievements;
         }
+
+        // Grant XP based on score (5-10 XP)
+        const xpGain = Math.min(10, Math.max(5, Math.floor(score / 2)));
+        update.evolution = gainExperience(state.evolution, xpGain);
 
         return update;
       });
@@ -302,6 +376,12 @@ export function createMetaPetWebStore(
         const update: Partial<MetaPetState> = { miniGames: next };
         if (achievements !== state.achievements) {
           update.achievements = achievements;
+        }
+
+        // Grant XP based on performance (5-10 XP, scaled by lines and level)
+        if (hasProgress) {
+          const xpGain = Math.min(10, Math.max(5, Math.floor(lines / 2) + level));
+          update.evolution = gainExperience(state.evolution, xpGain);
         }
 
         return update;
@@ -401,6 +481,96 @@ export function createMetaPetWebStore(
         return update;
       });
     },
+
+    beginMirrorMode(preset, durationMinutes = 15) {
+      const now = Date.now();
+      set(state => ({
+        mirrorMode: {
+          phase: 'entering',
+          startedAt: now,
+          consentExpiresAt: now + durationMinutes * 60_000,
+          preset,
+          presenceToken: state.mirrorMode.presenceToken ?? null,
+          lastReflection: state.mirrorMode.lastReflection,
+        },
+      }));
+    },
+
+    confirmMirrorCross() {
+      set(state => {
+        if (state.mirrorMode.phase !== 'entering') return {};
+        const token = state.mirrorMode.presenceToken ?? generatePresenceToken();
+        const now = Date.now();
+        const consentActive =
+          state.mirrorMode.consentExpiresAt === null || state.mirrorMode.consentExpiresAt > now;
+        const moodBoost = consentActive ? 6 : 3;
+        const energyBoost = consentActive ? 4 : 2;
+
+        return {
+          mirrorMode: {
+            ...state.mirrorMode,
+            phase: 'crossed',
+            presenceToken: token,
+          },
+          vitals: {
+            ...state.vitals,
+            mood: clamp(state.vitals.mood + moodBoost),
+            energy: clamp(state.vitals.energy + energyBoost),
+          },
+        };
+      });
+    },
+
+    completeMirrorMode(outcome, note) {
+      set(state => {
+        if (state.mirrorMode.phase === 'idle') return {};
+        const moodDelta = outcome === 'anchor' ? 8 : -6;
+        const energyDelta = outcome === 'anchor' ? 5 : -8;
+        const reflection: MirrorReflection = {
+          id: generatePresenceToken(),
+          note,
+          outcome,
+          moodDelta,
+          energyDelta,
+          timestamp: Date.now(),
+          preset: state.mirrorMode.preset ?? 'standard',
+        };
+
+        return {
+          mirrorMode: {
+            phase: 'returning',
+            startedAt: state.mirrorMode.startedAt,
+            consentExpiresAt: state.mirrorMode.consentExpiresAt,
+            preset: state.mirrorMode.preset,
+            presenceToken: state.mirrorMode.presenceToken,
+            lastReflection: reflection,
+          },
+          vitals: {
+            ...state.vitals,
+            mood: clamp(state.vitals.mood + moodDelta),
+            energy: clamp(state.vitals.energy + energyDelta),
+          },
+        };
+      });
+
+      // Allow the phase to settle back to idle after a beat
+      set(state => ({
+        mirrorMode: {
+          ...state.mirrorMode,
+          phase: 'idle',
+        },
+      }));
+    },
+
+    refreshConsent(durationMinutes) {
+      const now = Date.now();
+      set(state => ({
+        mirrorMode: {
+          ...state.mirrorMode,
+          consentExpiresAt: now + durationMinutes * 60_000,
+        },
+      }));
+    },
   }));
 
   if (autoPause && typeof document !== 'undefined') {
@@ -417,9 +587,30 @@ export function createMetaPetWebStore(
   return useStore;
 }
 
+function normalizeTraits(genome: Genome, traits: DerivedTraits): DerivedTraits {
+  if (traits.elementWeb) {
+    return traits;
+  }
+
+  return {
+    ...traits,
+    elementWeb: summarizeElementWeb(genome),
+  };
+}
+
 function cloneVimanaState(source: VimanaState): VimanaState {
   return {
     ...source,
     cells: source.cells.map(cell => ({ ...cell })),
   };
+}
+
+function generatePresenceToken(): string {
+  const cryptoApi = typeof globalThis !== 'undefined' ? (globalThis.crypto as Crypto | undefined) : undefined;
+  if (cryptoApi && 'randomUUID' in cryptoApi) {
+    return cryptoApi.randomUUID();
+  }
+
+  const rand = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  return `mirror-${rand.toString(36)}`;
 }

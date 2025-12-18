@@ -6,13 +6,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useTheme } from '../../src/providers/ThemeProvider';
 import { useStore } from '../../src/store';
 import { SeedOfLifeGlyph } from '../../src/ui/components/SeedOfLifeGlyph';
 import { persistence } from '../../src/store/persistence';
 import { isConsentValid } from '../../src/identity/consent';
+import { COLORS } from '../../src/ui/theme/colors';
 
 interface SettingRowProps {
   label: string;
@@ -224,11 +225,11 @@ export default function SettingsScreen() {
             <Text style={[styles.helperText, { color: theme.textTertiary }]}>Accept the privacy consent to enable exports.</Text>
           )}
           <TouchableOpacity
-            style={[styles.actionButton, styles.dangerButton, { borderColor: theme.ui.error }]}
+            style={[styles.actionButton, styles.dangerButton, { borderColor: COLORS.ui.error }]}
             onPress={handleResetData}
             activeOpacity={0.7}
           >
-            <Text style={[styles.actionButtonText, { color: theme.ui.error }]}>Reset All Data</Text>
+            <Text style={[styles.actionButtonText, { color: COLORS.ui.error }]}>Reset All Data</Text>
           </TouchableOpacity>
         </View>
 

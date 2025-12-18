@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Moss60 Ultimate 8-Mode Quantum Engine</title>
+  <style>
+    :root {
+      --bg: #050514;
+      --panel: #0c0f24;
+      --accent: #ffd700;
+      --text: #e4e8ff;
+      --moss-red: #ff3455;
+      --moss-blue: #44aaff;
+      --moss-black: #111111;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+      padding: 16px;
+      background: radial-gradient(circle at top, #262b60 0%, #050514 55%, #000000 100%);
+      color: var(--text);
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.85rem;
+    }
+
+    #sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, var(--moss-red), var(--moss-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .panel {
+      background: rgba(12, 15, 36, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+      color: var(--accent);
+      border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+      padding-bottom: 4px;
+    }
+
+    .mode-btn {
+      width: 100%;
+      padding: 8px;
+      margin: 4px 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: linear-gradient(135deg, #1a1d3a 0%, #0a0c1a 100%);
+      color: var(--text);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .mode-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+      transform: translateX(4px);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, var(--moss-red) 0%, var(--moss-blue) 100%);
+      border-color: var(--accent);
+      font-weight: bold;
+    }
+
+    .control-group {
+      margin: 8px 0;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      opacity: 0.8;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+      border: none;
+    }
+
+    .control-value {
+      display: inline-block;
+      float: right;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    button {
+      width: 100%;
+      padding: 8px;
+      margin: 4px 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: radial-gradient(circle at top, #383a65 0%, #0d0f24 60%, #04050b 100%);
+      color: var(--text);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 4px 0;
+      font-size: 0.7rem;
+    }
+
+    .stat-label {
+      opacity: 0.75;
+    }
+
+    .stat-value {
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    #main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #canvas-wrapper {
+      padding: 12px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(56, 61, 122, 0.9), rgba(5, 7, 19, 0.98));
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 100px rgba(27, 206, 255, 0.15);
+    }
+
+    #mainCanvas {
+      display: block;
+      background: radial-gradient(circle at center, #050514 0%, #000000 100%);
+      border-radius: 14px;
+    }
+
+    .keyboard-hint {
+      margin-top: 12px;
+      font-size: 0.7rem;
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 1200px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+      #sidebar {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <div class="panel">
+      <h1>MOSS60<br/>QUANTUM ENGINE</h1>
+    </div>
+
+    <div class="panel">
+      <h2>🎭 Projection Modes</h2>
+      <button class="mode-btn active" data-mode="1">1. Quantum Field</button>
+      <button class="mode-btn" data-mode="2">2. Prime Lattice</button>
+      <button class="mode-btn" data-mode="3">3. Harmonic Web</button>
+      <button class="mode-btn" data-mode="4">4. CA Evolution</button>
+      <button class="mode-btn" data-mode="5">5. Yantra Bloom</button>
+      <button class="mode-btn" data-mode="6">6. Cryptic Dance</button>
+      <button class="mode-btn" data-mode="7">7. Hepta-Sync</button>
+      <button class="mode-btn" data-mode="8">8. 4D Tesseract</button>
+    </div>
+
+    <div class="panel">
+      <h2>⚙️ Controls</h2>
+      <div class="control-group">
+        <label>Quantum Intensity <span class="control-value" id="intensityVal">0.8</span></label>
+        <input type="range" id="intensity" min="0" max="1" step="0.05" value="0.8">
+      </div>
+      <div class="control-group">
+        <label>Rotation Speed <span class="control-value" id="speedVal">1.0</span></label>
+        <input type="range" id="speed" min="0" max="3" step="0.1" value="1.0">
+      </div>
+      <div class="control-group">
+        <label>Prime Sensitivity <span class="control-value" id="primeVal">2.0</span></label>
+        <input type="range" id="primeSens" min="1" max="5" step="0.2" value="2.0">
+      </div>
+      <div class="control-group">
+        <label>Harmonic Depth <span class="control-value" id="depthVal">8</span></label>
+        <input type="range" id="depth" min="3" max="16" step="1" value="8">
+      </div>
+      <div class="control-group">
+        <label>Red Weight <span class="control-value" id="redVal">1.0</span></label>
+        <input type="range" id="redWeight" min="0" max="2" step="0.1" value="1.0">
+      </div>
+      <div class="control-group">
+        <label>Black Weight <span class="control-value" id="blackVal">1.0</span></label>
+        <input type="range" id="blackWeight" min="0" max="2" step="0.1" value="1.0">
+      </div>
+      <div class="control-group">
+        <label>Blue Weight <span class="control-value" id="blueVal">1.0</span></label>
+        <input type="range" id="blueWeight" min="0" max="2" step="0.1" value="1.0">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🎮 Actions</h2>
+      <button id="primePulse">Prime Pulse</button>
+      <button id="invertBtn">Invert (Red↔Blue)</button>
+      <button id="freezeBtn">Freeze / Resume</button>
+      <button id="screenshotBtn">Screenshot</button>
+    </div>
+
+    <div class="panel">
+      <h2>📊 Live Analysis</h2>
+      <div class="stat-row">
+        <span class="stat-label">Active Primes:</span>
+        <span class="stat-value" id="activePrimes">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Prime Density:</span>
+        <span class="stat-value" id="primeDensity">0%</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Twin Primes:</span>
+        <span class="stat-value" id="twinPrimes">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Harmonic Resonance:</span>
+        <span class="stat-value" id="harmonic">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Entropy:</span>
+        <span class="stat-value" id="entropy">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">XOR Accumulator:</span>
+        <span class="stat-value" id="xorAccum">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mod-60 Sum:</span>
+        <span class="stat-value" id="mod60Sum">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Base-60 Index:</span>
+        <span class="stat-value" id="base60Idx">0</span>
+      </div>
+    </div>
+
+    <div class="keyboard-hint">
+      Keys: 1-8=Modes | Space=Freeze | P=Prime Pulse | I=Invert
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div id="canvas-wrapper">
+      <canvas id="mainCanvas" width="1080" height="1080"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    // MOSS60 BASE-60 QUANTUM SEQUENCES
+    // ═══════════════════════════════════════════════════════════
+
+    const RED_SEQ = "113031491493585389543778774590997079619617525721567332336510";
+    const BLACK_SEQ = "011235831459437077415617853819099875279651673033695493257291";
+    const BLUE_SEQ = "012776329785893036118967145479098334781325217074992143965631";
+
+    const RED = RED_SEQ.split("").map(d => parseInt(d, 10));
+    const BLACK = BLACK_SEQ.split("").map(d => parseInt(d, 10));
+    const BLUE = BLUE_SEQ.split("").map(d => parseInt(d, 10));
+
+    // Lineage assignment: which sequence dominates at each index
+    const LINEAGE = [];
+    for (let i = 0; i < 60; i++) {
+      const r = RED[i], k = BLACK[i], b = BLUE[i];
+      if (r >= k && r >= b) LINEAGE[i] = 'red';
+      else if (b >= k) LINEAGE[i] = 'blue';
+      else LINEAGE[i] = 'black';
+    }
+
+    // Lukas 12 sectors
+    const LUKAS = [2,1,3,4,7,1,8,9,7,6,3,9];
+    const LUKAS_BOUNDS = [0];
+    let s = 0;
+    for (const d of LUKAS) { s += d; LUKAS_BOUNDS.push(s); }
+
+    function sectorForIndex(k) {
+      const idx = ((k % 60) + 60) % 60;
+      for (let s = 0; s < 12; s++) {
+        if (idx >= LUKAS_BOUNDS[s] && idx < LUKAS_BOUNDS[s+1]) return s;
+      }
+      return 11;
+    }
+
+    // Prime sieve
+    const PRIMES = new Set();
+    (function sieve() {
+      const limit = 10000;
+      const is = new Array(limit).fill(true);
+      is[0] = is[1] = false;
+      for (let i = 2; i * i < limit; i++) {
+        if (is[i]) for (let j = i*i; j < limit; j += i) is[j] = false;
+      }
+      for (let i = 0; i < limit; i++) if (is[i]) PRIMES.add(i);
+    })();
+
+    function isPrime(n) { return PRIMES.has(n); }
+
+    // ═══════════════════════════════════════════════════════════
+    // CANVAS & STATE
+    // ═══════════════════════════════════════════════════════════
+
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const CX = W/2, CY = H/2;
+
+    let MODE = 1;
+    let FROZEN = false;
+    let PARAMS = {
+      intensity: 0.8,
+      speed: 1.0,
+      primeSens: 2.0,
+      depth: 8,
+      redWeight: 1.0,
+      blackWeight: 1.0,
+      blueWeight: 1.0,
+      primePulse: 0,
+      inverted: false
+    };
+
+    let STATS = {
+      activePrimes: 0,
+      primeDensity: 0,
+      twinPrimes: 0,
+      harmonic: 0,
+      entropy: 0,
+      xorAccum: 0,
+      mod60Sum: 0,
+      base60Idx: 0
+    };
+
+    // ═══════════════════════════════════════════════════════════
+    // UTILITY FUNCTIONS
+    // ═══════════════════════════════════════════════════════════
+
+    function getSequence(lineage) {
+      if (lineage === 'red') return PARAMS.inverted ? BLUE : RED;
+      if (lineage === 'blue') return PARAMS.inverted ? RED : BLUE;
+      return BLACK;
+    }
+
+    function getColor(lineage, alpha = 1) {
+      const colors = {
+        red: `rgba(255, 52, 85, ${alpha})`,
+        blue: `rgba(68, 170, 255, ${alpha})`,
+        black: `rgba(255, 215, 0, ${alpha})`
+      };
+      return colors[lineage] || colors.black;
+    }
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    function computeEntropy(seq) {
+      const freq = {};
+      seq.forEach(d => freq[d] = (freq[d] || 0) + 1);
+      let H = 0;
+      for (const f of Object.values(freq)) {
+        const p = f / seq.length;
+        H -= p * Math.log2(p);
+      }
+      return H;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 1: QUANTUM FIELD (Phyllotaxis with Primes)
+    // ═══════════════════════════════════════════════════════════
+
+    function drawQuantumField(t) {
+      const N = 2000;
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const maxR = Math.min(W, H) * 0.45;
+
+      let primeCount = 0, twinCount = 0;
+
+      for (let n = 0; n < N; n++) {
+        const k = n % 60;
+        const seq = getSequence(LINEAGE[k]);
+        const digit = seq[k];
+        const sector = sectorForIndex(k);
+        const L = LUKAS[sector];
+
+        const baseR = maxR * Math.sqrt(n / N);
+        const baseAng = n * golden + 0.2 * t * PARAMS.speed;
+
+        const rScale = 0.7 + 0.3 * (L / 9);
+        const angOffset = sector * (Math.PI / 6) * 0.1;
+        const r = baseR * rScale;
+        const ang = baseAng + angOffset;
+
+        const x = CX + r * Math.cos(ang);
+        const y = CY + r * Math.sin(ang);
+
+        const prime = isPrime(digit);
+        if (prime) primeCount++;
+
+        const nextPrime = n < N - 1 && isPrime(seq[(n + 1) % 60]);
+        if (prime && nextPrime) twinCount++;
+
+        const pulse = 0.5 + 0.4 * Math.sin(t * 2 + n * 0.02);
+        let size = (2 + 1.5 * pulse) * (digit / 5);
+        let alpha = PARAMS.intensity * pulse;
+
+        if (prime) {
+          size *= PARAMS.primeSens * (1 + PARAMS.primePulse);
+          alpha = Math.min(1, alpha * 1.5 + PARAMS.primePulse * 0.5);
+        }
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ang);
+        ctx.fillStyle = getColor(LINEAGE[k], alpha);
+        ctx.fillRect(-size/2, -size/2, size, size);
+
+        if (prime && PARAMS.primePulse > 0) {
+          ctx.strokeStyle = getColor(LINEAGE[k], PARAMS.primePulse * 0.7);
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-size, -size, size*2, size*2);
+        }
+
+        ctx.restore();
+      }
+
+      STATS.activePrimes = primeCount;
+      STATS.primeDensity = ((primeCount / N) * 100).toFixed(1);
+      STATS.twinPrimes = twinCount;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 2: PRIME LATTICE (16×16 Grid)
+    // ═══════════════════════════════════════════════════════════
+
+    function drawPrimeLattice(t) {
+      const gridSize = 16;
+      const cellSize = Math.min(W, H) * 0.8 / gridSize;
+      const startX = CX - (gridSize * cellSize) / 2;
+      const startY = CY - (gridSize * cellSize) / 2;
+
+      let primeCount = 0;
+
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          const idx = (row * gridSize + col) % 60;
+          const seq = getSequence(LINEAGE[idx]);
+          const digit = seq[idx];
+
+          if (!isPrime(digit)) continue;
+          primeCount++;
+
+          const x = startX + col * cellSize + cellSize / 2;
+          const y = startY + row * cellSize + cellSize / 2;
+
+          const pulse = 0.6 + 0.4 * Math.sin(t * 3 + row * 0.3 + col * 0.3);
+          const size = cellSize * 0.4 * pulse * PARAMS.intensity;
+
+          ctx.fillStyle = getColor(LINEAGE[idx], pulse * 0.9);
+          ctx.fillRect(x - size/2, y - size/2, size, size);
+
+          // Draw connections to adjacent primes
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = row + dr, nc = col + dc;
+              if (nr < 0 || nr >= gridSize || nc < 0 || nc >= gridSize) continue;
+
+              const nidx = (nr * gridSize + nc) % 60;
+              const nseq = getSequence(LINEAGE[nidx]);
+              if (isPrime(nseq[nidx])) {
+                const nx = startX + nc * cellSize + cellSize / 2;
+                const ny = startY + nr * cellSize + cellSize / 2;
+                ctx.strokeStyle = getColor(LINEAGE[idx], 0.15);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(nx, ny);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      }
+
+      STATS.activePrimes = primeCount;
+      STATS.primeDensity = ((primeCount / (gridSize * gridSize)) * 100).toFixed(1);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 3: HARMONIC WEB
+    // ═══════════════════════════════════════════════════════════
+
+    function drawHarmonicWeb(t) {
+      const rings = PARAMS.depth;
+      const maxR = Math.min(W, H) * 0.45;
+      const ringPoints = Array.from({length: rings}, () => []);
+
+      let resonance = 0;
+
+      for (let ring = 0; ring < rings; ring++) {
+        const baseR = maxR * (ring + 1) / rings;
+
+        for (let j = 0; j < 60; j++) {
+          const theta = 2 * Math.PI * j / 60;
+          const seq = getSequence(LINEAGE[j]);
+          const digit = seq[j];
+          const sector = sectorForIndex(j);
+          const L = LUKAS[sector];
+
+          const kH = 2 + (digit % 5);
+          const amp = 0.15 + 0.04 * L;
+          const phase = 0.3 * L;
+          const wave = 1 + amp * Math.sin(kH * theta + 1.2 * t * PARAMS.speed + phase);
+
+          resonance += Math.abs(wave - 1);
+
+          const radius = baseR * wave;
+          const x = CX + radius * Math.cos(theta);
+          const y = CY + radius * Math.sin(theta);
+
+          ringPoints[ring].push({x, y, lineage: LINEAGE[j], digit});
+
+          const pulse = 0.55 + 0.35 * Math.sin(t * 3 + ring * 0.5 + j * 0.1);
+          const size = (2 + 2 * pulse) * PARAMS.intensity;
+
+          ctx.fillStyle = getColor(LINEAGE[j], pulse * 0.9);
+          ctx.fillRect(x - size/2, y - size/2, size, size);
+        }
+      }
+
+      // Connect rings
+      for (let ring = 0; ring < rings; ring++) {
+        ctx.beginPath();
+        ringPoints[ring].forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.08 + 0.04 * ring})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+
+      STATS.harmonic = (resonance / (rings * 60)).toFixed(3);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 4: CA EVOLUTION
+    // ═══════════════════════════════════════════════════════════
+
+    let caState = null;
+    let caRow = 0;
+
+    function initCA() {
+      const cols = 60;
+      caState = new Array(cols).fill(0);
+      caState[Math.floor(cols / 2)] = 1;
+      caRow = 0;
+    }
+
+    function drawCAEvolution(t) {
+      if (!caState) initCA();
+
+      const cols = 60;
+      const rows = 60;
+      const cellW = (Math.min(W, H) * 0.8) / cols;
+      const cellH = cellW;
+      const startX = CX - (cols * cellW) / 2;
+      const startY = CY - (rows * cellH) / 2;
+
+      // Evolve one step
+      const rowIdx = caRow % 60;
+      const rule = (90 + RED[rowIdx] * 10 + BLACK[rowIdx]) % 256;
+      const nextState = new Array(cols).fill(0);
+
+      for (let c = 0; c < cols; c++) {
+        const left = caState[(c - 1 + cols) % cols];
+        const self = caState[c];
+        const right = caState[(c + 1) % cols];
+        const neighborhood = (left << 2) | (self << 1) | right;
+        nextState[c] = (rule >> (7 - neighborhood)) & 1;
+      }
+
+      // Draw current row
+      const y = startY + (caRow % rows) * cellH;
+      for (let c = 0; c < cols; c++) {
+        if (!caState[c]) continue;
+        const x = startX + c * cellW;
+        const lineage = LINEAGE[c];
+        const pulse = 0.6 + 0.4 * Math.sin(t * 2 + c * 0.1);
+
+        ctx.fillStyle = getColor(lineage, pulse * PARAMS.intensity);
+        ctx.fillRect(x, y, cellW * 0.9, cellH * 0.9);
+      }
+
+      caState = nextState;
+      caRow++;
+
+      // Clear old rows with fade
+      if (caRow % rows === 0) {
+        ctx.fillStyle = 'rgba(5, 5, 20, 0.3)';
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 5: YANTRA BLOOM
+    // ═══════════════════════════════════════════════════════════
+
+    function drawYantraBloom(t) {
+      const baseR = Math.min(W, H) * 0.42;
+
+      ctx.save();
+      ctx.translate(CX, CY);
+
+      // Concentric circles
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 0.7;
+      for (let i = 1; i <= 6; i++) {
+        const r = baseR * (i / 6);
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Rotating triangles (9 levels)
+      const levels = 9;
+      for (let k = 0; k < levels; k++) {
+        const r = baseR * (0.22 + 0.74 * k / (levels - 1));
+        const idx = (k * 7) % 60;
+        const seq = getSequence(LINEAGE[idx]);
+        const spin = t * 0.2 * PARAMS.speed + k * 0.11;
+
+        ctx.save();
+        ctx.rotate(spin);
+        ctx.strokeStyle = getColor(LINEAGE[idx], 0.7 * PARAMS.intensity);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 3; i++) {
+          const a = (Math.PI * 2 / 3) * i - Math.PI / 2;
+          const x = r * Math.cos(a);
+          const y = r * Math.sin(a);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 12 Lukas rays
+      for (let i = 0; i < 12; i++) {
+        const L = LUKAS[i];
+        const lenFactor = 0.4 + 0.5 * (L / 9);
+        const r = baseR * lenFactor;
+        const angle = (Math.PI * 2 * i / 12) + 0.15 * Math.sin(t * PARAMS.speed + i);
+        const x = r * Math.cos(angle);
+        const y = r * Math.sin(angle);
+
+        const idx = LUKAS_BOUNDS[i];
+        ctx.strokeStyle = getColor(LINEAGE[idx], 0.5 * PARAMS.intensity);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 6: CRYPTIC DANCE (XOR & Bitwise)
+    // ═══════════════════════════════════════════════════════════
+
+    function drawCrypticDance(t) {
+      let xorAcc = 0, sum = 0;
+      const N = 200;
+
+      for (let i = 0; i < N; i++) {
+        const idx = (Math.floor(t * 10 * PARAMS.speed) + i) % 60;
+        const r = RED[idx] * PARAMS.redWeight;
+        const k = BLACK[idx] * PARAMS.blackWeight;
+        const b = BLUE[idx] * PARAMS.blueWeight;
+
+        xorAcc ^= Math.floor(r + k + b);
+        sum += r + k + b;
+
+        const angle = (i / N) * Math.PI * 2;
+        const radius = (Math.min(W, H) * 0.4) * (0.5 + 0.5 * ((xorAcc % 16) / 16));
+        const x = CX + radius * Math.cos(angle);
+        const y = CY + radius * Math.sin(angle);
+
+        const hue = (xorAcc * 10) % 360;
+        const size = 3 + (xorAcc % 5);
+        const alpha = PARAMS.intensity * 0.8;
+
+        ctx.fillStyle = `hsla(${hue}, 70%, 60%, ${alpha})`;
+        ctx.fillRect(x - size/2, y - size/2, size, size);
+
+        // Draw XOR connections
+        if (i > 0 && (xorAcc & 1)) {
+          const prevAngle = ((i - 1) / N) * Math.PI * 2;
+          const prevRadius = (Math.min(W, H) * 0.4) * (0.5 + 0.5 * ((xorAcc % 16) / 16));
+          const px = CX + prevRadius * Math.cos(prevAngle);
+          const py = CY + prevRadius * Math.sin(prevAngle);
+
+          ctx.strokeStyle = `hsla(${hue}, 70%, 60%, 0.2)`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+      }
+
+      STATS.xorAccum = xorAcc;
+      STATS.mod60Sum = Math.floor(sum) % 60;
+      STATS.entropy = computeEntropy([...RED, ...BLACK, ...BLUE]).toFixed(3);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 7: HEPTA-SYNC (7 Nested Heptagons)
+    // ═══════════════════════════════════════════════════════════
+
+    function drawHeptaSync(t) {
+      const layers = 7;
+      const maxR = Math.min(W, H) * 0.42;
+
+      ctx.save();
+      ctx.translate(CX, CY);
+
+      for (let layer = 0; layer < layers; layer++) {
+        const r = maxR * (layer + 1) / layers;
+        const spin = t * PARAMS.speed * (layer % 2 === 0 ? 1 : -1) * (0.3 + layer * 0.1);
+
+        ctx.save();
+        ctx.rotate(spin);
+
+        ctx.strokeStyle = getColor(LINEAGE[(layer * 7) % 60], 0.7 * PARAMS.intensity);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        for (let i = 0; i < 7; i++) {
+          const angle = (Math.PI * 2 / 7) * i;
+          const x = r * Math.cos(angle);
+          const y = r * Math.sin(angle);
+
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+
+          // Draw vertex point
+          const idx = (layer * 7 + i) % 60;
+          const seq = getSequence(LINEAGE[idx]);
+          const pulse = 0.5 + 0.5 * Math.sin(t * 2 + layer + i);
+          const size = (3 + seq[idx]) * pulse * PARAMS.intensity;
+
+          ctx.fillStyle = getColor(LINEAGE[idx], pulse);
+          ctx.fillRect(x - size/2, y - size/2, size, size);
+        }
+
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODE 8: 4D TESSERACT
+    // ═══════════════════════════════════════════════════════════
+
+    function drawTesseract(t) {
+      const size = Math.min(W, H) * 0.25;
+
+      // 4D vertices of tesseract
+      const vertices4D = [];
+      for (let i = 0; i < 16; i++) {
+        vertices4D.push([
+          (i & 1) ? 1 : -1,
+          (i & 2) ? 1 : -1,
+          (i & 4) ? 1 : -1,
+          (i & 8) ? 1 : -1
+        ]);
+      }
+
+      // Rotation matrices
+      const angleXY = t * PARAMS.speed * 0.3;
+      const angleZW = t * PARAMS.speed * 0.2;
+
+      function rotate4D(v) {
+        let [x, y, z, w] = v;
+
+        // Rotate in XY plane
+        let nx = x * Math.cos(angleXY) - y * Math.sin(angleXY);
+        let ny = x * Math.sin(angleXY) + y * Math.cos(angleXY);
+
+        // Rotate in ZW plane
+        let nz = z * Math.cos(angleZW) - w * Math.sin(angleZW);
+        let nw = z * Math.sin(angleZW) + w * Math.cos(angleZW);
+
+        return [nx, ny, nz, nw];
+      }
+
+      function project4Dto2D(v) {
+        const [x, y, z, w] = rotate4D(v);
+        const distance = 3;
+        const scale3D = distance / (distance - w);
+        const x3D = x * scale3D;
+        const y3D = y * scale3D;
+        const z3D = z * scale3D;
+
+        const scale2D = distance / (distance - z3D);
+        return {
+          x: CX + x3D * scale2D * size,
+          y: CY + y3D * scale2D * size,
+          depth: z3D + w
+        };
+      }
+
+      const vertices2D = vertices4D.map(project4Dto2D);
+
+      // Draw edges
+      const edges = [
+        // Inner cube edges (w=-1)
+        [0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7],
+        // Outer cube edges (w=1)
+        [8,9],[9,11],[11,10],[10,8],[12,13],[13,15],[15,14],[14,12],[8,12],[9,13],[10,14],[11,15],
+        // Connecting edges
+        [0,8],[1,9],[2,10],[3,11],[4,12],[5,13],[6,14],[7,15]
+      ];
+
+      edges.forEach(([a, b]) => {
+        const va = vertices2D[a];
+        const vb = vertices2D[b];
+
+        const idxA = a % 60;
+        const idxB = b % 60;
+        const lineage = LINEAGE[idxA];
+
+        const alpha = PARAMS.intensity * 0.6 * (0.5 + 0.5 * ((va.depth + vb.depth) / 4));
+
+        ctx.strokeStyle = getColor(lineage, alpha);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(va.x, va.y);
+        ctx.lineTo(vb.x, vb.y);
+        ctx.stroke();
+      });
+
+      // Draw vertices (highlight primes)
+      vertices2D.forEach((v, i) => {
+        const idx = i % 60;
+        const seq = getSequence(LINEAGE[idx]);
+        const digit = seq[idx];
+        const prime = isPrime(digit);
+
+        const size = (prime ? 8 : 4) * (1 + PARAMS.primePulse * prime);
+        const alpha = PARAMS.intensity * (0.7 + 0.3 * (v.depth / 2));
+
+        ctx.fillStyle = getColor(LINEAGE[idx], alpha);
+        ctx.fillRect(v.x - size/2, v.y - size/2, size, size);
+
+        if (prime) {
+          ctx.strokeStyle = getColor(LINEAGE[idx], alpha * PARAMS.primePulse);
+          ctx.lineWidth = 2;
+          ctx.strokeRect(v.x - size, v.y - size, size*2, size*2);
+        }
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MAIN RENDER LOOP
+    // ═══════════════════════════════════════════════════════════
+
+    function render(timestamp) {
+      if (!FROZEN) {
+        const t = timestamp / 1000;
+
+        // Clear with fade
+        ctx.fillStyle = 'rgba(5, 5, 20, 0.2)';
+        ctx.fillRect(0, 0, W, H);
+
+        // Update base-60 index
+        STATS.base60Idx = Math.floor(t * 10 * PARAMS.speed) % 60;
+
+        // Render current mode
+        switch (MODE) {
+          case 1: drawQuantumField(t); break;
+          case 2: drawPrimeLattice(t); break;
+          case 3: drawHarmonicWeb(t); break;
+          case 4: drawCAEvolution(t); break;
+          case 5: drawYantraBloom(t); break;
+          case 6: drawCrypticDance(t); break;
+          case 7: drawHeptaSync(t); break;
+          case 8: drawTesseract(t); break;
+        }
+
+        // Decay prime pulse
+        if (PARAMS.primePulse > 0) {
+          PARAMS.primePulse *= 0.95;
+        }
+
+        updateStats();
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // UI CONTROLS & EVENT HANDLERS
+    // ═══════════════════════════════════════════════════════════
+
+    function updateStats() {
+      document.getElementById('activePrimes').textContent = STATS.activePrimes;
+      document.getElementById('primeDensity').textContent = STATS.primeDensity + '%';
+      document.getElementById('twinPrimes').textContent = STATS.twinPrimes;
+      document.getElementById('harmonic').textContent = STATS.harmonic;
+      document.getElementById('entropy').textContent = STATS.entropy;
+      document.getElementById('xorAccum').textContent = STATS.xorAccum;
+      document.getElementById('mod60Sum').textContent = STATS.mod60Sum;
+      document.getElementById('base60Idx').textContent = STATS.base60Idx;
+    }
+
+    // Mode buttons
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        MODE = parseInt(btn.dataset.mode);
+        if (MODE === 4) initCA(); // Reset CA on mode switch
+      });
+    });
+
+    // Control sliders
+    const controls = {
+      intensity: 'intensityVal',
+      speed: 'speedVal',
+      primeSens: 'primeVal',
+      depth: 'depthVal',
+      redWeight: 'redVal',
+      blackWeight: 'blackVal',
+      blueWeight: 'blueVal'
+    };
+
+    Object.entries(controls).forEach(([id, valId]) => {
+      const slider = document.getElementById(id);
+      const display = document.getElementById(valId);
+      slider.addEventListener('input', () => {
+        PARAMS[id] = parseFloat(slider.value);
+        display.textContent = slider.value;
+      });
+    });
+
+    // Action buttons
+    document.getElementById('primePulse').addEventListener('click', () => {
+      PARAMS.primePulse = 1.0;
+    });
+
+    document.getElementById('invertBtn').addEventListener('click', () => {
+      PARAMS.inverted = !PARAMS.inverted;
+    });
+
+    document.getElementById('freezeBtn').addEventListener('click', () => {
+      FROZEN = !FROZEN;
+    });
+
+    document.getElementById('screenshotBtn').addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = `moss60_mode${MODE}_${Date.now()}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '1' && e.key <= '8') {
+        MODE = parseInt(e.key);
+        document.querySelectorAll('.mode-btn').forEach((btn, i) => {
+          btn.classList.toggle('active', i + 1 === MODE);
+        });
+        if (MODE === 4) initCA();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        FROZEN = !FROZEN;
+      } else if (e.key.toLowerCase() === 'p') {
+        PARAMS.primePulse = 1.0;
+      } else if (e.key.toLowerCase() === 'i') {
+        PARAMS.inverted = !PARAMS.inverted;
+      }
+    });
+
+    // Start rendering
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>

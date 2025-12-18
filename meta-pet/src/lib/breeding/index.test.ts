@@ -102,6 +102,18 @@ describe('Breeding System', () => {
       expect(result.lineageKey).toBeDefined();
     });
 
+    it('should produce varied mutation results across runs', () => {
+      const parent1 = createTestGenome(1);
+      const parent2 = createTestGenome(5);
+
+      const runs = Array.from({ length: 5 }, () =>
+        JSON.stringify(breedPets(parent1, parent2, 'MUTATION').offspring)
+      );
+
+      const uniqueResults = new Set(runs);
+      expect(uniqueResults.size).toBeGreaterThan(1);
+    });
+
     it('should produce deterministic offspring for identical inputs', () => {
       const parent1 = createTestGenome(1);
       const parent2 = createTestGenome(5);
@@ -270,6 +282,7 @@ describe('Breeding System', () => {
       const previewA = predictOffspring(parent1, parent2);
       const previewB = predictOffspring(parent1, parent2);
 
+      expect(previewA.confidence).toBe(previewB.confidence);
       expect(previewA).toEqual(previewB);
     });
   });

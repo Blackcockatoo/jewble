@@ -4,17 +4,19 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { useStore } from '@/lib/store';
+import type { PetType } from '@metapet/core/store';
 import { HUD } from '@/components/HUD';
 import { TraitPanel } from '@/components/TraitPanel';
 import { PetSprite } from '@/components/PetSprite';
+import AuraliaMetaPet from '@/components/AuraliaMetaPet';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
 import { AchievementShelf } from '@/components/AchievementShelf';
 import { Button } from '@/components/ui/button';
 import { mintPrimeTailId, getDeviceHmacKey } from '@/lib/identity/crest';
 import { heptaEncode42, playHepta } from '@/lib/identity/hepta';
-import { encodeGenome, decodeGenome, hashGenome, type GenomeHash } from '@/lib/genome';
-import type { PrimeTailId, HeptaDigits } from '@/lib/identity/types';
+import { encodeGenome, decodeGenome, hashGenome, type Genome, type GenomeHash } from '@/lib/genome';
+import type { PrimeTailId, HeptaDigits, Rotation, Vault } from '@/lib/identity/types';
 import {
   savePet,
   loadPet,
@@ -25,10 +27,15 @@ import {
   importPetFromJSON,
   type PetSaveData,
 } from '@/lib/persistence/indexeddb';
+import {
+  breedPets,
+  predictOffspring,
+  calculateSimilarity,
+  canBreed,
+  type BreedingResult,
+} from '@/lib/breeding';
 import { EvolutionPanel } from '@/components/EvolutionPanel';
-import { MiniGamesPanel } from '@/components/MiniGamesPanel';
-import { BattleArena } from '@/components/BattleArena';
-import { VimanaMap } from '@/components/VimanaMap';
+import { FeaturesDashboard } from '@/components/FeaturesDashboard';
 import { initializeEvolution } from '@/lib/evolution';
 import {
   createDefaultBattleStats,
@@ -46,9 +53,15 @@ import {
   Upload,
   Plus,
   Trash2,
-  Zap,
+  Baby,
+  FlaskConical,
+  HeartHandshake,
+  Maximize2,
+  Key,
 } from 'lucide-react';
 import Link from 'next/link';
+import { PetResponseOverlay } from '@/components/PetResponseOverlay';
+import { DigitalKeyPanel } from '@/components/DigitalKeyPanel';
 
 interface PetSummary {
   id: string;
@@ -140,6 +153,11 @@ export default function Home() {
   const stopTick = useStore(s => s.stopTick);
   const setGenome = useStore(s => s.setGenome);
   const hydrate = useStore(s => s.hydrate);
+  const petType = useStore(s => s.petType);
+  const setPetType = useStore(s => s.setPetType);
+  const genome = useStore(s => s.genome);
+  const traits = useStore(s => s.traits);
+  const evolution = useStore(s => s.evolution);
   const [crest, setCrest] = useState<PrimeTailId | null>(null);
   const [heptaCode, setHeptaCode] = useState<HeptaDigits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,6 +170,20 @@ export default function Home() {
   const [currentPetId, setCurrentPetId] = useState<string | null>(null);
   const [petName, setPetName] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+  const [breedingMode, setBreedingMode] = useState<'BALANCED' | 'DOMINANT' | 'MUTATION'>('BALANCED');
+  const [breedingPartnerId, setBreedingPartnerId] = useState('');
+  const [breedingPreview, setBreedingPreview] = useState<{
+    possibleTraits: string[];
+    confidence: number;
+    similarity: number;
+    partnerName?: string;
+    partnerStage?: string;
+  } | null>(null);
+  const [breedingResult, setBreedingResult] = useState<BreedingResult | null>(null);
+  const [breedingPartner, setBreedingPartner] = useState<PetSaveData | null>(null);
+  const [offspringSummary, setOffspringSummary] = useState<PetSummary | null>(null);
+  const [breedingError, setBreedingError] = useState<string | null>(null);
+  const [breedingBusy, setBreedingBusy] = useState(false);
 
   const debouncedSave = useMemo(() => createDebouncedSave(1_000), []);
 
@@ -165,6 +197,46 @@ export default function Home() {
   const persistenceSupportedRef = useRef(false);
   const autoSaveCleanupRef = useRef<(() => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const genomeToDna = useCallback((value: Genome): string => {
+    const alphabet = ['A', 'C', 'G', 'T'];
+    const flatten = [...value.red60, ...value.blue60, ...value.black60];
+    return flatten
+      .map(gene => {
+        const safe = Number.isFinite(gene) ? Math.abs(Math.round(gene)) : 0;
+        return alphabet[safe % alphabet.length];
+      })
+      .join('');
+  }, []);
+
+  const deriveTailFromLineage = useCallback((seed: string): [number, number, number, number] => {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = (hash ^ seed.charCodeAt(i)) * 16777619;
+      hash >>>= 0;
+    }
+
+    const next = () => {
+      hash ^= hash << 13;
+      hash ^= hash >>> 17;
+      hash ^= hash << 5;
+      hash >>>= 0;
+      return hash % 60;
+    };
+
+    return [next(), next(), next(), next()];
+  }, []);
+
+  const buildOffspringName = useCallback(
+    (lineageKey: string, partnerName?: string | null) => {
+      const left = (petNameRef.current || 'ORIGIN').slice(0, 4).toUpperCase();
+      const right = (partnerName && partnerName.trim() !== '' ? partnerName : 'ALLY')
+        .slice(0, 4)
+        .toUpperCase();
+      return `${left}-${right}-${lineageKey.slice(0, 4).toUpperCase()}`;
+    },
+    []
+  );
 
   useEffect(() => {
     crestRef.current = crest;
@@ -195,6 +267,52 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const previewPartner = async () => {
+      if (!breedingPartnerId || !persistenceSupportedRef.current) {
+        setBreedingPartner(null);
+        setBreedingPreview(null);
+        return;
+      }
+
+      try {
+        const partner = await loadPet(breedingPartnerId);
+        if (cancelled) return;
+        setBreedingPartner(partner);
+
+        if (!partner || !genome) {
+          setBreedingPreview(null);
+          return;
+        }
+
+        const similarity = calculateSimilarity(genome, partner.genome);
+        const prediction = predictOffspring(genome, partner.genome);
+        setBreedingPreview({
+          possibleTraits: prediction.possibleTraits,
+          confidence: prediction.confidence,
+          similarity,
+          partnerName: partner.name,
+          partnerStage: partner.evolution.state,
+        });
+        setBreedingError(null);
+      } catch (error) {
+        console.warn('Failed to load partner pet for breeding preview:', error);
+        if (!cancelled) {
+          setBreedingPartner(null);
+          setBreedingPreview(null);
+          setBreedingError('Unable to load partner data for breeding.');
+        }
+      }
+    };
+
+    void previewPartner();
+    return () => {
+      cancelled = true;
+    };
+  }, [breedingPartnerId, genome]);
+
   const buildSnapshot = useCallback((): PetSaveData => {
     const state = useStore.getState();
 
@@ -212,6 +330,8 @@ export default function Home() {
       id: petIdRef.current,
       name: petNameRef.current || undefined,
       vitals: state.vitals,
+      petType: state.petType,
+      mirrorMode: state.mirrorMode,
       genome: state.genome,
       genomeHash: genomeHashRef.current,
       traits: state.traits,
@@ -243,6 +363,8 @@ export default function Home() {
         const snapshot: PetSaveData = {
           id: PET_ID,
           vitals: state.vitals,
+          petType: state.petType,
+          mirrorMode: state.mirrorMode,
           genome: state.genome,
           genomeHash: genomeHashRef.current,
           traits: state.traits,
@@ -312,6 +434,8 @@ export default function Home() {
             cells: pet.vimana.cells.map(cell => ({ ...cell })),
           }
         : createDefaultVimanaState(),
+      petType: pet.petType,
+      mirrorMode: pet.mirrorMode,
     });
 
     const digits = Object.freeze([...pet.heptaDigits]) as HeptaDigits;
@@ -403,6 +527,15 @@ export default function Home() {
         mood: 60,
         energy: 80,
       },
+      petType: 'geometric',
+      mirrorMode: {
+        phase: 'idle',
+        startedAt: null,
+        consentExpiresAt: null,
+        preset: null,
+        presenceToken: null,
+        lastReflection: null,
+      },
       genome,
       genomeHash: genomeHashValue,
       traits,
@@ -417,6 +550,134 @@ export default function Home() {
       lastSaved: created,
     };
   }, []);
+
+  const createOffspringFromResult = useCallback(
+    async (result: BreedingResult, partnerName?: string | null): Promise<PetSaveData> => {
+      if (!result.offspring) {
+        throw new Error('Missing offspring genome');
+      }
+
+      const hmacKey = await getDeviceHmacKey();
+      const tail = deriveTailFromLineage(result.lineageKey);
+      const rotation: Rotation = result.lineageKey.charCodeAt(0) % 2 === 0 ? 'CW' : 'CCW';
+      const vault: Vault = crestRef.current?.vault ?? 'blue';
+      const dna = genomeToDna(result.offspring);
+      const crestValue = await mintPrimeTailId({
+        dna,
+        vault,
+        rotation,
+        tail,
+        hmacKey,
+      });
+
+      const minutes = Math.floor(Date.now() / 60000) % 8192;
+      const heptaDigits = await heptaEncode42(
+        {
+          version: 1,
+          preset: 'standard',
+          vault: crestValue.vault,
+          rotation: crestValue.rotation,
+          tail,
+          epoch13: minutes,
+          nonce14: Math.floor(Math.random() * 16384),
+        },
+        hmacKey
+      );
+
+      const now = Date.now();
+      const genomeHashValue = await hashGenome(result.offspring);
+
+      return {
+        id: `pet-${crestValue.signature.slice(0, 12)}`,
+        name: buildOffspringName(result.lineageKey, partnerName),
+        vitals: {
+          hunger: 40,
+          hygiene: 70,
+          mood: 70,
+          energy: 75,
+        },
+        petType: 'geometric',
+        mirrorMode: {
+          phase: 'idle',
+          startedAt: null,
+          consentExpiresAt: null,
+          preset: null,
+          presenceToken: null,
+          lastReflection: null,
+        },
+        genome: result.offspring,
+        genomeHash: genomeHashValue,
+        traits: result.traits,
+        evolution: initializeEvolution(),
+        achievements: [],
+        battle: createDefaultBattleStats(),
+        miniGames: createDefaultMiniGameProgress(),
+        vimana: createDefaultVimanaState(),
+        crest: crestValue,
+        heptaDigits: Object.freeze([...heptaDigits]) as HeptaDigits,
+        createdAt: now,
+        lastSaved: now,
+      };
+    },
+    [buildOffspringName, deriveTailFromLineage, genomeToDna]
+  );
+
+  const handleBreedWithPartner = useCallback(async () => {
+    setBreedingError(null);
+    setBreedingResult(null);
+    setOffspringSummary(null);
+
+    if (!persistenceSupportedRef.current) {
+      setBreedingError('Breeding requires offline archives so offspring can be saved.');
+      return;
+    }
+
+    if (!genome || !traits || !evolution) {
+      setBreedingError('Active companion is not initialized. Try loading or creating a pet first.');
+      return;
+    }
+
+    if (!breedingPartner || !breedingPartnerId) {
+      setBreedingError('Select a partner from your saved companions to begin breeding.');
+      return;
+    }
+
+    if (!canBreed(evolution.state, breedingPartner.evolution.state)) {
+      setBreedingError('Both companions must reach SPECIATION before they can breed.');
+      return;
+    }
+
+    setBreedingBusy(true);
+
+    try {
+      const result = breedPets(genome, breedingPartner.genome, breedingMode);
+      const offspring = await createOffspringFromResult(result, breedingPartner.name);
+      await savePet(offspring);
+      await refreshPetSummaries();
+
+      setBreedingResult(result);
+      setOffspringSummary({
+        id: offspring.id,
+        name: offspring.name,
+        createdAt: offspring.createdAt,
+        lastSaved: offspring.lastSaved,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Breeding attempt failed. Please try again.';
+      setBreedingError(message);
+    } finally {
+      setBreedingBusy(false);
+    }
+  }, [
+    breedingMode,
+    breedingPartner,
+    breedingPartnerId,
+    createOffspringFromResult,
+    evolution,
+    genome,
+    refreshPetSummaries,
+    traits,
+  ]);
 
   const initializeIdentity = useCallback(async () => {
     try {
@@ -663,8 +924,15 @@ export default function Home() {
     }
   };
 
+  const canBreedNow = Boolean(
+    genome && breedingPartner && evolution && canBreed(evolution.state, breedingPartner.evolution.state)
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6">
+      {/* Real-time Response Overlay */}
+      <PetResponseOverlay enableAudio={true} enableAnticipation={true} />
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -679,24 +947,14 @@ export default function Home() {
             Prime-Tail Crest • HeptaCode v1 • Live Vitals
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
-            <Link href="/scaffold">
+            <Link href="/pet">
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                className="gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
               >
-                <Zap className="w-4 h-4" />
-                View Scaffold Demo
-              </Button>
-            </Link>
-            <Link href="/genome-explorer">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-fuchsia-500/30 text-fuchsia-300 hover:bg-fuchsia-500/10"
-              >
-                <Dna className="w-4 h-4" />
-                Genome Explorer
+                <Maximize2 className="w-4 h-4" />
+                Full Screen Pet
               </Button>
             </Link>
           </div>
@@ -706,22 +964,44 @@ export default function Home() {
           {/* Pet Card */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-cyan-400" />
-                Your Companion
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-cyan-400" />
+                  Your Companion
+                </h2>
+
+                {/* Pet Type Switcher */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={petType === 'geometric' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPetType('geometric')}
+                    className="text-xs"
+                  >
+                    Geometric
+                  </Button>
+                  <Button
+                    variant={petType === 'auralia' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPetType('auralia')}
+                    className="text-xs"
+                  >
+                    Auralia
+                  </Button>
+                </div>
+              </div>
 
               {/* Pet sprite */}
-              <div className="relative h-48 mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden">
-                <PetSprite />
+              <div className={`relative mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden flex items-center justify-center ${petType === 'geometric' ? 'h-48' : 'h-[500px]'}`}>
+                {petType === 'geometric' ? <PetSprite /> : <AuraliaMetaPet />}
               </div>
 
               <HUD />
             </div>
 
             {/* Genome Traits */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 max-h-[calc(100vh-8rem)] overflow-y-auto">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 sticky top-0 bg-slate-900/50 backdrop-blur-sm -mx-6 px-6 py-3 z-10">
                 <Dna className="w-5 h-5 text-purple-400" />
                 Genome Traits
               </h2>
@@ -731,7 +1011,6 @@ export default function Home() {
 
           {/* Identity & Persistence */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Identity Cards */}
             {/* Crest */}
             {crest && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
@@ -778,6 +1057,148 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {/* Breeding Lab */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <FlaskConical className="w-5 h-5 text-pink-400" />
+                Breeding Lab
+              </h2>
+
+              <div className="space-y-4">
+                {/* Breeding Mode Selection */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-wide text-zinc-500">Breeding Mode</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(['BALANCED', 'DOMINANT', 'MUTATION'] as const).map(mode => (
+                      <Button
+                        key={mode}
+                        size="sm"
+                        variant={breedingMode === mode ? 'default' : 'outline'}
+                        onClick={() => setBreedingMode(mode)}
+                        className={breedingMode === mode ? 'bg-pink-600 hover:bg-pink-700' : 'border-slate-700'}
+                      >
+                        {mode}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-zinc-500">
+                    {breedingMode === 'BALANCED' && 'Equal mix of both parents\' traits'}
+                    {breedingMode === 'DOMINANT' && 'Stronger traits take priority'}
+                    {breedingMode === 'MUTATION' && 'Higher chance of unique mutations'}
+                  </p>
+                </div>
+
+                {/* Partner Selection */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs uppercase tracking-wide text-zinc-500">Select Partner</label>
+                  <select
+                    value={breedingPartnerId}
+                    onChange={event => setBreedingPartnerId(event.target.value)}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Choose a companion...</option>
+                    {petSummaries
+                      .filter(s => s.id !== currentPetId)
+                      .map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name && s.name.trim() !== '' ? s.name : `Companion ${s.id.slice(0, 8)}`}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Breeding Preview */}
+                {breedingPreview && (
+                  <div className="rounded-lg border border-pink-500/30 bg-pink-500/5 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <HeartHandshake className="w-5 h-5 text-pink-400" />
+                      <span className="text-sm font-semibold text-pink-200">Compatibility Preview</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-zinc-400">Partner:</span>
+                        <span className="ml-2 text-white">{breedingPreview.partnerName || 'Unknown'}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Stage:</span>
+                        <span className="ml-2 text-cyan-400">{breedingPreview.partnerStage}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Genetic Similarity:</span>
+                        <span className="ml-2 text-purple-400">{(breedingPreview.similarity * 100).toFixed(1)}%</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Confidence:</span>
+                        <span className="ml-2 text-green-400">{(breedingPreview.confidence * 100).toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-zinc-500">Possible Traits:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {breedingPreview.possibleTraits.slice(0, 6).map(trait => (
+                          <span key={trait} className="px-2 py-0.5 rounded-full bg-slate-800 text-xs text-zinc-300">
+                            {trait}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Breed Button */}
+                <Button
+                  onClick={() => void handleBreedWithPartner()}
+                  disabled={!canBreedNow || breedingBusy}
+                  className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 disabled:opacity-50"
+                >
+                  <Baby className="w-4 h-4 mr-2" />
+                  {breedingBusy ? 'Breeding...' : 'Breed Companions'}
+                </Button>
+
+                {breedingError && (
+                  <p className="text-xs text-rose-400">{breedingError}</p>
+                )}
+
+                {/* Breeding Result */}
+                {breedingResult && offspringSummary && (
+                  <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Baby className="w-5 h-5 text-green-400" />
+                      <span className="text-sm font-semibold text-green-200">New Offspring!</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-zinc-400">Name:</span>
+                        <span className="ml-2 text-white">{offspringSummary.name}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Lineage Key:</span>
+                        <span className="ml-2 text-purple-400 font-mono text-xs">{breedingResult.lineageKey.slice(0, 16)}...</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Inherited Traits:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {Object.entries(breedingResult.traits).slice(0, 4).map(([key, value]) => (
+                            <span key={key} className="px-2 py-0.5 rounded-full bg-slate-800 text-xs text-zinc-300">
+                              {key}: {typeof value === 'number' ? value.toFixed(2) : String(value)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-green-600 text-green-400 hover:bg-green-500/10"
+                      onClick={() => void handleSelectPet(offspringSummary.id)}
+                    >
+                      Switch to Offspring
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* HeptaCode Visuals */}
             {heptaCode && (
@@ -926,36 +1347,29 @@ export default function Home() {
                     })
                   )}
                 </div>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-            <AchievementShelf />
-          </div>
+            {/* Digital Keys */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <DigitalKeyPanel />
+            </div>
 
-          {/* Evolution */}
-          <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-cyan-300" />
-              Evolution Progress
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <AchievementShelf />
+            </div>
+
+            {/* Evolution */}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-cyan-300" />
+                Evolution Progress
               </h2>
               <EvolutionPanel />
             </div>
 
-            {/* Mini Games */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <MiniGamesPanel petName={petName} />
-            </div>
-
-            {/* Battle Arena */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <BattleArena />
-            </div>
-
-            {/* Vimana Map */}
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800">
-              <VimanaMap />
-            </div>
+            {/* Features Dashboard */}
+            <FeaturesDashboard />
           </div>
         </div>
 
