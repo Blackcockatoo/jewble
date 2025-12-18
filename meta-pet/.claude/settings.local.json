@@ -17,7 +17,8 @@
       "Bash(unzip:*)",
       "Bash(git mv:*)",
       "Bash(npm ls:*)",
-      "Bash(dir /b:*)"
+      "Bash(dir /b:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
