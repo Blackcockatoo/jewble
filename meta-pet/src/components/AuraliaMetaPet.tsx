@@ -16,6 +16,7 @@ import {
   type GuardianScaleName,
   type GuardianSigilPoint,
 } from '../../../shared/auralia/guardianBehavior';
+import { MechanicsShowcase } from './auralia/MechanicsShowcase';
 import { SubAtomicParticleField } from './auralia/SubAtomicParticleField';
 import { TemporalEchoTrail } from './auralia/TemporalEchoTrail';
 
@@ -1082,6 +1083,14 @@ const AuraliaMetaPet: React.FC = () => {
                 <div className="p-3 bg-gray-950/50 rounded-lg"><p className="text-sm text-gray-400">Fibonacci Number</p><p className="text-2xl font-mono text-yellow-500">{fibNum.toString()}</p></div>
               </div>
             </div>
+
+            <MechanicsShowcase
+              seedName={seedName}
+              energy={energy}
+              curiosity={curiosity}
+              bond={bond}
+              field={field}
+            />
 
             <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
               <h3 className="text-xl font-semibold text-yellow-400 mb-4">Trinity Genome Vaults</h3>
