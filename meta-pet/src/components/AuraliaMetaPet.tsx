@@ -29,6 +29,7 @@ type ScaleName = GuardianScaleName;
 type Particle = { id: number; x: number; y: number; vx: number; vy: number; color: string; size: number; };
 type Crackle = { id: number; x: number; y: number; life: number; };
 type SigilPulse = { id: number; x: number; y: number; life: number; color: string; };
+type AuraRipple = { id: number; x: number; y: number; radius: number; life: number; color: string; };
 type FormKey = 'radiant' | 'meditation' | 'sage' | 'vigilant' | 'celestial' | 'wild';
 type Form = { name: string; baseColor: string; primaryGold: string; secondaryGold: string; tealAccent: string; eyeColor: string; glowColor: string; description: string; };
 type BondHistoryEntry = { timestamp: number; bond: number; event: string; };
@@ -193,6 +194,8 @@ const AuraliaMetaPet: React.FC = () => {
   const [eyePos, setEyePos] = useState<{ x: number; y: number; }>({ x: 0, y: 0 });
   const [crackles, setCrackles] = useState<Crackle[]>([]);
   const [sigilPulses, setSigilPulses] = useState<SigilPulse[]>([]);
+  const [auraRipples, setAuraRipples] = useState<AuraRipple[]>([]);
+  const [hoverIntensity, setHoverIntensity] = useState<number>(0);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const [whisper, setWhisper] = useState<{ text: string; key: number }>({ text: 'The Guardian awakens...', key: 0 });
@@ -364,6 +367,7 @@ const AuraliaMetaPet: React.FC = () => {
       setCrackles(prev => prev.map(c => ({ ...c, life: c.life - 0.05 })).filter(c => c.life > 0));
       
       setSigilPulses(prev => prev.map(p => ({ ...p, life: p.life - 0.04 })).filter(p => p.life > 0));
+      setAuraRipples(prev => prev.map(r => ({ ...r, radius: r.radius + 2.2, life: r.life - 0.025 })).filter(r => r.life > 0.05).slice(-40));
 
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -421,8 +425,8 @@ const AuraliaMetaPet: React.FC = () => {
     }
   }, [aiState, aiFocus]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!svgRef.current || activeForm === 'meditation' || aiState.mode !== 'idle') return;
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!svgRef.current) return;
     const svg = svgRef.current;
     const pt = svg.createSVGPoint();
     pt.x = e.clientX;
@@ -431,13 +435,22 @@ const AuraliaMetaPet: React.FC = () => {
     
     const dx = x - 200;
     const dy = y - 145;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dist = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
     const maxDist = 4;
     
-    setEyePos({
-      x: (dx / dist) * Math.min(dist, maxDist),
-      y: (dy / dist) * Math.min(dist, maxDist)
-    });
+    if (activeForm !== 'meditation' && aiState.mode === 'idle') {
+      setEyePos({
+        x: (dx / dist) * Math.min(dist, maxDist),
+        y: (dy / dist) * Math.min(dist, maxDist)
+      });
+    }
+
+    const hover = Math.max(0, 1 - Math.min(1, dist / 180));
+    setHoverIntensity(hover);
+  };
+
+  const spawnRipple = (x: number, y: number, color: string) => {
+    setAuraRipples((prev) => [...prev.slice(-30), { id: Date.now() + Math.random(), x, y, radius: 6, life: 1, color }]);
   };
 
   const handleSigilClick = (index: number, point: SigilPoint) => {
@@ -477,6 +490,24 @@ const AuraliaMetaPet: React.FC = () => {
     } else {
       addToBondHistory(`Resonated with sigil point ${index + 1}`);
     }
+  };
+
+  const handleAvatarPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 400;
+    const y = ((e.clientY - rect.top) / rect.height) * 400;
+    spawnRipple(x, y, currentForm.tealAccent);
+    setHoverIntensity(1);
+    setBond((b) => Math.min(100, b + 1.5));
+    setCuriosity((c) => Math.min(100, c + 1));
+    setEnergy((en) => Math.min(100, en + 0.5));
+    setTotalInteractions((prev) => prev + 1);
+    if (audioEnabled) playNote(Math.floor((x / 400) * 7), 0.35);
+  };
+
+  const handleAvatarPointerUp = () => {
+    setHoverIntensity((h) => Math.max(0.15, h * 0.6));
   };
 
   const startPatternGame = () => {
@@ -841,12 +872,22 @@ const AuraliaMetaPet: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           <div className="bg-gray-900/80 rounded-2xl p-8 border border-yellow-600/20 lg:sticky lg:top-4">
-            <div 
+          <div 
             className="aspect-square bg-gradient-to-br from-blue-950/30 to-gray-900/30 rounded-xl flex items-center justify-center relative overflow-hidden"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => setEyePos({ x: 0, y: 0 })}
+            onPointerMove={handlePointerMove}
+            onPointerLeave={() => { setEyePos({ x: 0, y: 0 }); setHoverIntensity(0); }}
+            onPointerDown={handleAvatarPointerDown}
+            onPointerUp={handleAvatarPointerUp}
           >
             <div className="absolute inset-0 opacity-30 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
+
+            <div
+              className="absolute inset-0 pointer-events-none transition-opacity duration-200"
+              style={{
+                opacity: 0.15 + hoverIntensity * 0.6,
+                background: `radial-gradient(circle at ${50 + hoverIntensity * 6}% ${50 - hoverIntensity * 8}%, ${currentForm.tealAccent}26, transparent 58%)`,
+              }}
+            />
 
             <YantraMorphBackdrop
               width={400}
@@ -1030,6 +1071,13 @@ const AuraliaMetaPet: React.FC = () => {
                     </>
                   )}
                 </g>
+
+                {auraRipples.map(r => (
+                  <g key={r.id} opacity={r.life}>
+                    <circle cx={r.x} cy={r.y} r={r.radius} fill="none" stroke={r.color} strokeWidth={1.4 * r.life} opacity={0.5} />
+                    <circle cx={r.x} cy={r.y} r={r.radius * 0.6} fill="none" stroke={currentForm.primaryGold} strokeWidth={0.6} strokeDasharray="4 4" opacity={0.35} />
+                  </g>
+                ))}
 
                 {sigilPulses.map(p => <circle key={p.id} cx={p.x} cy={p.y} r={(1 - p.life) * 30} fill="none" stroke={p.color} strokeWidth={p.life * 2} opacity={p.life} />)}
 
