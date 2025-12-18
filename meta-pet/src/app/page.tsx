@@ -9,6 +9,7 @@ import { HUD } from '@/components/HUD';
 import { TraitPanel } from '@/components/TraitPanel';
 import { PetSprite } from '@/components/PetSprite';
 import AuraliaMetaPet from '@/components/AuraliaMetaPet';
+import AuraliaSprite from '@/components/AuraliaSprite';
 import { HeptaTag } from '@/components/HeptaTag';
 import { SeedOfLifeGlyph } from '@/components/SeedOfLifeGlyph';
 import { AchievementShelf } from '@/components/AchievementShelf';
@@ -992,8 +993,8 @@ export default function Home() {
               </div>
 
               {/* Pet sprite */}
-              <div className={`relative mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden flex items-center justify-center ${petType === 'geometric' ? 'h-48' : 'h-[500px]'}`}>
-                {petType === 'geometric' ? <PetSprite /> : <AuraliaMetaPet />}
+              <div className={`relative mb-6 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl overflow-hidden flex items-center justify-center h-48`}>
+                {petType === 'geometric' ? <PetSprite /> : <AuraliaSprite />}
               </div>
 
               <HUD />
