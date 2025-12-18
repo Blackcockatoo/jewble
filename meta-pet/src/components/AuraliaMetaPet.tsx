@@ -16,6 +16,7 @@ import {
   type GuardianScaleName,
   type GuardianSigilPoint,
 } from '../../../shared/auralia/guardianBehavior';
+import { YantraMorphBackdrop } from './auralia/YantraMorphBackdrop';
 import { MechanicsShowcase } from './auralia/MechanicsShowcase';
 import { SubAtomicParticleField } from './auralia/SubAtomicParticleField';
 import { TemporalEchoTrail } from './auralia/TemporalEchoTrail';
@@ -846,6 +847,14 @@ const AuraliaMetaPet: React.FC = () => {
             onMouseLeave={() => setEyePos({ x: 0, y: 0 })}
           >
             <div className="absolute inset-0 opacity-30 blur-3xl breathe-anim" style={{ background: `radial-gradient(circle at center, ${currentForm.glowColor}, transparent 70%)` }} />
+
+            <YantraMorphBackdrop
+              width={400}
+              height={400}
+              energy={energy}
+              curiosity={curiosity}
+              bond={bond}
+            />
 
             <SubAtomicParticleField
               energy={energy}
