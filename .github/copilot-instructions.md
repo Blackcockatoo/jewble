@@ -1,117 +1,173 @@
 # Jewble - AI Coding Agent Instructions
 
-## Project Overview
-Jewble is a React/TypeScript project with an interactive "Guardian" AI system featuring adaptive audio synthesis, canvas visualization, and persistent memory. The codebase uses a modular architecture with `shared/` containing cross-cutting components.
+## Project Structure
+**Jewble** is a multi-platform monorepo (npm workspaces) for a virtual pet game with genetic identity systems:
+- `packages/core` – Platform-agnostic game engine (Zustand store, evolution, vitals, genome encoding)
+- `meta-pet` – Next.js web dashboard (full-featured gameplay UI, crypto adapter)
+- `meta-pet-mobile` – Expo/React Native mobile app (persistence via MMKV)
+- `apps/web-vite` – Lightweight Vite shell (vitals display only)
+- `shared/auralia/` – Guardian AI subsystem (audio synthesis, canvas visualization)
 
-## Architecture Patterns
+## Core Gameplay Architecture
 
-### Module Organization
-- **`shared/auralia/`**: Guardian AI system with autonomous behaviors, evolution stages, and audio-visual feedback
-- Components are self-contained with co-located hooks, types, and demo implementations
-- Export pattern: Types → Hooks → Components → Demo → Default placeholder
+### The Pet Store (Zustand)
+**`meta-pet/src/store/index.ts`** is the single source of truth. It implements:
+- **Vitals** (hunger, energy, happiness) with time-based decay via `tick()` interval
+- **Genome** (Red60/Blue60/Black60 base-60 encoding) → **DerivedTraits** (element metrics, wave functions)
+- **Evolution** (4 stages: Genetics → Neuro → Quantum → Speciation) auto-triggered via thresholds
+- **Achievements**, **Battles**, **Mini-games**, **Vimana exploration**, **Mirror mode** (privacy feature)
+- Methods: `feed()`, `play()`, `sleep()`, `clean()` call `applyInteraction()` which updates vitals
 
-### Guardian System Architecture
-The Guardian is a stateful AI entity with three interconnected layers:
+**Key insight:** Store initializes `vitals` from defaults, hydrates from persisted state, and auto-ticks every 1s.
 
-1. **Stats System** (`GuardianStats`): `energy`, `curiosity`, `bond` (0-100 range)
-2. **Evolution System**: 4 stages (Seedling → Sprout → Guardian → Ancient) triggered by stat thresholds
-3. **AI State Machine**: 5 modes (`idle` → `observing`/`focusing`/`dreaming` → `playing` → `idle`)
+### Element Math & Genetics
+**Genome structure:** 3 arrays of 60 base-60 digits (Prime-Tail Crest ID). `decodeGenome()` extracts:
+- **Element triples** (Z≤118 atomic numbers) mapped to residues on base-60 circle
+- **Bridge score** (residues hosting both layers)
+- **Frontier weight** (high-Z element preference)
+- **Charge vector** (`c2`, `c3`, `c5` exponent sums)
+- **Heptasignature** (base-7 aggregates)
+- **Element wave** (complex oscillation from layer/angle/factorization)
 
-**State transitions** happen probabilistically using `GuardianField.prng()` with time-based thresholds:
-- Idle waits 4-10s before transitioning
-- Focusing → Playing after 2-5s (triggers audio note)
-- Dreaming generates insights after 6-12s
+`summarizeElementWeb()` computes these once, stores in `traits.elements`. Use when breeding or displaying genetic info.
 
-### Audio Architecture (Web Audio API)
-- **Base frequency**: 432 Hz (not standard 440 Hz)
-- **Drone oscillators**: 3 sine waves at 1×, 1.5×, 2× base frequency
-  - Volumes tied to stats: energy/curiosity/bond (max 0.06 × evolution multiplier)
-  - Use exponential ramping with `linearRampToValueAtTime` over 0.6s
-- **Note oscillators**: Scale-specific intervals (harmonic/pentatonic/dorian/phrygian)
-  - Triggered by `playNote(index)` with 0.4s duration
-  - Attack: 0.00001 → 0.18 in 0.02s, decay to 0.00001
-- **Safety**: Always clamp gains to `[0.00001, 1]` and wrap in try-catch
+### Evolution Stages
+Each stage in `DEFAULT_EVOLUTIONS` has:
+- **Threshold stats** (energy/curiosity/bond values that trigger progression)
+- **Audio config** (scale: harmonic/pentatonic/dorian/phrygian, drones multiplier)
+- **Visual config** (glow intensity, point size for sigil canvas)
 
-### Canvas Rendering Pattern
-1. Set up high-DPI canvas: `width/height × devicePixelRatio`, scale context
-2. Clear with state-dependent gradient (hue varies by AI mode: dreaming=260°, playing=200°, focusing=120°, idle=20°)
-3. Draw sigil polygon connecting points with low-opacity strokes
-4. Render points with radial glow gradients (size/intensity from evolution)
-5. Add decorative diagonal lines with `globalCompositeOperation=''lighter''`
+When vitals meet thresholds, `evolvePet()` updates stage and audio style. Check `meta-pet/src/evolution/index.ts`.
 
-**Key**: Canvas updates are `useEffect`-driven with complete redraw on dependency changes
+## State Management Patterns
 
-### Memory & Persistence
-- **LocalStorage key**: `auralia_guardian_memory_v1`
-- **Structure**: `{ insights: MemoryInsight[], visits: number }`
-- **Safety**: Comprehensive error handling with fallback to empty state
-- **Limits**: Keep only last 50 insights (slice on read/write)
+### Zustand Store Actions
+All mutations go through store methods, never direct state assignment:
+```ts
+feed: () => {
+  const { vitals } = useStore.getState();
+  useStore.setState({ vitals: applyInteraction(vitals, 'feed') });
+}
+```
 
-## Code Conventions
+### Hydration Flow
+Apps must call `hydrate()` on startup with persisted data (localStorage for web, MMKV for mobile):
+```ts
+const stored = JSON.parse(localStorage.getItem('meta-pet-state') || '{}');
+useStore.getState().hydrate(stored);
+```
 
-### Type Definitions
-- Export all domain types at file top (Stats, Points, Fields, AI states, etc.)
-- Use string literals for enums: `mode: ''idle'' | ''observing'' | ...`
-- Audio scales are `Record<ScaleName, number[]>` with frequency ratios
+### Persistence
+- **Web (meta-pet):** localStorage via Zustand persist middleware (see store/index.ts)
+- **Mobile (meta-pet-mobile):** MMKV storage (sync storage layer)
+- **Vite (apps/web-vite):** No persistence (read-only vitals display)
 
-### React Patterns
-- **Custom hooks** for complex state logic (`useGuardianMemory`, `useEvolution`, `useAdaptiveAudio`, `useGuardianSystem`)
-- **Refs** for persistent objects that shouldn''t trigger re-renders (AudioContext, oscillators, PRNG field)
-- **Memoization**: Use `useCallback` for functions passed as dependencies or props
-- **Effect cleanup**: Always return cleanup functions to stop oscillators, clear intervals, close contexts
+## Guardian AI System
 
-### State Management
-- Derived state via hooks when possible (evolution from stats)
-- Update patterns: `setStats(s => ({ ...s, energy: Math.min(100, s.energy + delta) }))`
-- Time tracking: Store `since: Date.now()` in state, calculate `timeInState` in effects
+### Overview
+**`shared/auralia/guardianBehavior.tsx`** is a semi-autonomous companion with:
+- **Stats:** energy, curiosity, bond (0-100)
+- **Evolution:** 4 stages (Seedling → Sprout → Guardian → Ancient)
+- **AI modes:** idle → observing/focusing/dreaming → playing → idle (probabilistic FSM)
+- **Audio:** 432 Hz base frequency, 3 drone oscillators, scale-based note synth
+- **Canvas:** Deterministic sigil points (LCG PRNG), radial glow, mode-dependent hues
 
-### Audio Best Practices
-- Never start oscillators without try-catch
-- Cancel scheduled values before scheduling new ones: `gain.cancelScheduledValues(now)`
-- Use exponential ramping for volume (sounds more natural than linear)
-- Check for AudioContext/webkitAudioContext browser compatibility
+### Integration
+Guardian is **opt-in visual overlay**; not core gameplay. Lives in `shared/auralia/` for reuse across apps.
+- Imported in `meta-pet` as companion UI element
+- Can be disabled (audio/canvas paused independently)
+- Persists insights to localStorage (`auralia_guardian_memory_v1`)
 
-### Error Handling
-- LocalStorage operations wrapped in try-catch (can throw in private browsing)
-- Type guards: `typeof parsed !== ''object''`, `Array.isArray()`
-- Null coalescing with defaults: `parsed.visits || 0`
+### Audio Implementation
+**`useAuraliaAudio(enabled, stats, scale)`** hook manages Web Audio:
+- 3 sine-wave drones at 432Hz × {1, 1.5, 2} with gain tied to stats (max 0.06)
+- LFO modulates at 0.18 Hz (subtle wobble)
+- Exponential ramping: `gain.linearRampToValueAtTime(target, context.currentTime + 0.6)`
+- Note playback via separate gain/osc triggered by mode transitions
+- **Always clamp gains to [0.00001, 1]**, wrap in try-catch (AudioContext quirks)
+
+### Canvas Rendering
+High-DPI canvas with sigil pattern (polygon + points + glow):
+1. Scale canvas: `canvas.width/height = logical × devicePixelRatio`
+2. Background: gradient hue varies by mode (idle=20°, focusing=120°, playing=200°, dreaming=260°)
+3. Draw sigil: deterministic LCG points → polygon strokes → radial glow gradients
+4. Update: useEffect dependency triggers full redraw (no partial updates)
 
 ## Development Workflows
 
-### Adding New Guardian Behaviors
-1. Add state to `GuardianAIState.mode` union type
-2. Implement transition logic in `useGuardianSystem` effect''s `tick()` function
-3. Update canvas hue mapping in `GuardianSigilCanvas`
-4. Consider adding audio response in evolution stage config
+### Running the Monorepo
+```bash
+npm install                  # Bootstrap all packages
+npm run dev:web             # Next.js (localhost:3000)
+npm run dev:mobile          # Expo (use Expo Go app)
+npm run dev:vite            # Vite (localhost:5173)
+cd meta-pet && npm run test # Vitest suite
+```
 
-### Modifying Evolution Stages
-1. Edit `DEFAULT_EVOLUTIONS` array with new thresholds
-2. Update `audio` config (scale, droneMultiplier) for musical progression
-3. Update `visual` config (glow, pointSize) for visual feedback
-4. Evolution auto-triggers via `useEvolution` hook when stats meet thresholds
+### Adding Game Features
+1. **Define state** in `MetaPetState` (store/index.ts)
+2. **Implement logic** in appropriate module (evolution/, vitals/, progression/)
+3. **Wire action** via store method
+4. **Persist:** auto-handled if using hydrate/localStorage flow
+5. **Test:** add Vitest cases in `meta-pet/src/**/*.test.ts`
 
-### Testing Audio Changes
-- Test in Chrome/Firefox (Safari has WebAudio quirks)
-- Use dev tools to inspect `AudioContext.state` (must be ''running'')
-- Check volume ranges don''t exceed 1.0 (causes distortion)
-- Verify exponential ramps: `gain.value` should never be 0 (use 0.00001)
+### Genome/Breeding Changes
+- Modify logic in `packages/core/src/genome/` or `packages/core/src/genetics/`
+- Update `decodeGenome()` → `DerivedTraits` pipeline
+- Re-sync `meta-pet` imports (re-export from core)
+- Test element wave math in isolation (complex domain)
 
-## Key Files
-- `shared/auralia/guardianBehavior.ts`: Complete Guardian system (398 lines)
-  - Lines 1-13: Type definitions
-  - Lines 15-26: Audio scale constants
-  - Lines 28-37: Evolution stage definitions
-  - Lines 39-58: Memory hooks with localStorage
-  - Lines 60-74: Evolution progression logic
-  - Lines 76-157: Adaptive audio synthesis
-  - Lines 159-171: Sigil point generation (deterministic PRNG)
-  - Lines 173-252: Canvas visualization component
-  - Lines 254-337: Main Guardian system hook (AI state machine)
-  - Lines 339-366: Demo component
+### Guardian Audio Tweaks
+1. Adjust scales in `AUDIO_SCALES`
+2. Modify drone ratios/volumes in `useAuraliaAudio`
+3. Change evolution stage audio config (`DEFAULT_EVOLUTIONS`)
+4. Test in Chrome/Firefox (Safari has strict Web Audio policies)
+
+## Code Conventions
+
+### Types
+- Export domain types at file top (Vitals, Genome, GuardianStats, etc.)
+- Union types for enums: `mode: 'idle' | 'observing' | ...` (not const enums)
+- Genome arrays are `number[]` (base-60 digits 0-59)
+- Time stored as `number` (Date.now() milliseconds)
+
+### Zustand Patterns
+- Single `create()` call per store (meta-pet has one global store)
+- Actions are store methods, not external reducers
+- Use `getState()` for imperative reads, subscription for reactive updates
+- Persist middleware config: `localStorage` key, version number, structure
+
+### React in Guardian
+- **Refs:** AudioContext, oscillators (don't re-render on change)
+- **Effect cleanup:** Always stop audio nodes, clear intervals
+- **useCallback:** Required for functions passed as dependencies
+- **Memoization:** useMemo for expensive deriving (element wave calc)
+
+### Error Handling
+- localStorage can throw (private browsing) → wrap in try-catch with fallback defaults
+- AudioContext operations → try-catch (context might be closed/suspended)
+- Type guards: `Array.isArray()`, `typeof obj === 'object'`
+- Null safety: `state?.property || defaultValue`
+
+## Cross-Platform Considerations
+
+### Web (Next.js) vs Mobile (Expo)
+- **Shared:** `@metapet/core` (Zustand, pure logic)
+- **Diverges:** Persistence layer (localStorage vs MMKV), crypto adapters, UI framework
+- **Mobile quirks:** MMKV is synchronous, Expo doesn't support some Web APIs (crypto uses `expo-crypto`)
+- **Testing:** Vitest for core, manual smoke tests for Expo (no Jest setup currently)
+
+### Web Shell (Vite)
+- Minimal read-only vitals display (no game logic)
+- Consumes only store subset
+- Useful for dashboards or external integrations
 
 ## Common Pitfalls
-- **AudioContext must be resumed**: User interaction required before audio plays (browser security)
-- **Canvas coordinate system**: Set logical size via style, physical via width/height attributes
-- **Interval cleanup**: Always store interval ID and clear in effect cleanup
-- **PRNG seeding**: Guardian uses custom LCG (not Math.random) for deterministic sigils
-- **React strict mode**: Effects run twice in dev; use `mounted` flag for async operations
+
+- **Vitals decay:** Must call `startTick()` or vitals won't change (happens on hydrate auto)
+- **Store mutations:** Never modify vitals directly; use action methods
+- **AudioContext suspended:** Requires user interaction first (browser security); Guardian auto-resumes on first hover/click
+- **Genome decoding:** Element indices aren't sequential (use `residues` lookup table)
+- **Element wave math:** Complex domain with layer offsets & factorization; isolate tests
+- **Persistence race:** Mobile MMKV syncs async; check for conflicts on app resume
+- **Guardian visuals:** High-DPI canvas scaling must match actual device pixel ratio
