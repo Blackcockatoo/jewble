@@ -20,6 +20,7 @@ import { YantraMorphBackdrop } from './auralia/YantraMorphBackdrop';
 import { MechanicsShowcase } from './auralia/MechanicsShowcase';
 import { SubAtomicParticleField } from './auralia/SubAtomicParticleField';
 import { TemporalEchoTrail } from './auralia/TemporalEchoTrail';
+import { YantraTileGenomeVisualizer } from './auralia/YantraTileGenomeVisualizer';
 
 // ===== TYPE DEFINITIONS =====
 type Bigish = bigint | number;
@@ -1160,6 +1161,35 @@ const AuraliaMetaPet: React.FC = () => {
                 
                 <div className="flex justify-between text-sm text-gray-400 pt-2"><span>Black-60 (Mystery Halo)</span><span className="font-mono text-yellow-500">{black60.toFixed(2)}%</span></div>
                 <div className="w-full bg-gray-700 rounded-full h-2"><div className="bg-gray-500 h-2 rounded-full" style={{ width: `${black60}%` }}></div></div>
+              </div>
+            </div>
+
+            <div className="bg-gray-900/80 rounded-2xl p-6 border border-yellow-600/20">
+              <h3 className="text-xl font-semibold text-yellow-400 mb-4">Yantra Genome Lattice</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                {activatedPoints.size}/7 sigils active • {activeForm === 'celestial' ? '12 tiles (Celestial)' : activeForm === 'wild' ? '9 tiles (Wild)' : '7 tiles'}
+              </p>
+
+              <YantraTileGenomeVisualizer
+                energy={energy}
+                curiosity={curiosity}
+                bond={bond}
+                red60={red60}
+                blue60={blue60}
+                black60={black60}
+                field={field}
+                currentForm={currentForm}
+                activatedPoints={activatedPoints}
+                onTileClick={(index) => handleSigilClick(index % 7, sigilPoints[index % 7])}
+                width={600}
+                height={400}
+                className="rounded-lg"
+              />
+
+              <div className="mt-3 text-xs text-gray-500 space-y-1">
+                <p>Red-60 ({red60.toFixed(1)}%): Morph bias (circle↔triangle)</p>
+                <p>Blue-60 ({blue60.toFixed(1)}%): Form stability</p>
+                <p>Black-60 ({black60.toFixed(1)}%): Mystery halo glow</p>
               </div>
             </div>
 
